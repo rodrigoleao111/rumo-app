@@ -21,7 +21,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         VoucherGroupEntity::class,
         BoardingPassEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class TravelDatabase : RoomDatabase() {
@@ -81,6 +81,16 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v12 → v13: tipo de transporte, documento e observações em boarding_passes
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE boarding_passes ADD COLUMN transportType TEXT NOT NULL DEFAULT 'FLIGHT'")
+                db.execSQL("ALTER TABLE boarding_passes ADD COLUMN documentPath TEXT")
+                db.execSQL("ALTER TABLE boarding_passes ADD COLUMN documentName TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE boarding_passes ADD COLUMN notes TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -117,7 +127,7 @@ abstract class TravelDatabase : RoomDatabase() {
                     TravelDatabase::class.java,
                     "travel_db"
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .fallbackToDestructiveMigrationFrom(1, 2) // versões iniciais sem dados reais
                     .build()
                     .also { INSTANCE = it }

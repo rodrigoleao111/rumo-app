@@ -47,6 +47,7 @@ private data class ExportedVoucher(
 )
 
 private data class ExportedBoardingPass(
+    val transportType: String,
     val origin: String,
     val originCity: String,
     val destination: String,
@@ -55,7 +56,9 @@ private data class ExportedBoardingPass(
     val date: String,
     val boardingTime: String,
     val passenger: String,
-    val walletUrl: String?
+    val walletUrl: String?,
+    val documentName: String,
+    val notes: String
 )
 
 private data class ExportedDay(
@@ -111,7 +114,11 @@ class TravelImporter(
 
     /** Importa a viagem completa para o banco e retorna o novo tripId. */
     suspend fun import(uri: Uri): Long {
-        val (exported, documents, voucherFiles) = parseZip(uri)
+        val parsed = parseZip(uri)
+        val exported     = parsed.trip
+        val documents    = parsed.documents
+        val voucherFiles = parsed.voucherFiles
+        val boardingFiles = parsed.boardingFiles
 
         if (exported.startDate == null || exported.endDate == null)
             throw Exception("Arquivo inválido: datas ausentes.")
@@ -245,11 +252,21 @@ class TravelImporter(
         }
 
         // Importa boarding passes
+        val passagensDir = File(context.filesDir, "Passagens").apply { mkdirs() }
         for (expPass in exported.boardingPasses) {
+            val localDocPath = if (expPass.documentName.isNotBlank()) {
+                boardingFiles[expPass.documentName]?.let { bytes ->
+                    val dest = File(passagensDir, expPass.documentName)
+                    dest.writeBytes(bytes)
+                    dest.absolutePath
+                }
+            } else null
+
             repo.upsertBoardingPass(
                 tripId = tripId,
                 entity = BoardingPassEntity(
                     tripId          = tripId,
+                    transportType   = expPass.transportType,
                     origin          = expPass.origin,
                     originCity      = expPass.originCity,
                     destination     = expPass.destination,
@@ -258,7 +275,10 @@ class TravelImporter(
                     date            = expPass.date,
                     boardingTime    = expPass.boardingTime,
                     passenger       = expPass.passenger,
-                    walletUrl       = expPass.walletUrl
+                    walletUrl       = expPass.walletUrl,
+                    documentPath    = localDocPath,
+                    documentName    = expPass.documentName,
+                    notes           = expPass.notes
                 )
             )
         }
@@ -268,11 +288,12 @@ class TravelImporter(
 
     // ── Parser ────────────────────────────────────────────────────────────────
 
-    /** Retorna (ExportedTrip, documentos, vouchers como Map<path, bytes>). */
-    private fun parseZip(uri: Uri): Triple<ExportedTrip, Map<String, ByteArray>, Map<String, ByteArray>> {
+    /** Retorna (ExportedTrip, documentos, vouchers, arquivos de boarding como Map<name, bytes>). */
+    private fun parseZip(uri: Uri): ParsedZip {
         var exported: ExportedTrip? = null
-        val documents = mutableMapOf<String, ByteArray>()
+        val documents    = mutableMapOf<String, ByteArray>()
         val voucherFiles = mutableMapOf<String, ByteArray>()
+        val boardingFiles = mutableMapOf<String, ByteArray>()
 
         context.contentResolver.openInputStream(uri)?.use { input ->
             ZipInputStream(input.buffered()).use { zip ->
@@ -291,6 +312,10 @@ class TravelImporter(
                             val path = entry.name.removePrefix("vouchers/")
                             if (path.isNotBlank()) voucherFiles[path] = zip.readBytes()
                         }
+                        entry.name.startsWith("boarding/") && !entry.isDirectory -> {
+                            val name = entry.name.removePrefix("boarding/")
+                            if (name.isNotBlank()) boardingFiles[name] = zip.readBytes()
+                        }
                     }
                     zip.closeEntry()
                     entry = zip.nextEntry
@@ -298,12 +323,20 @@ class TravelImporter(
             }
         } ?: throw Exception("Não foi possível ler o arquivo.")
 
-        return Triple(
+        return ParsedZip(
             exported ?: throw Exception("Arquivo .travel inválido: trip.json não encontrado."),
             documents,
-            voucherFiles
+            voucherFiles,
+            boardingFiles
         )
     }
+
+    private data class ParsedZip(
+        val trip: ExportedTrip,
+        val documents: Map<String, ByteArray>,
+        val voucherFiles: Map<String, ByteArray>,
+        val boardingFiles: Map<String, ByteArray>
+    )
 
     private fun parseTripJson(json: String): ExportedTrip {
         val root      = JSONObject(json)
@@ -396,6 +429,7 @@ class TravelImporter(
             (0 until boardingJsonArray.length()).map { i ->
                 val p = boardingJsonArray.getJSONObject(i)
                 ExportedBoardingPass(
+                    transportType   = p.optString("transportType", "FLIGHT").ifBlank { "FLIGHT" },
                     origin          = p.getString("origin"),
                     originCity      = p.getString("originCity"),
                     destination     = p.getString("destination"),
@@ -404,7 +438,9 @@ class TravelImporter(
                     date            = p.getString("date"),
                     boardingTime    = p.getString("boardingTime"),
                     passenger       = p.getString("passenger"),
-                    walletUrl       = p.optString("walletUrl").takeIf { it.isNotBlank() && it != "null" }
+                    walletUrl       = p.optString("walletUrl").takeIf  { it.isNotBlank() && it != "null" },
+                    documentName    = p.optString("documentName").takeIf { it.isNotBlank() && it != "null" } ?: "",
+                    notes           = p.optString("notes").takeIf       { it.isNotBlank() && it != "null" } ?: ""
                 )
             } else emptyList()
 

@@ -83,15 +83,19 @@ data class Contact(
 // ── BOARDING PASSES ──────────────────────────────────────────────────────
 data class BoardingPass(
     val id: Long = 0,
-    val origin: String,           // "REC"
-    val originCity: String,       // "Recife"
-    val destination: String,      // "GRU"
-    val destinationCity: String,  // "São Paulo"
-    val flightNumber: String,     // "AD 4153"
-    val date: String,             // "09 Jun 2026"
-    val boardingTime: String,     // "02h30"
+    val transportType: String = "FLIGHT",
+    val origin: String,
+    val originCity: String,
+    val destination: String,
+    val destinationCity: String,
+    val flightNumber: String,
+    val date: String,
+    val boardingTime: String,
     val passenger: String,
-    val walletUrl: String?        // null = check-in ainda não disponível
+    val walletUrl: String?,
+    val documentPath: String? = null,
+    val documentName: String = "",
+    val notes: String = ""
 )
 
 // ── VOUCHERS ─────────────────────────────────────────────────────────────

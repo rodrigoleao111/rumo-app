@@ -1,68 +1,118 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+
 package com.rodrigoleao.gramado2026.ui.edit
 
+import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.ui.theme.*
+import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+private data class TransportOption(val type: String, val emoji: String, val label: String)
+
+private val TRANSPORT_OPTIONS = listOf(
+    TransportOption("FLIGHT", "✈️", "Avião"),
+    TransportOption("TRAIN",  "🚂", "Trem"),
+    TransportOption("BUS",    "🚌", "Ônibus"),
+    TransportOption("SHIP",   "🚢", "Navio"),
+    TransportOption("OTHER",  "🎫", "Outro")
+)
+
 @Composable
 fun EditBoardingPassScreen(
     viewModel: EditBoardingPassViewModel,
     onBack: () -> Unit
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val state   by viewModel.state.collectAsStateWithLifecycle()
     val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
     var showDeleteDialog  by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
 
     val isEditing = state.entity != null
     val canSave   = state.origin.isNotBlank() && state.destination.isNotBlank() && state.passenger.isNotBlank()
+    val isFlight  = state.transportType == "FLIGHT"
+
+    val filePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        var fileName = "arquivo"
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val col = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (col >= 0) fileName = cursor.getString(col)
+            }
+        }
+        val destDir  = File(context.filesDir, "Passagens").also { it.mkdirs() }
+        val destFile = File(destDir, fileName)
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            destFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        viewModel.updateFile(destFile.absolutePath, fileName)
+    }
 
     BackHandler(enabled = isDirty) { showDiscardDialog = true }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar passagem" else "Nova passagem", fontWeight = FontWeight.SemiBold) },
+                title = {
+                    Text(
+                        if (isEditing) "Editar passagem" else "Nova passagem",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFD32F2F))
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
                         }
                     }
                     IconButton(onClick = { viewModel.save(onBack) }, enabled = canSave && !state.isSaving) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = GreenMoss)
+                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
             )
         },
         containerColor = GreenLight
     ) { innerPadding ->
 
         if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = GreenSage) }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = GreenSage)
+            }
             return@Scaffold
         }
 
@@ -74,48 +124,144 @@ fun EditBoardingPassScreen(
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Rota
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Origem (sigla)")
-                    EditTextField(value = state.origin, onValueChange = viewModel::updateOrigin, placeholder = "REC")
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Destino (sigla)")
-                    EditTextField(value = state.destination, onValueChange = viewModel::updateDestination, placeholder = "GRU")
+
+            // ── Tipo de transporte ────────────────────────────────────────────
+            EditSectionLabel("Tipo de transporte")
+            FlowRow(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement   = Arrangement.spacedBy(8.dp)
+            ) {
+                TRANSPORT_OPTIONS.forEach { opt ->
+                    val sel = state.transportType == opt.type
+                    FilterChip(
+                        selected = sel,
+                        onClick  = { viewModel.updateTransportType(opt.type) },
+                        label    = { Text("${opt.emoji} ${opt.label}") },
+                        colors   = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor   = AmberPrimary.copy(alpha = 0.15f),
+                            selectedLabelColor       = GreenMoss,
+                            selectedLeadingIconColor = GreenMoss
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled             = true,
+                            selected            = sel,
+                            selectedBorderColor = AmberPrimary,
+                            selectedBorderWidth = 1.5.dp
+                        )
+                    )
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Cidade de origem")
-                    EditTextField(value = state.originCity, onValueChange = viewModel::updateOriginCity, placeholder = "Recife")
+            // ── Rota ─────────────────────────────────────────────────────────
+            if (isFlight) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Origem (sigla)")
+                        EditTextField(value = state.origin, onValueChange = viewModel::updateOrigin, placeholder = "REC")
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Destino (sigla)")
+                        EditTextField(value = state.destination, onValueChange = viewModel::updateDestination, placeholder = "GRU")
+                    }
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Cidade de destino")
-                    EditTextField(value = state.destinationCity, onValueChange = viewModel::updateDestinationCity, placeholder = "São Paulo")
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Cidade de origem")
+                        EditTextField(value = state.originCity, onValueChange = viewModel::updateOriginCity, placeholder = "Recife")
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Cidade de destino")
+                        EditTextField(value = state.destinationCity, onValueChange = viewModel::updateDestinationCity, placeholder = "Gramado")
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Origem")
+                        EditTextField(
+                            value         = state.originCity,
+                            onValueChange = viewModel::updateOriginSingle,
+                            placeholder   = "Ex: São Paulo"
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        EditSectionLabel("Destino")
+                        EditTextField(
+                            value         = state.destinationCity,
+                            onValueChange = viewModel::updateDestinationSingle,
+                            placeholder   = "Ex: Gramado"
+                        )
+                    }
                 }
             }
 
-            EditSectionLabel("Número do voo")
-            EditTextField(value = state.flightNumber, onValueChange = viewModel::updateFlightNumber, placeholder = "AD 4153")
+            // ── Número / linha ────────────────────────────────────────────────
+            EditSectionLabel(
+                when (state.transportType) {
+                    "FLIGHT" -> "Número do voo"
+                    "TRAIN"  -> "Número do trem / linha"
+                    "BUS"    -> "Linha / serviço"
+                    "SHIP"   -> "Nome da embarcação"
+                    else     -> "Número / identificador"
+                }
+            )
+            EditTextField(
+                value         = state.flightNumber,
+                onValueChange = viewModel::updateFlightNumber,
+                placeholder   = when (state.transportType) {
+                    "FLIGHT" -> "AD 4153"
+                    "TRAIN"  -> "Ex: IC 732"
+                    "BUS"    -> "Ex: Linha 301"
+                    "SHIP"   -> "Ex: Azul Mar"
+                    else     -> "Ex: 001"
+                }
+            )
 
+            // ── Data e horário ────────────────────────────────────────────────
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     EditSectionLabel("Data")
                     EditTextField(value = state.date, onValueChange = viewModel::updateDate, placeholder = "09 Jun 2026")
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Horário embarque")
-                    EditTextField(value = state.boardingTime, onValueChange = viewModel::updateBoardingTime, placeholder = "02h30")
+                    EditSectionLabel("Horário de partida")
+                    EditTextField(value = state.boardingTime, onValueChange = viewModel::updateBoardingTime, placeholder = "06h30")
                 }
             }
 
+            // ── Passageiro ────────────────────────────────────────────────────
             EditSectionLabel("Passageiro")
             EditTextField(value = state.passenger, onValueChange = viewModel::updatePassenger, placeholder = "Nome completo")
 
-            EditSectionLabel("Link Google Wallet (opcional)")
-            EditTextField(value = state.walletUrl, onValueChange = viewModel::updateWalletUrl, placeholder = "https://pay.google.com/...")
+            // ── Link ou arquivo da passagem ───────────────────────────────────
+            EditSectionLabel("Passagem (link ou arquivo)")
+            PassSourceSelector(
+                mode         = state.inputMode,
+                linkUrl      = state.walletUrl,
+                fileName     = state.documentName,
+                onModeChange = viewModel::setInputMode,
+                onLinkChange = viewModel::updateWalletUrl,
+                onPickFile   = { filePicker.launch(arrayOf("*/*")) },
+                onClearFile  = viewModel::clearFile
+            )
+
+            // ── Observações ───────────────────────────────────────────────────
+            EditSectionLabel("Observações (opcional)")
+            OutlinedTextField(
+                value         = state.notes,
+                onValueChange = viewModel::updateNotes,
+                placeholder   = { Text("Ex: Correr para o terminal B para trocar de veículo...", color = TextSecondary) },
+                modifier      = Modifier.fillMaxWidth(),
+                minLines      = 3,
+                shape         = RoundedCornerShape(12.dp),
+                colors        = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor   = GreenMoss,
+                    unfocusedBorderColor = CardBorder,
+                    focusedContainerColor   = SurfaceWhite,
+                    unfocusedContainerColor = SurfaceWhite
+                )
+            )
 
             Spacer(Modifier.height(8.dp))
 
@@ -127,7 +273,12 @@ fun EditBoardingPassScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text(if (isEditing) "Salvar passagem" else "Adicionar passagem", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                else Text(
+                    if (isEditing) "Salvar passagem" else "Adicionar passagem",
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = AmberPrimary
+                )
             }
         }
     }
@@ -151,9 +302,108 @@ fun EditBoardingPassScreen(
             title = { Text("Descartar alterações?") },
             text  = { Text("As informações preenchidas serão perdidas.") },
             confirmButton = {
-                TextButton(onClick = { showDiscardDialog = false; onBack() }) { Text("Descartar", color = Color(0xFFD32F2F)) }
+                TextButton(onClick = { showDiscardDialog = false; onBack() }) {
+                    Text("Descartar", color = Color(0xFFD32F2F))
+                }
             },
             dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") } }
         )
+    }
+}
+
+// ── PassSourceSelector ────────────────────────────────────────────────────────
+
+@Composable
+private fun PassSourceSelector(
+    mode: PassInputMode,
+    linkUrl: String,
+    fileName: String,
+    onModeChange: (PassInputMode) -> Unit,
+    onLinkChange: (String) -> Unit,
+    onPickFile: () -> Unit,
+    onClearFile: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            val linkSel = mode == PassInputMode.LINK
+            val fileSel = mode == PassInputMode.FILE
+            SegmentedButton(
+                selected = linkSel,
+                onClick  = { onModeChange(PassInputMode.LINK) },
+                shape    = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                icon     = {},
+                colors   = SegmentedButtonDefaults.colors(
+                    activeContainerColor = AmberPrimary.copy(alpha = 0.18f),
+                    activeContentColor   = GreenMoss,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Link", fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
+                }
+            }
+            SegmentedButton(
+                selected = fileSel,
+                onClick  = { onModeChange(PassInputMode.FILE) },
+                shape    = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                icon     = {},
+                colors   = SegmentedButtonDefaults.colors(
+                    activeContainerColor = AmberPrimary.copy(alpha = 0.18f),
+                    activeContentColor   = GreenMoss,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("Arquivo", fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
+                }
+            }
+        }
+
+        if (mode == PassInputMode.LINK) {
+            EditTextField(
+                value         = linkUrl,
+                onValueChange = onLinkChange,
+                placeholder   = "https://..."
+            )
+        } else {
+            if (fileName.isNotBlank()) {
+                Surface(
+                    shape    = RoundedCornerShape(12.dp),
+                    color    = AmberPrimary.copy(alpha = 0.08f),
+                    border   = BorderStroke(1.dp, AmberPrimary.copy(alpha = 0.4f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier              = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                        Text(
+                            text     = fileName,
+                            style    = MaterialTheme.typography.bodyMedium,
+                            color    = TextPrimary,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        IconButton(onClick = onClearFile, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+            OutlinedButton(
+                onClick  = onPickFile,
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (fileName.isBlank()) "Selecionar arquivo" else "Trocar arquivo")
+            }
+        }
     }
 }

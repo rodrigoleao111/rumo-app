@@ -69,6 +69,7 @@ fun Voucher.toEntity(tripId: Long): VoucherEntity = VoucherEntity(
 
 fun BoardingPass.toEntity(tripId: Long): BoardingPassEntity = BoardingPassEntity(
     tripId          = tripId,
+    transportType   = transportType,
     origin          = origin,
     originCity      = originCity,
     destination     = destination,
@@ -77,7 +78,10 @@ fun BoardingPass.toEntity(tripId: Long): BoardingPassEntity = BoardingPassEntity
     date            = date,
     boardingTime    = boardingTime,
     passenger       = passenger,
-    walletUrl       = walletUrl
+    walletUrl       = walletUrl,
+    documentPath    = documentPath,
+    documentName    = documentName,
+    notes           = notes
 )
 
 // ── Entity → Domain (usados no repositório) ───────────────────────────────────
@@ -152,6 +156,7 @@ fun VoucherEntity.toDomain(): Voucher = Voucher(
 
 fun BoardingPassEntity.toDomain(): BoardingPass = BoardingPass(
     id              = id,
+    transportType   = transportType,
     origin          = origin,
     originCity      = originCity,
     destination     = destination,
@@ -160,5 +165,8 @@ fun BoardingPassEntity.toDomain(): BoardingPass = BoardingPass(
     date            = date,
     boardingTime    = boardingTime,
     passenger       = passenger,
-    walletUrl       = walletUrl
+    walletUrl       = walletUrl,
+    documentPath    = documentPath,
+    documentName    = documentName,
+    notes           = notes
 )

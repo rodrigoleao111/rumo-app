@@ -18,6 +18,7 @@ import androidx.room.PrimaryKey
 data class BoardingPassEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val tripId: Long,
+    val transportType: String = "FLIGHT",
     val origin: String,
     val originCity: String,
     val destination: String,
@@ -26,5 +27,8 @@ data class BoardingPassEntity(
     val date: String,
     val boardingTime: String,
     val passenger: String,
-    val walletUrl: String?
+    val walletUrl: String?,
+    val documentPath: String? = null,
+    val documentName: String = "",
+    val notes: String = ""
 )

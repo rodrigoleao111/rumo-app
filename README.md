@@ -27,7 +27,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 - **Documentos por dia** — anexe PDFs ou imagens a cada dia do roteiro
 - **Vouchers** — cards com acento colorido por tipo, drag-to-reorder, toggle "Usado", agrupamento por categoria/pessoa/dia (preferência salva por viagem)
 - **Configurações** — toggle para abrir automaticamente a viagem em curso ao iniciar o app (quando há exatamente uma ativa)
-- **Boarding passes** — cartões de embarque por viagem
+- **Passagens** — suporte a qualquer tipo de transporte (avião, trem, ônibus, navio); card adaptativo com ícone, labels e campos conforme o tipo; anexo de arquivo ou link da passagem; campo de observações; portão de embarque editável (somente voos)
 
 ## Setup
 
@@ -118,7 +118,7 @@ Veja `docs/travel-export-schema.md` para o schema completo do `trip.json`.
 
 ## Banco de dados
 
-Room versão 12. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
+Room versão 13. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
 
 Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `version` no `@Database` e registre em `.addMigrations(...)`.
 

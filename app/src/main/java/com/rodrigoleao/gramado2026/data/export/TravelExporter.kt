@@ -47,6 +47,18 @@ class TravelExporter(
                 }
             }
 
+            // boarding/ — arquivos de passagens anexados
+            data.boardingPasses.forEach { pass ->
+                if (!pass.documentPath.isNullOrBlank()) {
+                    val doc = File(pass.documentPath)
+                    if (doc.exists() && pass.documentName.isNotBlank()) {
+                        zip.putNextEntry(ZipEntry("boarding/${pass.documentName}"))
+                        doc.inputStream().use { it.copyTo(zip) }
+                        zip.closeEntry()
+                    }
+                }
+            }
+
             // vouchers/ — tenta copiar o arquivo de cada voucher (assets ou filesDir)
             data.vouchers.forEach { voucher ->
                 val assetPath = voucher.assetPath.trimStart('/')
@@ -195,6 +207,7 @@ class TravelExporter(
 
     private fun buildBoardingPassJson(pass: BoardingPass): JSONObject =
         JSONObject().apply {
+            put("transportType",   pass.transportType)
             put("origin",          pass.origin)
             put("originCity",      pass.originCity)
             put("destination",     pass.destination)
@@ -204,6 +217,8 @@ class TravelExporter(
             put("boardingTime",    pass.boardingTime)
             put("passenger",       pass.passenger)
             put("walletUrl",       pass.walletUrl ?: JSONObject.NULL)
+            put("documentName",    pass.documentName.ifEmpty { JSONObject.NULL })
+            put("notes",           pass.notes.ifEmpty { JSONObject.NULL })
         }
 
     // Tenta ler o arquivo do voucher: primeiro como caminho absoluto (filesDir),
