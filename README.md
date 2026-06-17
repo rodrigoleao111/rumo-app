@@ -26,6 +26,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 - **Integração com Maps e Uber** — deep links direto de qualquer atividade
 - **Documentos por dia** — anexe PDFs ou imagens a cada dia do roteiro
 - **Vouchers** — cards com acento colorido por tipo, drag-to-reorder, toggle "Usado", agrupamento por categoria/pessoa/dia (preferência salva por viagem)
+- **Configurações** — toggle para abrir automaticamente a viagem em curso ao iniciar o app (quando há exatamente uma ativa)
 - **Boarding passes** — cartões de embarque por viagem
 
 ## Setup
@@ -78,6 +79,7 @@ app/src/main/
 │   │   ├── db/                          ← Room: database, DAOs, entities, mappers
 │   │   ├── export/TravelExporter.kt     ← gera arquivo .travel (ZIP)
 │   │   ├── import/TravelImporter.kt     ← importa arquivo .travel
+│   │   ├── preferences/SettingsRepository.kt ← SharedPreferences: configurações do app
 │   │   ├── repository/                  ← TripRepository, RoteiroRepository
 │   │   └── weather/WeatherRepository.kt ← Open-Meteo API + cache
 │   ├── navigation/AppNavigation.kt
@@ -89,6 +91,7 @@ app/src/main/
 │       ├── edit/                         ← edição de viagem, dia e atividade
 │       ├── share_trip/                   ← compartilhamento .travel
 │       ├── import_trip/                  ← importação .travel
+│       ├── settings/                     ← SettingsScreen, SettingsViewModel
 │       ├── contacts/ContactsScreen.kt
 │       ├── vouchers/VouchersScreen.kt
 │       ├── components/BadgeChip.kt

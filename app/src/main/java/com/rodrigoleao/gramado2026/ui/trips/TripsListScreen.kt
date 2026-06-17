@@ -2,6 +2,7 @@
 
 package com.rodrigoleao.gramado2026.ui.trips
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,11 +19,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,11 +53,16 @@ fun TripsListScreen(
     onNewTripClick: () -> Unit,
     onTripEdit: (Long) -> Unit = {},
     onTripShare: (Long) -> Unit = {},
-    onImportTrip: () -> Unit = {}
+    onImportTrip: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     val trips        by viewModel.trips.collectAsStateWithLifecycle()
     val snackbarHost  = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<TripEntity?>(null) }
+    var showExitDialog by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as? Activity
+
+    BackHandler { showExitDialog = true }
 
     Scaffold(
         snackbarHost = {
@@ -71,11 +80,13 @@ fun TripsListScreen(
 
         // ── Header ───────────────────────────────────────────────────────────
         Surface(color = GreenMoss) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp)
+                    .padding(start = 20.dp, end = 4.dp, top = 16.dp, bottom = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text       = "✈️  Minhas viagens",
@@ -83,6 +94,13 @@ fun TripsListScreen(
                     color      = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        imageVector        = Icons.Default.Settings,
+                        contentDescription = "Configurações",
+                        tint               = Color.White.copy(alpha = 0.6f)
+                    )
+                }
             }
         }
 
@@ -142,7 +160,10 @@ fun TripsListScreen(
             }
 
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier              = Modifier.padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     ImportTripCard(
                         modifier = Modifier.weight(1f),
                         onClick  = onImportTrip
@@ -181,6 +202,25 @@ fun TripsListScreen(
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Sair do app?") },
+            text  = { Text("Deseja fechar o Rumo?", color = TextSecondary) },
+            confirmButton = {
+                Button(
+                    onClick = { activity?.finish() },
+                    colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
+                ) {
+                    Text("Sair", color = AmberPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) { Text("Cancelar") }
             }
         )
     }

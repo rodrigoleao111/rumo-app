@@ -75,7 +75,11 @@ import com.rodrigoleao.gramado2026.ui.trips.TripsListScreen
 import com.rodrigoleao.gramado2026.ui.trips.TripsListViewModel
 import com.rodrigoleao.gramado2026.ui.trips.TripViewModel
 import com.rodrigoleao.gramado2026.ui.vouchers.VouchersScreen
+import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
+import com.rodrigoleao.gramado2026.ui.settings.SettingsScreen
+import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 // ── ROTAS ─────────────────────────────────────────────────────────────────────
 
@@ -112,6 +116,7 @@ sealed class Screen(val route: String) {
     object ShareTrip  : Screen("trip/{tripId}/share") {
         fun createRoute(tripId: Long) = "trip/$tripId/share"
     }
+    object Settings   : Screen("settings")
 }
 
 private val TAB_ICONS  = listOf(Icons.Default.Home, Icons.Default.ConfirmationNumber, Icons.Default.FlightTakeoff, Icons.Default.Call)
@@ -126,6 +131,7 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
     val context       = LocalContext.current
     val db            = remember { TravelDatabase.getInstance(context) }
     val repo          = remember { TripRepository(db) }
+    val settings      = remember { SettingsRepository(context) }
     val scope         = rememberCoroutineScope()
 
     val startDestination = when {
@@ -154,13 +160,45 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
         // ── Lista de viagens (entry point) ───────────────────────────────────
         composable(Screen.TripsList.route) {
             val vm: TripsListViewModel = viewModel(factory = TripsListViewModel.Factory(repo))
+            val trips by vm.trips.collectAsStateWithLifecycle()
+            var autoNavigated by remember { mutableStateOf(false) }
+
+            LaunchedEffect(trips) {
+                if (!autoNavigated && trips != null && settings.autoOpenActiveTrip) {
+                    val today = LocalDate.now()
+                    val active = trips!!.filter { trip ->
+                        val start = runCatching { LocalDate.parse(trip.startDate) }.getOrNull()
+                        val end   = runCatching { LocalDate.parse(trip.endDate)   }.getOrNull()
+                        start != null && end != null && !today.isBefore(start) && !today.isAfter(end)
+                    }
+                    if (active.size == 1) {
+                        autoNavigated = true
+                        navController.navigate(Screen.TripMain.createRoute(active.first().id)) {
+                            popUpTo(Screen.TripsList.route)
+                        }
+                    } else {
+                        autoNavigated = true
+                    }
+                }
+            }
+
             TripsListScreen(
                 viewModel      = vm,
                 onTripClick    = { tripId -> navController.navigate(Screen.TripMain.createRoute(tripId)) },
                 onNewTripClick = { navController.navigate(Screen.CreateTrip.route) },
                 onTripEdit     = { tripId -> navController.navigate(Screen.EditTrip.createRoute(tripId)) },
                 onTripShare    = { tripId -> navController.navigate(Screen.ShareTrip.createRoute(tripId)) },
-                onImportTrip   = { navController.navigate(Screen.ImportTrip.route) }
+                onImportTrip   = { navController.navigate(Screen.ImportTrip.route) },
+                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+            )
+        }
+
+        // ── Configurações ────────────────────────────────────────────────────
+        composable(Screen.Settings.route) {
+            val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(settings))
+            SettingsScreen(
+                viewModel = vm,
+                onBack    = { navController.popBackStack() }
             )
         }
 
@@ -252,7 +290,8 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
                 onReorderVouchers    = { ordered -> vm.reorderVouchers(ordered) },
                 onDeleteVoucher      = { vId -> vm.deleteVoucher(vId) },
                 onVoucherSortMode    = { mode -> vm.setVoucherSortMode(mode) },
-                onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) }
+                onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) },
+                onBack               = { navController.popBackStack() }
             )
         }
 
@@ -472,7 +511,8 @@ private fun MainPagerScreen(
     onReorderVouchers: (List<Voucher>) -> Unit = {},
     onDeleteVoucher: (Long) -> Unit = {},
     onVoucherSortMode: (VoucherSortMode) -> Unit = {},
-    onToggleVoucherUsed: (Long, Boolean) -> Unit = { _, _ -> }
+    onToggleVoucherUsed: (Long, Boolean) -> Unit = { _, _ -> },
+    onBack: () -> Unit = {}
 ) {
     val pagerState        = rememberPagerState(pageCount = { TAB_ICONS.size })
     val coroutineScope    = rememberCoroutineScope()
@@ -494,12 +534,31 @@ private fun MainPagerScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    val titleText = when (pagerState.currentPage) {
+                        0    -> tripName
+                        1    -> "$tripName  •  Vouchers"
+                        2    -> "$tripName  •  Passagens"
+                        3    -> "$tripName  •  Contatos"
+                        else -> tripName
+                    }
                     Text(
-                        text       = tripName,
+                        text       = titleText,
                         fontWeight = FontWeight.SemiBold,
                         maxLines   = 1,
+                        overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         color      = Color.White
                     )
+                },
+                navigationIcon = {
+                    if (pagerState.currentPage == 0) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Minhas viagens",
+                                tint = Color.White
+                            )
+                        }
+                    }
                 },
                 actions = {
                     // Botão de agrupamento — só visível na aba de vouchers
