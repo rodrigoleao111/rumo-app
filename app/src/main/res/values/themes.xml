@@ -1,0 +1,15 @@
+<resources>
+    <!-- Tema base do app (sem ActionBar) -->
+    <style name="Theme.GramadoApp" parent="android:Theme.Material.Light.NoActionBar"/>
+
+    <!-- Tema da Splash Screen (exibido pelo sistema antes do Compose carregar) -->
+    <style name="Theme.GramadoApp.Splash" parent="Theme.SplashScreen">
+        <!-- Fundo verde musgo -->
+        <item name="windowSplashScreenBackground">#1B4332</item>
+        <!-- Ícone animado (usa o mesmo foreground do launcher) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_transparent</item>
+        <item name="windowSplashScreenIconBackgroundColor">#1B4332</item>
+        <!-- Tema aplicado após a splash sair -->
+        <item name="postSplashScreenTheme">@style/Theme.GramadoApp</item>
+    </style>
+</resources>

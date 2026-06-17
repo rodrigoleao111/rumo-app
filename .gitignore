@@ -1,0 +1,22 @@
+# Local config — nunca versionar (contém GEMINI_API_KEY)
+local.properties
+
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Keystore
+*.jks
+*.keystore
+
+# Assets sensíveis (vouchers e imagens pessoais — copiar manualmente conforme README)
+app/src/main/assets/vouchers/
+app/src/main/assets/images/
