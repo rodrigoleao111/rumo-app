@@ -255,7 +255,7 @@ private fun ItineraryHelpSheet() {
             icon        = Icons.Default.FileUpload,
             iconTint    = AmberPrimary,
             title       = "Importar roteiro",
-            description = "Ideal se você já tem um roteiro pronto — seja gerado por outra IA (ChatGPT, Claude, Gemini), copiado de um blog ou site, ou escrito em um documento.\n\nO app fornece um prompt que você copia, cola em qualquer IA e recebe de volta um JSON estruturado. Depois é só colar aqui e importar com um toque."
+            description = "Ideal se você já tem um roteiro em mente ou encontrou sugestões em algum lugar — um blog, um vídeo, uma conversa com o ChatGPT.\n\nO app gera um texto de instrução que você copia e cola em qualquer IA. Ela devolve o roteiro no formato certo. Depois é só colar aqui e pronto."
         )
 
         // Opção 2: Chat com IA
@@ -832,7 +832,7 @@ private fun ChoosingScreen(
                 iconTint    = AmberPrimary,
                 iconBg      = AmberPrimary.copy(alpha = 0.10f),
                 title       = "Importar roteiro",
-                description = "Cole um JSON gerado por qualquer IA",
+                description = "Traga um roteiro pronto de qualquer lugar",
                 onClick     = onImport
             )
             OptionCard(
@@ -952,11 +952,28 @@ private fun ImportScreen(
                         Text("Como importar", fontWeight = FontWeight.SemiBold, color = GreenMoss, fontSize = 13.sp)
                     }
                     Text(
-                        text       = "1. Copie o prompt clicando no botão abaixo\n2. Cole em qualquer IA (ChatGPT, Claude, Gemini…)\n3. Cole a resposta abaixo",
+                        text       = "1. Abra qualquer IA (ChatGPT, Gemini…) e monte ou descreva seu roteiro\n2. Com o roteiro finalizado, copie o texto de instrução clicando no botão abaixo e cole na mesma conversa\n3. A IA vai organizar o roteiro no formato que o app entende\n4. Cole a resposta aqui embaixo",
                         fontSize   = 12.sp,
                         color      = TextPrimary,
                         lineHeight = 18.sp
                     )
+                    HorizontalDivider(
+                        modifier  = Modifier.padding(top = 6.dp),
+                        thickness = 0.5.dp,
+                        color     = GreenMoss.copy(alpha = 0.15f)
+                    )
+                    Row(
+                        verticalAlignment     = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("⚠️", fontSize = 11.sp)
+                        Text(
+                            text       = "Cole a resposta da IA exatamente como ela aparecer, sem editar nada. Qualquer alteração pode causar erro na importação.",
+                            fontSize   = 11.sp,
+                            color      = TextSecondary,
+                            lineHeight = 16.sp
+                        )
+                    }
                 }
             }
 
@@ -978,13 +995,13 @@ private fun ImportScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text       = if (wasCopied) "Prompt copiado!" else "Copiar prompt para IA",
+                    text       = if (wasCopied) "Texto copiado!" else "Copiar texto de instrução",
                     fontWeight = FontWeight.SemiBold,
                     color      = AmberPrimary
                 )
             }
 
-            SectionLabel("Cole o JSON aqui")
+            SectionLabel("Cole aqui a resposta da IA")
 
             // Campo de texto ocupa o espaço restante
             OutlinedTextField(
