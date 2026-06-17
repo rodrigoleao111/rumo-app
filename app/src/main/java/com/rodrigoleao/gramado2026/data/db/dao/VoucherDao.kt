@@ -5,8 +5,17 @@ import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
 
 @Dao
 interface VoucherDao {
-    @Query("SELECT * FROM vouchers WHERE tripId = :tripId")
+    @Query("SELECT * FROM vouchers WHERE tripId = :tripId ORDER BY groupName ASC, sort_order ASC, id ASC")
     suspend fun getVouchersForTrip(tripId: Long): List<VoucherEntity>
+
+    @Query("UPDATE vouchers SET sort_order = :sortOrder WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, sortOrder: Int)
+
+    @Query("UPDATE vouchers SET is_used = :isUsed WHERE id = :id")
+    suspend fun updateIsUsed(id: Long, isUsed: Boolean)
+
+    @Query("SELECT COALESCE(MAX(sort_order), -1) FROM vouchers WHERE tripId = :tripId AND groupName = :groupName")
+    suspend fun getMaxSortOrderInGroup(tripId: Long, groupName: String): Int
 
     @Query("SELECT * FROM vouchers WHERE id = :id")
     suspend fun getById(id: Long): VoucherEntity?

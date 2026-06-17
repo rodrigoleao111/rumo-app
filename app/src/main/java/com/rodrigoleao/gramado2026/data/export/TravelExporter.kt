@@ -47,10 +47,11 @@ class TravelExporter(
                 }
             }
 
-            // vouchers/ — tenta copiar o arquivo de cada voucher
+            // vouchers/ — tenta copiar o arquivo de cada voucher (assets ou filesDir)
             data.vouchers.forEach { voucher ->
                 val assetPath = voucher.assetPath.trimStart('/')
-                tryReadAsset(assetPath)?.let { bytes ->
+                val bytes = tryReadVoucherFile(voucher.assetPath, assetPath)
+                if (bytes != null) {
                     zip.putNextEntry(ZipEntry("vouchers/$assetPath"))
                     zip.write(bytes)
                     zip.closeEntry()
@@ -91,18 +92,19 @@ class TravelExporter(
         data.boardingPasses.forEach { boardingArray.put(buildBoardingPassJson(it)) }
 
         val tripObj = JSONObject().apply {
-            put("name",           trip.name)
-            put("destination",    trip.destination)
-            put("coverEmoji",     trip.coverEmoji)
-            put("startDate",      trip.startDate)
-            put("endDate",        trip.endDate)
-            put("latitude",       trip.latitude ?: JSONObject.NULL)
-            put("longitude",      trip.longitude ?: JSONObject.NULL)
-            put("hotel",          hotelObj)
-            put("days",           daysArray)
-            put("contacts",       contactsArray)
-            put("vouchers",       vouchersArray)
-            put("boardingPasses", boardingArray)
+            put("name",             trip.name)
+            put("destination",      trip.destination)
+            put("coverEmoji",       trip.coverEmoji)
+            put("startDate",        trip.startDate)
+            put("endDate",          trip.endDate)
+            put("latitude",         trip.latitude ?: JSONObject.NULL)
+            put("longitude",        trip.longitude ?: JSONObject.NULL)
+            put("voucherSortMode",  trip.voucherSortMode)
+            put("hotel",            hotelObj)
+            put("days",             daysArray)
+            put("contacts",         contactsArray)
+            put("vouchers",         vouchersArray)
+            put("boardingPasses",   boardingArray)
         }
 
         val ts = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -187,6 +189,8 @@ class TravelExporter(
             put("person",    voucher.person ?: JSONObject.NULL)
             put("assetPath", voucher.assetPath)
             put("dayId",     voucher.dayId ?: JSONObject.NULL)
+            put("sortOrder", voucher.sortOrder)
+            put("isUsed",    voucher.isUsed)
         }
 
     private fun buildBoardingPassJson(pass: BoardingPass): JSONObject =
@@ -202,6 +206,13 @@ class TravelExporter(
             put("walletUrl",       pass.walletUrl ?: JSONObject.NULL)
         }
 
-    private fun tryReadAsset(assetPath: String): ByteArray? =
-        runCatching { context.assets.open(assetPath).use { it.readBytes() } }.getOrNull()
+    // Tenta ler o arquivo do voucher: primeiro como caminho absoluto (filesDir),
+    // depois como asset (quando assetPath é um caminho relativo a assets/).
+    private fun tryReadVoucherFile(absoluteOrRelative: String, assetPath: String): ByteArray? {
+        val localFile = File(absoluteOrRelative)
+        if (localFile.isAbsolute && localFile.exists()) return localFile.readBytes()
+        val inVouchersDir = File(context.filesDir, "Vouchers/$assetPath")
+        if (inVouchersDir.exists()) return inVouchersDir.readBytes()
+        return runCatching { context.assets.open(assetPath).use { it.readBytes() } }.getOrNull()
+    }
 }

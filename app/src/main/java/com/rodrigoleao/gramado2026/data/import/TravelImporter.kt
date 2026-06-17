@@ -28,6 +28,7 @@ private data class ExportedTrip(
     val hotelName: String,
     val hotelAddress: String,
     val hotelPhone: String,
+    val voucherSortMode: String,
     val days: List<ExportedDay>,
     val contacts: List<ExportedContact>,
     val vouchers: List<ExportedVoucher>,
@@ -40,7 +41,9 @@ private data class ExportedVoucher(
     val name: String,
     val person: String?,
     val assetPath: String,
-    val dayId: Int?
+    val dayId: Int?,
+    val sortOrder: Int,
+    val isUsed: Boolean
 )
 
 private data class ExportedBoardingPass(
@@ -126,6 +129,11 @@ class TravelImporter(
             hotelAddress = exported.hotelAddress,
             hotelPhone   = exported.hotelPhone
         )
+
+        // Grava preferência de agrupamento de vouchers
+        if (exported.voucherSortMode != "BY_CATEGORY") {
+            repo.saveVoucherSortMode(tripId, exported.voucherSortMode)
+        }
 
         // Copia documentos para filesDir/Arquivos/
         val arquivosDir = File(context.filesDir, "Arquivos").apply { mkdirs() }
@@ -229,7 +237,9 @@ class TravelImporter(
                     groupName = expVoucher.groupName,
                     name      = expVoucher.name,
                     person    = expVoucher.person,
-                    assetPath = localPath
+                    assetPath = localPath,
+                    sortOrder = expVoucher.sortOrder,
+                    isUsed    = expVoucher.isUsed
                 )
             )
         }
@@ -375,7 +385,9 @@ class TravelImporter(
                     name      = v.getString("name"),
                     person    = v.optString("person").takeIf { it.isNotBlank() && it != "null" },
                     assetPath = v.getString("assetPath"),
-                    dayId     = if (v.isNull("dayId")) null else v.optInt("dayId")
+                    dayId     = if (v.isNull("dayId")) null else v.optInt("dayId"),
+                    sortOrder = v.optInt("sortOrder", 0),
+                    isUsed    = v.optBoolean("isUsed", false)
                 )
             } else emptyList()
 
@@ -405,10 +417,11 @@ class TravelImporter(
             endDate       = trip.optString("endDate").takeIf   { it.isNotBlank() && it != "null" },
             latitude      = if (trip.isNull("latitude")) null else trip.optDouble("latitude"),
             longitude     = if (trip.isNull("longitude")) null else trip.optDouble("longitude"),
-            hotelName     = hotel?.optString("name", "") ?: "",
-            hotelAddress  = hotel?.optString("address", "") ?: "",
-            hotelPhone    = hotel?.optString("phone", "") ?: "",
-            days          = days,
+            hotelName       = hotel?.optString("name", "") ?: "",
+            hotelAddress    = hotel?.optString("address", "") ?: "",
+            hotelPhone      = hotel?.optString("phone", "") ?: "",
+            voucherSortMode = trip.optString("voucherSortMode", "BY_CATEGORY"),
+            days            = days,
             contacts      = contacts,
             vouchers      = vouchers,
             boardingPasses = boardingPasses

@@ -18,9 +18,10 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         WalkStopEntity::class,
         ContactEntity::class,
         VoucherEntity::class,
+        VoucherGroupEntity::class,
         BoardingPassEntity::class
     ],
-    version = 8,
+    version = 12,
     exportSchema = false
 )
 abstract class TravelDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class TravelDatabase : RoomDatabase() {
     abstract fun activityDao(): TravelActivityDao
     abstract fun contactDao(): ContactDao
     abstract fun voucherDao(): VoucherDao
+    abstract fun voucherGroupDao(): VoucherGroupDao
     abstract fun boardingPassDao(): BoardingPassDao
 
     companion object {
@@ -72,6 +74,42 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v11 → v12: flag de voucher usado/não usado
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE vouchers ADD COLUMN is_used INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // v10 → v11: preferência de agrupamento de vouchers por viagem
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE trips ADD COLUMN voucherSortMode TEXT NOT NULL DEFAULT 'BY_CATEGORY'")
+            }
+        }
+
+        // v9 → v10: coluna sort_order em vouchers para reordenação
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE vouchers ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // v8 → v9: tabela de categorias de vouchers
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS voucher_groups (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        tripId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        FOREIGN KEY (tripId) REFERENCES trips(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_voucher_groups_tripId ON voucher_groups(tripId)")
+            }
+        }
+
         fun getInstance(context: Context): TravelDatabase =
             INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -79,7 +117,7 @@ abstract class TravelDatabase : RoomDatabase() {
                     TravelDatabase::class.java,
                     "travel_db"
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .fallbackToDestructiveMigrationFrom(1, 2) // versões iniciais sem dados reais
                     .build()
                     .also { INSTANCE = it }

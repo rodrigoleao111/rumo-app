@@ -2,4 +2,5 @@
 <paths>
     <cache-path name="cached_files" path="." />
     <files-path name="arquivos" path="Arquivos/" />
+    <files-path name="vouchers" path="Vouchers/" />
 </paths>

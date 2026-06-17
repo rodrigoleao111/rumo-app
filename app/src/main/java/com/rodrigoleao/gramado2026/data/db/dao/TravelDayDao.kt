@@ -3,10 +3,15 @@ package com.rodrigoleao.gramado2026.data.db.dao
 import androidx.room.*
 import com.rodrigoleao.gramado2026.data.db.entity.TravelDayEntity
 
+data class DayTitleRow(val dayNumber: Int, val title: String)
+
 @Dao
 interface TravelDayDao {
     @Query("SELECT * FROM travel_days WHERE tripId = :tripId ORDER BY dayNumber ASC")
     suspend fun getDaysForTrip(tripId: Long): List<TravelDayEntity>
+
+    @Query("SELECT dayNumber, title FROM travel_days WHERE tripId = :tripId ORDER BY dayNumber ASC")
+    suspend fun getDayTitlesForTrip(tripId: Long): List<DayTitleRow>
 
     @Query("SELECT * FROM travel_days WHERE id = :dayId")
     suspend fun getById(dayId: Long): TravelDayEntity?

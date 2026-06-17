@@ -40,6 +40,32 @@ fun openAssetFile(context: Context, assetPath: String) {
     }
 }
 
+fun openInternalFile(context: Context, absolutePath: String) {
+    try {
+        val file = File(absolutePath)
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val mime = when {
+            absolutePath.endsWith(".pdf",  ignoreCase = true) -> "application/pdf"
+            absolutePath.endsWith(".jpeg", ignoreCase = true) ||
+            absolutePath.endsWith(".jpg",  ignoreCase = true) -> "image/jpeg"
+            absolutePath.endsWith(".png",  ignoreCase = true) -> "image/png"
+            absolutePath.endsWith(".webp", ignoreCase = true) -> "image/webp"
+            else -> "*/*"
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mime)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Não foi possível abrir o arquivo.", Toast.LENGTH_SHORT).show()
+    }
+}
+
 fun dialPhone(context: Context, phone: String) {
     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
     context.startActivity(intent)

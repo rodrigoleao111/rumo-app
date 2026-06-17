@@ -13,11 +13,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.filled.Sort
+import com.rodrigoleao.gramado2026.ui.vouchers.VoucherSortMode
 import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
@@ -244,7 +247,12 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
                 onAddBoardingPass = { navController.navigate(Screen.EditBoardingPass.createRoute(tripId, 0L)) },
                 onEditContact  = { cId -> navController.navigate(Screen.EditContact.createRoute(tripId, cId)) },
                 onEditVoucher  = { vId -> navController.navigate(Screen.EditVoucher.createRoute(tripId, vId)) },
-                onEditBoardingPass = { pId -> navController.navigate(Screen.EditBoardingPass.createRoute(tripId, pId)) }
+                onEditBoardingPass = { pId -> navController.navigate(Screen.EditBoardingPass.createRoute(tripId, pId)) },
+                savedVoucherSortMode = tripEntity?.voucherSortMode ?: "BY_CATEGORY",
+                onReorderVouchers    = { ordered -> vm.reorderVouchers(ordered) },
+                onDeleteVoucher      = { vId -> vm.deleteVoucher(vId) },
+                onVoucherSortMode    = { mode -> vm.setVoucherSortMode(mode) },
+                onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) }
             )
         }
 
@@ -459,12 +467,23 @@ private fun MainPagerScreen(
     onAddBoardingPass: () -> Unit = {},
     onEditContact: (Long) -> Unit = {},
     onEditVoucher: (Long) -> Unit = {},
-    onEditBoardingPass: (Long) -> Unit = {}
+    onEditBoardingPass: (Long) -> Unit = {},
+    savedVoucherSortMode: String = "BY_CATEGORY",
+    onReorderVouchers: (List<Voucher>) -> Unit = {},
+    onDeleteVoucher: (Long) -> Unit = {},
+    onVoucherSortMode: (VoucherSortMode) -> Unit = {},
+    onToggleVoucherUsed: (Long, Boolean) -> Unit = { _, _ -> }
 ) {
     val pagerState        = rememberPagerState(pageCount = { TAB_ICONS.size })
     val coroutineScope    = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior    = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    var voucherSortMode   by remember(savedVoucherSortMode) {
+        mutableStateOf(
+            VoucherSortMode.entries.find { it.name == savedVoucherSortMode } ?: VoucherSortMode.BY_CATEGORY
+        )
+    }
+    var showSortMenu      by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshKey) {
         if (refreshKey > 0L) snackbarHostState.showSnackbar("Alterações salvas ✓")
@@ -483,6 +502,40 @@ private fun MainPagerScreen(
                     )
                 },
                 actions = {
+                    // Botão de agrupamento — só visível na aba de vouchers
+                    if (pagerState.currentPage == 1) {
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = "Agrupar vouchers",
+                                    tint = if (voucherSortMode != VoucherSortMode.BY_CATEGORY)
+                                               AmberPrimary else Color.White
+                                )
+                            }
+                            DropdownMenu(
+                                expanded         = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                                containerColor   = SurfaceWhite
+                            ) {
+                                SortMenuItem(
+                                    label    = "Por categoria",
+                                    selected = voucherSortMode == VoucherSortMode.BY_CATEGORY,
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_CATEGORY; onVoucherSortMode(VoucherSortMode.BY_CATEGORY); showSortMenu = false }
+                                )
+                                SortMenuItem(
+                                    label    = "Por pessoa",
+                                    selected = voucherSortMode == VoucherSortMode.BY_PERSON,
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_PERSON; onVoucherSortMode(VoucherSortMode.BY_PERSON); showSortMenu = false }
+                                )
+                                SortMenuItem(
+                                    label    = "Por dia da viagem",
+                                    selected = voucherSortMode == VoucherSortMode.BY_DAY,
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_DAY; onVoucherSortMode(VoucherSortMode.BY_DAY); showSortMenu = false }
+                                )
+                            }
+                        }
+                    }
                     IconButton(onClick = onShareTrip) {
                         Icon(Icons.Default.Share, contentDescription = "Compartilhar viagem")
                     }
@@ -568,13 +621,30 @@ private fun MainPagerScreen(
         ) { page ->
             when (page) {
                 0 -> HomeScreen(days = days, hotelName = hotelName, hotelAddress = hotelAddress, hotelPhone = hotelPhone, tripLat = tripLat, tripLon = tripLon, tripStartDate = tripStartDate, tripEndDate = tripEndDate, contentPadding = innerPadding, onDayClick = onDayClick)
-                1 -> VouchersScreen(vouchers = vouchers, contentPadding = innerPadding, onEditVoucher = onEditVoucher)
+                1 -> VouchersScreen(vouchers = vouchers, contentPadding = innerPadding, sortMode = voucherSortMode, onEditVoucher = onEditVoucher, onReorderVouchers = onReorderVouchers, onDeleteVoucher = onDeleteVoucher, onToggleUsed = onToggleVoucherUsed)
                 2 -> BoardingPassScreen(passes = boardingPasses, contentPadding = innerPadding, onEditBoardingPass = onEditBoardingPass)
                 3 -> ContactsScreen(contacts = contacts, contentPadding = innerPadding, onEditContact = onEditContact)
                 else -> Box(Modifier.fillMaxSize())
             }
         }
     }
+}
+
+// ── SORT MENU ITEM ────────────────────────────────────────────────────────────
+
+@Composable
+private fun SortMenuItem(label: String, selected: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(label, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+            }
+        },
+        onClick = onClick,
+        trailingIcon = if (selected) {{
+            Icon(Icons.Default.Check, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
+        }} else null
+    )
 }
 
 // ── PILL NAV ITEM ─────────────────────────────────────────────────────────────

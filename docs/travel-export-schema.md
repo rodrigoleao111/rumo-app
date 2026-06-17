@@ -29,6 +29,7 @@ viagem.travel  (ZIP)
     "endDate": "2026-06-13",
     "latitude": -29.3781,
     "longitude": -50.8728,
+    "voucherSortMode": "BY_CATEGORY",
     "hotel": {
       "name": "Serra Azul Resort",
       "address": "Rua dos Pinheiros, 100, Gramado, RS",
@@ -47,6 +48,7 @@ viagem.travel  (ZIP)
 | `schemaVersion` | `int` | Versão do schema. Atual: `1` |
 | `exportedAt` | `string` | ISO 8601 — informativo, não usado na importação |
 | `trip.latitude` / `trip.longitude` | `number \| null` | Coordenadas do destino para clima |
+| `trip.voucherSortMode` | `string` | `BY_CATEGORY \| BY_PERSON \| BY_DAY` — preferência de agrupamento restaurada na importação |
 
 ---
 
@@ -175,7 +177,9 @@ viagem.travel  (ZIP)
   "name": "Adulto — dia 09/06",
   "person": "Rodrigo",
   "assetPath": "bondinhos/voucher-adulto.pdf",
-  "dayId": 1
+  "dayId": 1,
+  "sortOrder": 0,
+  "isUsed": false
 }
 ```
 
@@ -187,8 +191,10 @@ viagem.travel  (ZIP)
 | `person` | `string \| null` | Nome do portador |
 | `assetPath` | `string` | Caminho relativo dentro de `vouchers/` no ZIP |
 | `dayId` | `int \| null` | `dayNumber` do dia relacionado; `null` se não vinculado |
+| `sortOrder` | `int` | Posição do voucher dentro do grupo para preservar ordem manual |
+| `isUsed` | `boolean` | `true` se o voucher foi marcado como já utilizado |
 
-> **Exportação:** o exporter tenta ler `assets/<assetPath>` do APK via `context.assets.open()`. Se o arquivo não existir nos assets, é omitido do ZIP mas o registro JSON é mantido.  
+> **Exportação:** o exporter busca o arquivo do voucher em três locais, nesta ordem: (1) caminho absoluto em `filesDir` (vouchers importados de outro aparelho), (2) `filesDir/Vouchers/<assetPath>`, (3) `assets/<assetPath>` do APK. Se não encontrado em nenhum, o registro JSON é mantido mas o arquivo é omitido do ZIP.  
 > **Importação:** se o arquivo existir no ZIP em `vouchers/<assetPath>`, é salvo em `filesDir/Vouchers/<assetPath>` e `assetPath` é substituído pelo caminho absoluto. Se não existir, o `assetPath` original é mantido (aponta para o asset do APK).
 
 ---

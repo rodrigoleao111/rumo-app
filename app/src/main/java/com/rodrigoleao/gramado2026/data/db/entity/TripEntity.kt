@@ -16,5 +16,6 @@ data class TripEntity(
     val endDate: String? = null,     // ISO: "2026-06-13"
     val createdAt: Long = System.currentTimeMillis(),
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val voucherSortMode: String = "BY_CATEGORY"
 )

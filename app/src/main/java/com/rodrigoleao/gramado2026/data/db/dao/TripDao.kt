@@ -26,4 +26,7 @@ interface TripDao {
 
     @Query("UPDATE trips SET latitude = :lat, longitude = :lon WHERE id = :id")
     suspend fun updateCoordinates(id: Long, lat: Double, lon: Double)
+
+    @Query("UPDATE trips SET voucherSortMode = :mode WHERE id = :id")
+    suspend fun updateVoucherSortMode(id: Long, mode: String)
 }

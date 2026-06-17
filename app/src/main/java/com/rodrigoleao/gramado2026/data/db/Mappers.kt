@@ -63,7 +63,8 @@ fun Voucher.toEntity(tripId: Long): VoucherEntity = VoucherEntity(
     groupName = groupName,
     name      = name,
     person    = person,
-    assetPath = assetPath
+    assetPath = assetPath,
+    sortOrder = sortOrder
 )
 
 fun BoardingPass.toEntity(tripId: Long): BoardingPassEntity = BoardingPassEntity(
@@ -144,7 +145,9 @@ fun VoucherEntity.toDomain(): Voucher = Voucher(
     name      = name,
     person    = person,
     assetPath = assetPath,
-    dayId     = dayNumber
+    dayId     = dayNumber,
+    sortOrder = sortOrder,
+    isUsed    = isUsed
 )
 
 fun BoardingPassEntity.toDomain(): BoardingPass = BoardingPass(

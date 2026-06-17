@@ -102,5 +102,7 @@ data class Voucher(
     val name: String,
     val person: String? = null,
     val assetPath: String,
-    val dayId: Int? = null
+    val dayId: Int? = null,
+    val sortOrder: Int = 0,
+    val isUsed: Boolean = false
 )

@@ -93,6 +93,9 @@ dependencies {
     // Gemini AI
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    // Drag-to-reorder em LazyColumn
+    implementation("sh.calvin.reorderable:reorderable:2.4.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

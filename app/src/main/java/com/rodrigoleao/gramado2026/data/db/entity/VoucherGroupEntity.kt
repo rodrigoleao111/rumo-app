@@ -1,13 +1,12 @@
 package com.rodrigoleao.gramado2026.data.db.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "vouchers",
+    tableName = "voucher_groups",
     foreignKeys = [ForeignKey(
         entity = TripEntity::class,
         parentColumns = ["id"],
@@ -16,15 +15,8 @@ import androidx.room.PrimaryKey
     )],
     indices = [Index("tripId")]
 )
-data class VoucherEntity(
+data class VoucherGroupEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val tripId: Long,
-    val dayNumber: Int?,        // 1-N (qual dia da viagem), null = voucher geral
-    val emoji: String,
-    val groupName: String,
-    val name: String,
-    val person: String?,
-    val assetPath: String,
-    @ColumnInfo(name = "sort_order") val sortOrder: Int = 0,
-    @ColumnInfo(name = "is_used") val isUsed: Boolean = false
+    val name: String
 )

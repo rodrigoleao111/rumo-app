@@ -10,6 +10,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.gramado2026.data.db.entity.TravelDayEntity
 import com.rodrigoleao.gramado2026.data.db.entity.TripEntity
 import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
+import com.rodrigoleao.gramado2026.data.db.entity.VoucherGroupEntity
 import com.rodrigoleao.gramado2026.data.db.toDomain
 import com.rodrigoleao.gramado2026.data.model.*
 import com.rodrigoleao.gramado2026.data.model.BadgeType
@@ -61,6 +62,10 @@ class TripRepository(private val db: TravelDatabase) {
     suspend fun getDays(tripId: Long): List<TravelDay> =
         getTripData(tripId)?.days ?: emptyList()
 
+    // Query leve: só dayNumber + title, sem carregar atividades/badges/etc.
+    suspend fun getDayTitles(tripId: Long): List<Pair<Int, String>> =
+        db.dayDao().getDayTitlesForTrip(tripId).map { row -> row.dayNumber to row.title }
+
     suspend fun getContacts(tripId: Long): List<Contact> =
         db.contactDao().getContactsForTrip(tripId).map { it.toDomain() }
 
@@ -77,6 +82,9 @@ class TripRepository(private val db: TravelDatabase) {
     suspend fun deleteTrip(entity: TripEntity) = db.tripDao().delete(entity)
 
     suspend fun getTripEntity(tripId: Long): TripEntity? = db.tripDao().getById(tripId)
+
+    suspend fun saveVoucherSortMode(tripId: Long, mode: String) =
+        db.tripDao().updateVoucherSortMode(tripId, mode)
 
     suspend fun getDayEntity(tripId: Long, dayNumber: Int): TravelDayEntity? =
         db.dayDao().getByTripAndDayNumber(tripId, dayNumber)
@@ -134,12 +142,45 @@ class TripRepository(private val db: TravelDatabase) {
 
     suspend fun getVoucherEntity(id: Long): VoucherEntity? = db.voucherDao().getById(id)
 
-    suspend fun upsertVoucher(tripId: Long, entity: VoucherEntity): Long =
-        if (entity.id == 0L) db.voucherDao().insert(entity.copy(tripId = tripId))
-        else { db.voucherDao().update(entity); entity.id }
+    suspend fun upsertVoucher(tripId: Long, entity: VoucherEntity): Long {
+        return if (entity.id == 0L) {
+            val nextOrder = db.voucherDao().getMaxSortOrderInGroup(tripId, entity.groupName) + 1
+            db.voucherDao().insert(entity.copy(tripId = tripId, sortOrder = nextOrder))
+        } else {
+            db.voucherDao().update(entity)
+            entity.id
+        }
+    }
 
     suspend fun deleteVoucher(id: Long) {
         db.voucherDao().getById(id)?.let { db.voucherDao().delete(it) }
+    }
+
+    suspend fun reorderVouchers(ordered: List<Voucher>) {
+        ordered.forEachIndexed { index, voucher ->
+            db.voucherDao().updateSortOrder(voucher.id, index)
+        }
+    }
+
+    suspend fun toggleVoucherUsed(voucherId: Long, isUsed: Boolean) =
+        db.voucherDao().updateIsUsed(voucherId, isUsed)
+
+    // ── Voucher groups ────────────────────────────────────────────────────────
+
+    suspend fun getVoucherGroups(tripId: Long): List<String> {
+        val saved = db.voucherGroupDao().getForTrip(tripId).map { it.name }
+        // Inclui groupNames de vouchers existentes que ainda não estão na tabela de grupos
+        val fromVouchers = db.voucherDao().getVouchersForTrip(tripId)
+            .map { it.groupName }
+            .filter { it.isNotBlank() }
+            .distinct()
+        return (saved + fromVouchers).distinct().sorted()
+    }
+
+    suspend fun addVoucherGroup(tripId: Long, name: String): Boolean {
+        if (db.voucherGroupDao().exists(tripId, name.trim()) > 0) return false
+        db.voucherGroupDao().insert(VoucherGroupEntity(tripId = tripId, name = name.trim()))
+        return true
     }
 
     // ── Boarding Passes ───────────────────────────────────────────────────────
