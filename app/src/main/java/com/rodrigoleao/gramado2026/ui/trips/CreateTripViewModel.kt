@@ -79,7 +79,7 @@ class CreateTripViewModel(private val repo: TripRepository) : ViewModel() {
         searchJob = viewModelScope.launch {
             delay(350)
             _isSearching.value = true
-            _searchResults.value = WeatherRepository.searchLocations(v)
+            _searchResults.value = runCatching { WeatherRepository.searchLocations(v) }.getOrDefault(emptyList())
             _isSearching.value = false
         }
     }
@@ -114,7 +114,7 @@ class CreateTripViewModel(private val repo: TripRepository) : ViewModel() {
         hotelSearchJob = viewModelScope.launch {
             delay(350)
             _isHotelSearching.value = true
-            _hotelSearchResults.value = WeatherRepository.searchLocations(v)
+            _hotelSearchResults.value = runCatching { WeatherRepository.searchLocations(v) }.getOrDefault(emptyList())
             _isHotelSearching.value = false
         }
     }
@@ -354,6 +354,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     fun createTrip() {
         val f = _form.value
         if (f.startDate == null || f.endDate == null) return
+        if (_createdTripId.value != null) return  // guard duplo clique
         viewModelScope.launch {
             val id = repo.createTrip(
                 name         = f.name.trim(),

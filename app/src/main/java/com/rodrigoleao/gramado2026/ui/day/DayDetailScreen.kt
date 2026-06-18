@@ -107,7 +107,7 @@ fun DayDetailScreen(
         }
     }
 
-    val expandedActivities = remember { mutableStateMapOf<Int, Boolean>() }
+    val expandedActivities = remember { mutableStateMapOf<Long, Boolean>() }
 
     Scaffold(
         topBar = {
@@ -230,17 +230,17 @@ fun DayDetailScreen(
             }
 
             // ── Atividades (colapsáveis) ─────────────────────────────────
-            itemsIndexed(day.activities) { index, activity ->
+            itemsIndexed(day.activities) { _, activity ->
                 ActivityItem(
                     activity   = activity,
-                    expanded   = expandedActivities[index] == true,
-                    onToggle   = { expandedActivities[index] = !(expandedActivities[index] ?: false) },
+                    expanded   = expandedActivities[activity.id] == true,
+                    onToggle   = { expandedActivities[activity.id] = !(expandedActivities[activity.id] ?: false) },
                     onEdit     = { onEditActivity(activity.id) },
                     onDelete   = { activityToDelete = activity.id },
                     onMapClick = activity.mapQuery?.let { query ->
                         {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(query)}"))
-                            context.startActivity(intent)
+                            runCatching { context.startActivity(intent) }
                         }
                     },
                     onUberClick = activity.uberDestination?.let { dest ->
@@ -249,7 +249,7 @@ fun DayDetailScreen(
                                 "&pickup=my_location" +
                                 "&dropoff[formatted_address]=${Uri.encode(dest)}" +
                                 "&dropoff[nickname]=${Uri.encode(activity.name)}"
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                         }
                     }
                 )
@@ -321,7 +321,7 @@ private fun DayDocumentCard(name: String, path: String, context: Context) {
                 setDataAndType(uri, mime)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Abrir com…"))
+            runCatching { context.startActivity(Intent.createChooser(intent, "Abrir com…")) }
         },
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         shape    = RoundedCornerShape(12.dp),

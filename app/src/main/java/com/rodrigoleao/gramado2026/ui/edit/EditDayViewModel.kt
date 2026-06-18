@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class EditDayState(
     val entity: TravelDayEntity? = null,
@@ -67,6 +68,8 @@ class EditDayViewModel(
     }
     fun updateDocumentTitle(v: String) { _state.value = _state.value.copy(dayDocumentTitle = v) }
     fun clearDocument() {
+        val path = _state.value.dayDocumentPath
+        if (!path.isNullOrBlank()) runCatching { File(path).delete() }
         _state.value = _state.value.copy(dayDocumentPath = "", dayDocumentName = "", dayDocumentTitle = "")
     }
 

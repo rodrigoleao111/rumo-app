@@ -84,7 +84,7 @@ class EditTripViewModel(private val repo: TripRepository, private val tripId: Lo
         searchJob = viewModelScope.launch {
             delay(350)
             _isSearching.value = true
-            _searchResults.value = WeatherRepository.searchLocations(v)
+            _searchResults.value = runCatching { WeatherRepository.searchLocations(v) }.getOrDefault(emptyList())
             _isSearching.value = false
         }
     }
