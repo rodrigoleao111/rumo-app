@@ -21,10 +21,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rodrigoleao.gramado2026.data.model.Contact
@@ -87,7 +87,7 @@ fun ContactsScreen(
             fixedGroups.forEach { (meta, filter) ->
                 val (key, label, emoji) = meta
                 val builtins = if (key == "emergency" && showEmergencyContacts) BUILTIN_EMERGENCY_CONTACTS else emptyList()
-                val userContacts = localContacts.filter(filter).sortedBy { it.sortOrder }
+                val userContacts = localContacts.filter(filter)
                 val all = builtins + userContacts
                 if (all.isNotEmpty()) {
                     add(ContactListItem.Header(label, emoji))
@@ -101,7 +101,7 @@ fun ContactsScreen(
                 .entries.sortedBy { it.key }
             customGroups.forEach { (groupName, groupContacts) ->
                 add(ContactListItem.Header(groupName, "🏷️"))
-                groupContacts.sortedBy { it.sortOrder }.forEach { add(ContactListItem.Item(it, "custom_$groupName")) }
+                groupContacts.forEach { add(ContactListItem.Item(it, "custom_$groupName")) }
             }
         }
     }
@@ -204,6 +204,13 @@ fun ContactsScreen(
                                 targetValue = if (isDragging) 10.dp else 0.dp,
                                 label       = "dragElevation"
                             )
+                            Box(
+                                modifier = Modifier.shadow(
+                                    elevation = elevation,
+                                    shape     = RoundedCornerShape(12.dp),
+                                    clip      = false
+                                )
+                            ) {
                             SwipeToDismissBox(
                                 state            = dismissState,
                                 enableDismissFromStartToEnd = false,
@@ -233,7 +240,6 @@ fun ContactsScreen(
                             ) {
                                 ContactCard(
                                     contact       = contact,
-                                    elevation     = elevation,
                                     isDragging    = isDragging,
                                     dragHandle    = {
                                         IconButton(
@@ -264,6 +270,7 @@ fun ContactsScreen(
                                     }
                                 )
                             }
+                            } // Box shadow
                         }
                     }
                 }
@@ -317,7 +324,6 @@ private fun ContactGroupHeader(label: String, emoji: String) {
 @Composable
 private fun ContactCard(
     contact: Contact,
-    elevation: Dp = 0.dp,
     isDragging: Boolean = false,
     dragHandle: @Composable () -> Unit = {},
     onCallClick: (() -> Unit)?,
@@ -336,7 +342,7 @@ private fun ContactCard(
         colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
         border    = if (isDragging) BorderStroke(1.5.dp, GreenMoss.copy(alpha = 0.4f))
                     else BorderStroke(1.dp, if (isEmergency) Color(0xFFE88888) else GreenMoss),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         // ── Header colorido ──────────────────────────────────────────────────
         Row(
