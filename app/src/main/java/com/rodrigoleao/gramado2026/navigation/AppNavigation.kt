@@ -79,6 +79,8 @@ import com.rodrigoleao.gramado2026.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
 import com.rodrigoleao.gramado2026.ui.settings.SettingsScreen
 import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -164,7 +166,7 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
         composable(Screen.TripsList.route) {
             val vm: TripsListViewModel = viewModel(factory = TripsListViewModel.Factory(repo))
             val trips by vm.trips.collectAsStateWithLifecycle()
-            var autoNavigated by remember { mutableStateOf(false) }
+            var autoNavigated by rememberSaveable { mutableStateOf(false) }
 
             LaunchedEffect(trips) {
                 if (!autoNavigated && trips != null && settings.autoOpenActiveTrip) {
@@ -266,6 +268,19 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
                 .collectAsStateWithLifecycle()
             LaunchedEffect(refreshKey) { if (refreshKey > 0L) vm.refresh() }
 
+            // Re-lê a preferência toda vez que esta tela volta ao foco (ON_RESUME do NavBackStackEntry),
+            // garantindo que o toggle de emergência reflita o valor atual mesmo após voltar via swipe.
+            var showEmergencyContactsCurrent by remember { mutableStateOf(settings.showEmergencyContacts) }
+            DisposableEffect(entry) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        showEmergencyContactsCurrent = settings.showEmergencyContacts
+                    }
+                }
+                entry.lifecycle.addObserver(observer)
+                onDispose { entry.lifecycle.removeObserver(observer) }
+            }
+
             val tripEntity = tripData?.trip
             MainPagerScreen(
                 tripId         = tripId,
@@ -297,10 +312,10 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
                 onDeleteVoucher      = { vId -> vm.deleteVoucher(vId) },
                 onVoucherSortMode    = { mode -> vm.setVoucherSortMode(mode) },
                 onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) },
-                onDeleteContact      = { cId -> scope.launch { repo.deleteContact(cId) }; vm.refresh() },
+                onDeleteContact      = { cId -> scope.launch { repo.deleteContact(cId); vm.refresh() } },
                 onReorderContacts    = { list -> scope.launch { repo.reorderContacts(list) } },
-                onToggleFavoriteContact = { cId, fav -> scope.launch { repo.toggleFavoriteContact(cId, fav) }; vm.refresh() },
-                showEmergencyContacts = showEmergencyContacts,
+                onToggleFavoriteContact = { cId, fav -> scope.launch { repo.toggleFavoriteContact(cId, fav); vm.refresh() } },
+                showEmergencyContacts = showEmergencyContactsCurrent,
                 onBack               = { navController.popBackStack() }
             )
         }

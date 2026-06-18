@@ -239,7 +239,7 @@ private fun SwipeToRevealTrip(
     val density       = LocalDensity.current
     val actionWidth   = 162.dp
     val actionWidthPx = with(density) { actionWidth.toPx() }
-    val offsetX       = remember { Animatable(0f) }
+    val offsetX       = remember(trip.id) { Animatable(0f) }
     val scope         = rememberCoroutineScope()
 
     Box(
