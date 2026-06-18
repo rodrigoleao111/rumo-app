@@ -300,6 +300,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
 
     fun sendChatMessage() {
         val text = _chatInput.value.trim().ifEmpty { return }
+        if (_chatMessages.value.any { it.isLoading }) return
         _chatInput.value = ""
 
         _chatMessages.value = _chatMessages.value +
@@ -315,6 +316,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     }
 
     fun generateItinerary() {
+        if (_chatPhase.value == ChatPhase.GENERATING) return
         _chatPhase.value = ChatPhase.GENERATING
         viewModelScope.launch {
             try {
@@ -342,7 +344,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     }
 
     fun backToChat() {
-        _chatPhase.value = ChatPhase.CHOOSING
+        _chatPhase.value = ChatPhase.CHATTING
     }
 
     fun skipItinerary() {
