@@ -80,7 +80,7 @@ fun BoardingPassScreen(
     val context = LocalContext.current
     val prefs   = remember { context.getSharedPreferences("boarding_passes", Context.MODE_PRIVATE) }
 
-    val savedUrls = remember {
+    val savedUrls = remember(passes) {
         mutableStateMapOf<String, String>().apply {
             passes.forEach { pass ->
                 prefs.getString(passKey(pass), null)?.let { put(passKey(pass), it) }
@@ -88,7 +88,7 @@ fun BoardingPassScreen(
         }
     }
 
-    val savedGates = remember {
+    val savedGates = remember(passes) {
         mutableStateMapOf<String, String>().apply {
             passes.distinctBy { gateKey(it) }.forEach { pass ->
                 prefs.getString(gateKey(pass), null)?.let { put(gateKey(pass), it) }
@@ -163,15 +163,19 @@ fun BoardingPassScreen(
                         gate            = savedGates[gateKey(groupPasses.first())] ?: "",
                         onLinkClick     = { url ->
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            context.startActivity(intent)
+                            runCatching { context.startActivity(intent) }
                         },
                         onAddUrlClick      = { pass -> dialogPass = pass },
                         onEditGateClick    = { dialogGatePass = groupPasses.first() },
                         onEditBoardingPass = onEditBoardingPass,
                         onOpenFile         = { path ->
+                            val file = File(path)
+                            if (!file.exists()) {
+                                android.widget.Toast.makeText(context, "Arquivo não encontrado.", android.widget.Toast.LENGTH_SHORT).show()
+                                return@BoardingPassCard
+                            }
                             runCatching {
-                                val file = File(path)
-                                val uri  = FileProvider.getUriForFile(
+                                val uri = FileProvider.getUriForFile(
                                     context,
                                     "${context.packageName}.fileprovider",
                                     file
@@ -703,7 +707,7 @@ private fun AddLinkDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(url.trim()) },
-                enabled = url.isNotBlank() && url.startsWith("https://"),
+                enabled = url.isNotBlank() && url.startsWith("http"),
                 colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) { Text("Salvar", color = Color.White) }
         },

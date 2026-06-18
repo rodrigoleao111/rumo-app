@@ -101,12 +101,13 @@ fun EditBoardingPassScreen(
                 if (col >= 0) fileName = cursor.getString(col)
             }
         }
-        val destDir  = File(context.filesDir, "Passagens").also { it.mkdirs() }
-        val destFile = File(destDir, fileName)
+        val destDir    = File(context.filesDir, "Passagens").also { it.mkdirs() }
+        val uniqueName = "${System.currentTimeMillis()}_$fileName"
+        val destFile   = File(destDir, uniqueName)
         context.contentResolver.openInputStream(uri)?.use { input ->
             destFile.outputStream().use { output -> input.copyTo(output) }
         }
-        viewModel.updateFile(destFile.absolutePath, fileName)
+        viewModel.updateFile(destFile.absolutePath, uniqueName)
     }
 
     BackHandler(enabled = isDirty) { showDiscardDialog = true }

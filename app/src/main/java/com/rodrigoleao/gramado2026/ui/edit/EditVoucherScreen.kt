@@ -77,7 +77,9 @@ fun EditVoucherScreen(
             }
         }
         val destDir  = File(context.filesDir, "Vouchers").also { it.mkdirs() }
-        val destFile = File(destDir, fileName)
+        val uniqueName = "${System.currentTimeMillis()}_$fileName"
+        val destFile = File(destDir, uniqueName)
+        fileName = uniqueName
         context.contentResolver.openInputStream(uri)?.use { input ->
             destFile.outputStream().use { output -> input.copyTo(output) }
         }
@@ -188,8 +190,7 @@ fun EditVoucherScreen(
                 )
             }
 
-            // Validação inline — só mostra se o usuário já tentou salvar (nome em branco)
-            if (!canSave && state.name.isBlank() && !state.isLoading) {
+            if (state.name.isBlank() && !state.isLoading) {
                 Text(
                     text  = "Preencha o nome do voucher para continuar.",
                     style = MaterialTheme.typography.labelSmall,

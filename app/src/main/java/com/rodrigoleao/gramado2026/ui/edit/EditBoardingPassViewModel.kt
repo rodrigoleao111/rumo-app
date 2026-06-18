@@ -50,7 +50,8 @@ class EditBoardingPassViewModel(
         s.origin != e.origin || s.destination != e.destination ||
         s.flightNumber != e.flightNumber || s.passenger != e.passenger ||
         s.date != e.date || s.boardingTime != e.boardingTime ||
-        s.walletUrl != (e.walletUrl ?: "") || s.documentPath != (e.documentPath ?: "")
+        s.walletUrl != (e.walletUrl ?: "") || s.documentPath != (e.documentPath ?: "") ||
+        s.notes != e.notes
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {

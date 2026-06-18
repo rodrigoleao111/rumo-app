@@ -124,10 +124,11 @@ fun VouchersScreen(
 
     // localVouchers só é mutável para o drag (BY_CATEGORY); nos outros modos usa a prop diretamente
     var localVouchers by remember(vouchers) { mutableStateOf(vouchers) }
+    var skipNextReorder by remember { mutableStateOf(false) }
 
     val flatList: List<VoucherListItem> = remember(localVouchers, sortMode) {
         val grouped: Map<String, List<Voucher>> = when (sortMode) {
-            VoucherSortMode.BY_CATEGORY -> localVouchers.groupBy { it.groupName }
+            VoucherSortMode.BY_CATEGORY -> localVouchers.groupBy { it.groupName.ifBlank { "Sem categoria" } }
             VoucherSortMode.BY_PERSON   -> localVouchers
                 .groupBy { v -> v.person?.takeIf { it.isNotBlank() } ?: "Sem pessoa" }
                 .entries.sortedWith(compareBy { if (it.key == "Sem pessoa") "￿" else it.key })
@@ -170,6 +171,7 @@ fun VouchersScreen(
     )
 
     LaunchedEffect(localVouchers) {
+        if (skipNextReorder) { skipNextReorder = false; return@LaunchedEffect }
         if (localVouchers != vouchers) onReorderVouchers(localVouchers)
     }
 
@@ -275,6 +277,7 @@ fun VouchersScreen(
             text  = { Text("Essa ação não pode ser desfeita.") },
             confirmButton = {
                 TextButton(onClick = {
+                    skipNextReorder = true
                     localVouchers = localVouchers.filter { it.id != deleteId }
                     onDeleteVoucher(deleteId)
                     confirmDeleteId = null
