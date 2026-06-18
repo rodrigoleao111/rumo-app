@@ -53,7 +53,9 @@ fun Contact.toEntity(tripId: Long): ContactEntity = ContactEntity(
     phone       = phone,
     contactType = type.name,
     hasWhatsApp = hasWhatsApp,
-    isEmergency = isEmergency
+    isEmergency = isEmergency,
+    sortOrder   = sortOrder,
+    isFavorite  = isFavorite
 )
 
 fun Voucher.toEntity(tripId: Long): VoucherEntity = VoucherEntity(
@@ -139,7 +141,9 @@ fun ContactEntity.toDomain(): Contact = Contact(
     phone       = phone,
     type        = ContactType.valueOf(contactType),
     hasWhatsApp = hasWhatsApp,
-    isEmergency = isEmergency
+    isEmergency = isEmergency,
+    sortOrder   = sortOrder,
+    isFavorite  = isFavorite
 )
 
 fun VoucherEntity.toDomain(): Voucher = Voucher(

@@ -1,14 +1,23 @@
 package com.rodrigoleao.gramado2026.ui.contacts
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,16 +30,146 @@ import com.rodrigoleao.gramado2026.data.model.ContactType
 import com.rodrigoleao.gramado2026.ui.theme.*
 import com.rodrigoleao.gramado2026.utils.dialPhone
 import com.rodrigoleao.gramado2026.utils.openWhatsApp
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
+// ── List item types ───────────────────────────────────────────────────────────
+
+private sealed class ContactListItem {
+    data class Header(val label: String, val emoji: String) : ContactListItem()
+    data class Item(val contact: Contact, val groupKey: String) : ContactListItem()
+}
+
+// ── Contatos fixos de emergência (IDs negativos, não vêm do banco) ────────────
+
+private val BUILTIN_EMERGENCY_CONTACTS = listOf(
+    Contact(id = -1L, name = "SAMU",            role = "Serviço de Atendimento Móvel de Urgência", phone = "192", type = ContactType.EMERGENCY, isEmergency = true),
+    Contact(id = -2L, name = "Bombeiros",        role = "Corpo de Bombeiros",                       phone = "193", type = ContactType.EMERGENCY, isEmergency = true),
+    Contact(id = -3L, name = "Polícia Militar",  role = "Emergências policiais",                    phone = "190", type = ContactType.EMERGENCY, isEmergency = true),
+)
+
+// ── Groups definition ─────────────────────────────────────────────────────────
+
+private data class ContactGroup(
+    val key: String,
+    val label: String,
+    val emoji: String,
+    val filter: (Contact) -> Boolean,
+    val sorter: Comparator<Contact>
+)
+
+private val CONTACT_GROUPS = listOf(
+    ContactGroup(
+        key    = "favorites",
+        label  = "Favoritos",
+        emoji  = "⭐",
+        filter = { it.isFavorite },
+        sorter = compareBy { it.sortOrder }
+    ),
+    ContactGroup(
+        key    = "agency",
+        label  = "Agência & Transfers",
+        emoji  = "📋",
+        filter = { it.type == ContactType.AGENCY && !it.isFavorite },
+        sorter = compareBy { it.sortOrder }
+    ),
+    ContactGroup(
+        key    = "hotel",
+        label  = "Hospedagem",
+        emoji  = "🏨",
+        filter = { it.type == ContactType.HOTEL && !it.isFavorite },
+        sorter = compareBy { it.sortOrder }
+    ),
+    ContactGroup(
+        key    = "attraction",
+        label  = "Atrações",
+        emoji  = "🎡",
+        filter = { it.type == ContactType.ATTRACTION && !it.isFavorite },
+        sorter = compareBy { it.sortOrder }
+    ),
+    ContactGroup(
+        key    = "emergency",
+        label  = "Emergências",
+        emoji  = "🚨",
+        filter = { it.type == ContactType.EMERGENCY && !it.isFavorite },
+        sorter = compareBy { it.sortOrder }
+    )
+)
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactsScreen(
     contacts: List<Contact>,
     contentPadding: PaddingValues = PaddingValues(),
-    onEditContact: (Long) -> Unit = {}
+    onEditContact: (Long) -> Unit = {},
+    onDeleteContact: (Long) -> Unit = {},
+    onReorderContacts: (List<Contact>) -> Unit = {},
+    onToggleFavoriteContact: (Long, Boolean) -> Unit = { _, _ -> },
+    showEmergencyContacts: Boolean = true
 ) {
     val context = LocalContext.current
+    var localContacts by remember(contacts) { mutableStateOf(contacts) }
+    var contactToDelete by remember { mutableStateOf<Contact?>(null) }
+
+    LaunchedEffect(localContacts) {
+        if (localContacts != contacts) onReorderContacts(localContacts)
+    }
+
+    val listItems: List<ContactListItem> = remember(localContacts, showEmergencyContacts) {
+        buildList {
+            CONTACT_GROUPS.forEach { group ->
+                val userContacts = localContacts.filter(group.filter).sortedWith(group.sorter)
+                val builtins = if (group.key == "emergency" && showEmergencyContacts)
+                    BUILTIN_EMERGENCY_CONTACTS else emptyList()
+                val allInGroup = builtins + userContacts
+                if (allInGroup.isNotEmpty()) {
+                    add(ContactListItem.Header(group.label, group.emoji))
+                    allInGroup.forEach { add(ContactListItem.Item(it, group.key)) }
+                }
+            }
+        }
+    }
+
+    if (contacts.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("📞", fontSize = 48.sp)
+                Text("Nenhum contato ainda", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text("Toque em + para adicionar", fontSize = 14.sp, color = TextSecondary)
+            }
+        }
+        return
+    }
+
+    val lazyListState = rememberLazyListState()
+
+    val reorderState = rememberReorderableLazyListState(
+        lazyListState = lazyListState,
+        onMove = { from, to ->
+            val fromItem = listItems.getOrNull(from.index) as? ContactListItem.Item ?: return@rememberReorderableLazyListState
+            val toItem   = listItems.getOrNull(to.index)   as? ContactListItem.Item ?: return@rememberReorderableLazyListState
+            if (fromItem.groupKey != toItem.groupKey) return@rememberReorderableLazyListState
+            val mutable = localContacts.toMutableList()
+            val fromIdx = mutable.indexOfFirst { it.id == fromItem.contact.id }
+            val toIdx   = mutable.indexOfFirst { it.id == toItem.contact.id }
+            if (fromIdx >= 0 && toIdx >= 0) {
+                val moved = mutable.removeAt(fromIdx)
+                mutable.add(toIdx, moved)
+                localContacts = mutable
+            }
+        }
+    )
 
     LazyColumn(
+        state          = lazyListState,
         modifier       = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             top    = contentPadding.calculateTopPadding()    + 12.dp,
@@ -40,59 +179,138 @@ fun ContactsScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val groups = listOf(
-            ContactType.AGENCY     to "Agência & Transfers",
-            ContactType.HOTEL      to "Hospedagem",
-            ContactType.ATTRACTION to "Atrações",
-            ContactType.EMERGENCY  to "Emergências"
-        )
-
-        groups.forEach { (type, label) ->
-            val groupContacts = contacts.filter { it.type == type }
-            if (groupContacts.isNotEmpty()) {
-                item {
-                    GroupHeader(
-                        label = label,
-                        emoji = when (type) {
-                            ContactType.AGENCY     -> "📋"
-                            ContactType.HOTEL      -> "🏨"
-                            ContactType.ATTRACTION -> "🎡"
-                            ContactType.EMERGENCY  -> "🚨"
-                        }
-                    )
-                }
-                items(groupContacts) { contact ->
-                    ContactCard(
-                        contact       = contact,
-                        onCallClick   = contact.phone?.let { { dialPhone(context, it) } },
-                        onWhatsAppClick = if (contact.hasWhatsApp && contact.phone != null) {
-                            { openWhatsApp(context, contact.phone) }
-                        } else null,
-                        onEditClick   = { onEditContact(contact.id) }
-                    )
+        items(
+            items = listItems,
+            key   = { item ->
+                when (item) {
+                    is ContactListItem.Header -> "header_${item.label}"
+                    is ContactListItem.Item   -> "contact_${item.contact.id}"
                 }
             }
-        }
+        ) { listItem ->
+            when (listItem) {
+                is ContactListItem.Header -> {
+                    ContactGroupHeader(listItem.label, listItem.emoji)
+                }
+                is ContactListItem.Item -> {
+                    val contact = listItem.contact
+                    val isBuiltin = contact.id < 0
 
-        if (contacts.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("📞", fontSize = 36.sp)
-                        Text("Nenhum contato ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                        Text("Toque em + para adicionar", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+                    if (isBuiltin) {
+                        // Contatos fixos: sem swipe, drag ou estrela
+                        ContactCard(
+                            contact          = contact,
+                            dragHandle       = {},
+                            onCallClick      = contact.phone?.let { { dialPhone(context, it) } },
+                            onWhatsAppClick  = null,
+                            onEditClick      = {},
+                            onToggleFavorite = {},
+                            showActions      = false
+                        )
+                    } else {
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { value ->
+                                if (value == SwipeToDismissBoxValue.EndToStart) {
+                                    contactToDelete = contact
+                                }
+                                false
+                            }
+                        )
+
+                        ReorderableItem(
+                            state = reorderState,
+                            key   = "contact_${contact.id}"
+                        ) { _ ->
+                            SwipeToDismissBox(
+                                state            = dismissState,
+                                enableDismissFromStartToEnd = false,
+                                backgroundContent = {
+                                    val color by animateColorAsState(
+                                        if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                                            Color(0xFFE53935) else Color.Transparent,
+                                        label = "swipe_bg"
+                                    )
+                                    Box(
+                                        modifier         = Modifier
+                                            .fillMaxSize()
+                                            .background(color, RoundedCornerShape(12.dp))
+                                            .padding(end = 20.dp),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                                            Icon(
+                                                imageVector        = Icons.Default.Delete,
+                                                contentDescription = "Remover",
+                                                tint               = Color.White,
+                                                modifier           = Modifier.size(22.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                ContactCard(
+                                    contact       = contact,
+                                    dragHandle    = {
+                                        IconButton(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .longPressDraggableHandle(),
+                                            onClick  = {}
+                                        ) {
+                                            Icon(
+                                                imageVector        = Icons.Default.DragHandle,
+                                                contentDescription = "Reordenar",
+                                                tint               = Color.White.copy(alpha = 0.8f),
+                                                modifier           = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    },
+                                    onCallClick   = contact.phone?.let { { dialPhone(context, it) } },
+                                    onWhatsAppClick = if (contact.hasWhatsApp && contact.phone != null) {
+                                        { openWhatsApp(context, contact.phone) }
+                                    } else null,
+                                    onEditClick   = { onEditContact(contact.id) },
+                                    onToggleFavorite = {
+                                        val newFav = !contact.isFavorite
+                                        localContacts = localContacts.map {
+                                            if (it.id == contact.id) it.copy(isFavorite = newFav) else it
+                                        }
+                                        onToggleFavoriteContact(contact.id, newFav)
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
+
+    // Delete confirmation dialog
+    contactToDelete?.let { c ->
+        AlertDialog(
+            onDismissRequest = { contactToDelete = null },
+            title = { Text("Remover ${c.name}?") },
+            text  = { Text("Esse contato será removido permanentemente.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteContact(c.id)
+                    contactToDelete = null
+                }) {
+                    Text("Remover", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { contactToDelete = null }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
+// ── Group header ──────────────────────────────────────────────────────────────
+
 @Composable
-private fun GroupHeader(label: String, emoji: String) {
+private fun ContactGroupHeader(label: String, emoji: String) {
     Row(
         modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -109,36 +327,67 @@ private fun GroupHeader(label: String, emoji: String) {
     }
 }
 
+// ── Contact card ──────────────────────────────────────────────────────────────
+
 @Composable
 private fun ContactCard(
     contact: Contact,
+    dragHandle: @Composable () -> Unit = {},
     onCallClick: (() -> Unit)?,
     onWhatsAppClick: (() -> Unit)?,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    showActions: Boolean = true
 ) {
     val isEmergency = contact.isEmergency
+
+    val headerColor = if (isEmergency) Color(0xFFB71C1C) else GreenMoss
 
     Card(
         modifier  = Modifier.fillMaxWidth(),
         shape     = RoundedCornerShape(12.dp),
-        colors    = CardDefaults.cardColors(
-            containerColor = if (isEmergency) Color(0xFFFFF5F5) else SurfaceWhite
-        ),
-        border    = BorderStroke(1.dp, if (isEmergency) Color(0xFFE88888) else CardBorder),
+        colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        border    = BorderStroke(1.dp, if (isEmergency) Color(0xFFE88888) else GreenMoss),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        // ── Header colorido ──────────────────────────────────────────────────
         Row(
-            modifier              = Modifier.padding(14.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier              = Modifier
+                .fillMaxWidth()
+                .background(headerColor)
+                .padding(start = 4.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text       = contact.name,
-                    style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = if (isEmergency) Color(0xFF8A1515) else TextPrimary
-                )
+            dragHandle()
+
+            Spacer(Modifier.width(6.dp))
+
+            Text(
+                text       = contact.name,
+                style      = MaterialTheme.typography.titleMedium,
+                fontSize   = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color      = Color.White,
+                modifier   = Modifier.weight(1f)
+            )
+
+            if (showActions) {
+                IconButton(
+                    onClick  = onToggleFavorite,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector        = if (contact.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = if (contact.isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
+                        tint               = if (contact.isFavorite) AmberPrimary else Color.White.copy(alpha = 0.5f),
+                        modifier           = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+
+        // ── Corpo ────────────────────────────────────────────────────────────
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                 Text(text = contact.role, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 contact.phone?.let { phone ->
                     Spacer(Modifier.height(2.dp))
@@ -149,51 +398,56 @@ private fun ContactCard(
                         fontWeight = FontWeight.Medium
                     )
                 }
-            }
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                horizontalAlignment = Alignment.End
-            ) {
-                // Editar
-                IconButton(onClick = onEditClick, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.Edit, "Editar contato", tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
-                }
+                Spacer(Modifier.height(8.dp))
 
-                if (onCallClick != null) {
-                    if (isEmergency) {
-                        Button(
-                            onClick        = onCallClick,
-                            colors         = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            shape          = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("🚨  Ligar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-                    } else {
-                        OutlinedButton(
-                            onClick        = onCallClick,
-                            border         = BorderStroke(1.dp, GreenMoss),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier       = Modifier.height(32.dp),
-                            shape          = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("📞  Ligar", fontSize = 12.sp, color = GreenMoss)
-                        }
-                        onWhatsAppClick?.let { onClick ->
+                // Action buttons at bottom
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    if (onCallClick != null) {
+                        if (isEmergency) {
+                            Button(
+                                onClick        = onCallClick,
+                                colors         = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                shape          = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("🚨  Ligar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        } else {
                             OutlinedButton(
-                                onClick        = onClick,
-                                border         = BorderStroke(1.dp, Color(0xFF25D366)),
+                                onClick        = onCallClick,
+                                border         = BorderStroke(1.dp, GreenMoss),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 modifier       = Modifier.height(32.dp),
                                 shape          = RoundedCornerShape(8.dp)
                             ) {
-                                Text("💬  WhatsApp", fontSize = 12.sp, color = Color(0xFF0A7A30))
+                                Text("📞  Ligar", fontSize = 12.sp, color = GreenMoss)
+                            }
+                            onWhatsAppClick?.let { onClick ->
+                                OutlinedButton(
+                                    onClick        = onClick,
+                                    border         = BorderStroke(1.dp, Color(0xFF25D366)),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    modifier       = Modifier.height(32.dp),
+                                    shape          = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("💬  WhatsApp", fontSize = 12.sp, color = Color(0xFF0A7A30))
+                                }
                             }
                         }
                     }
+
+                    Spacer(Modifier.weight(1f))
+
+                    if (showActions) {
+                        IconButton(onClick = onEditClick, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Edit, "Editar contato", tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                        }
+                    }
                 }
-            }
         }
     }
 }

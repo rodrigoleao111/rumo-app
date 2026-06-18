@@ -5,7 +5,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.ContactEntity
 
 @Dao
 interface ContactDao {
-    @Query("SELECT * FROM contacts WHERE tripId = :tripId")
+    @Query("SELECT * FROM contacts WHERE tripId = :tripId ORDER BY sortOrder ASC")
     suspend fun getContactsForTrip(tripId: Long): List<ContactEntity>
 
     @Query("SELECT * FROM contacts WHERE id = :id")
@@ -19,4 +19,7 @@ interface ContactDao {
 
     @Delete
     suspend fun delete(contact: ContactEntity)
+
+    @Query("UPDATE contacts SET sortOrder = :order WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, order: Int)
 }

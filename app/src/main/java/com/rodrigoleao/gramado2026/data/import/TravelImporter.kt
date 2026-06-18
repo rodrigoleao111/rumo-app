@@ -102,7 +102,9 @@ private data class ExportedContact(
     val phone: String?,
     val type: String,
     val hasWhatsApp: Boolean,
-    val isEmergency: Boolean
+    val isEmergency: Boolean,
+    val sortOrder: Int,
+    val isFavorite: Boolean
 )
 
 // ── Importer ──────────────────────────────────────────────────────────────────
@@ -219,7 +221,9 @@ class TravelImporter(
                     phone       = expContact.phone,
                     contactType = type.name,
                     hasWhatsApp = expContact.hasWhatsApp,
-                    isEmergency = expContact.isEmergency
+                    isEmergency = expContact.isEmergency,
+                    sortOrder   = expContact.sortOrder,
+                    isFavorite  = expContact.isFavorite
                 )
             )
         }
@@ -404,7 +408,9 @@ class TravelImporter(
                     phone       = c.optString("phone").takeIf { it.isNotBlank() && it != "null" },
                     type        = c.optString("type", "AGENCY"),
                     hasWhatsApp = c.optBoolean("hasWhatsApp", false),
-                    isEmergency = c.optBoolean("isEmergency", false)
+                    isEmergency = c.optBoolean("isEmergency", false),
+                    sortOrder   = c.optInt("sortOrder", 0),
+                    isFavorite  = c.optBoolean("isFavorite", false)
                 )
             } else emptyList()
 

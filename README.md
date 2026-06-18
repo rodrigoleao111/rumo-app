@@ -26,7 +26,8 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 - **Integração com Maps e Uber** — deep links direto de qualquer atividade
 - **Documentos por dia** — anexe PDFs ou imagens a cada dia do roteiro
 - **Vouchers** — cards com acento colorido por tipo, drag-to-reorder, toggle "Usado", agrupamento por categoria/pessoa/dia (preferência salva por viagem)
-- **Configurações** — toggle para abrir automaticamente a viagem em curso ao iniciar o app (quando há exatamente uma ativa)
+- **Configurações** — toggle para abrir automaticamente a viagem em curso; toggle para exibir SAMU, Bombeiros e PM automaticamente nos contatos de todas as viagens
+- **Contatos** — agrupados por categoria com grupo Favoritos no topo; favoritar por estrela; swipe para deletar; drag-to-reorder com ordem persistida; card com faixa colorida; contatos fixos de emergência configuráveis
 - **Passagens** — suporte a qualquer tipo de transporte (avião, trem, ônibus, navio); card adaptativo com ícone, labels e campos conforme o tipo; anexo de arquivo ou link da passagem; campo de observações; portão de embarque editável (somente voos)
 
 ## Setup

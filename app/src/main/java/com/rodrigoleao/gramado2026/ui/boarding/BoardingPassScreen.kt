@@ -112,6 +112,23 @@ fun BoardingPassScreen(
         }
     }
 
+    if (passes.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("🎟️", fontSize = 36.sp)
+                Text("Nenhuma passagem ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text("Toque em + para adicionar", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+            }
+        }
+        return
+    }
+
     // Agrupa por data — mantém a ordem de inserção
     val grouped = passes.groupBy { it.date }
 

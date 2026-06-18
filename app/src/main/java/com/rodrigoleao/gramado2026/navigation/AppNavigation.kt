@@ -133,6 +133,7 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
     val repo          = remember { TripRepository(db) }
     val settings      = remember { SettingsRepository(context) }
     val scope         = rememberCoroutineScope()
+    var showEmergencyContacts by remember { mutableStateOf(settings.showEmergencyContacts) }
 
     val startDestination = when {
         initialImportUri != null -> Screen.ImportTrip.route
@@ -198,7 +199,10 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
             val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(settings))
             SettingsScreen(
                 viewModel = vm,
-                onBack    = { navController.popBackStack() }
+                onBack    = {
+                    showEmergencyContacts = settings.showEmergencyContacts
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -291,6 +295,10 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
                 onDeleteVoucher      = { vId -> vm.deleteVoucher(vId) },
                 onVoucherSortMode    = { mode -> vm.setVoucherSortMode(mode) },
                 onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) },
+                onDeleteContact      = { cId -> scope.launch { repo.deleteContact(cId) }; vm.refresh() },
+                onReorderContacts    = { list -> scope.launch { repo.reorderContacts(list) } },
+                onToggleFavoriteContact = { cId, fav -> scope.launch { repo.toggleFavoriteContact(cId, fav) }; vm.refresh() },
+                showEmergencyContacts = showEmergencyContacts,
                 onBack               = { navController.popBackStack() }
             )
         }
@@ -512,6 +520,10 @@ private fun MainPagerScreen(
     onDeleteVoucher: (Long) -> Unit = {},
     onVoucherSortMode: (VoucherSortMode) -> Unit = {},
     onToggleVoucherUsed: (Long, Boolean) -> Unit = { _, _ -> },
+    onDeleteContact: (Long) -> Unit = {},
+    onReorderContacts: (List<Contact>) -> Unit = {},
+    onToggleFavoriteContact: (Long, Boolean) -> Unit = { _, _ -> },
+    showEmergencyContacts: Boolean = true,
     onBack: () -> Unit = {}
 ) {
     val pagerState        = rememberPagerState(pageCount = { TAB_ICONS.size })
@@ -682,7 +694,7 @@ private fun MainPagerScreen(
                 0 -> HomeScreen(days = days, hotelName = hotelName, hotelAddress = hotelAddress, hotelPhone = hotelPhone, tripLat = tripLat, tripLon = tripLon, tripStartDate = tripStartDate, tripEndDate = tripEndDate, contentPadding = innerPadding, onDayClick = onDayClick)
                 1 -> VouchersScreen(vouchers = vouchers, contentPadding = innerPadding, sortMode = voucherSortMode, onEditVoucher = onEditVoucher, onReorderVouchers = onReorderVouchers, onDeleteVoucher = onDeleteVoucher, onToggleUsed = onToggleVoucherUsed)
                 2 -> BoardingPassScreen(passes = boardingPasses, contentPadding = innerPadding, onEditBoardingPass = onEditBoardingPass)
-                3 -> ContactsScreen(contacts = contacts, contentPadding = innerPadding, onEditContact = onEditContact)
+                3 -> ContactsScreen(contacts = contacts, contentPadding = innerPadding, onEditContact = onEditContact, onDeleteContact = onDeleteContact, onReorderContacts = onReorderContacts, onToggleFavoriteContact = onToggleFavoriteContact, showEmergencyContacts = showEmergencyContacts)
                 else -> Box(Modifier.fillMaxSize())
             }
         }

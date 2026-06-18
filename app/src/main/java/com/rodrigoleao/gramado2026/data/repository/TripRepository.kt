@@ -138,6 +138,18 @@ class TripRepository(private val db: TravelDatabase) {
         db.contactDao().getById(id)?.let { db.contactDao().delete(it) }
     }
 
+    suspend fun reorderContacts(contacts: List<Contact>) {
+        contacts.forEachIndexed { index, contact ->
+            if (contact.id > 0) db.contactDao().updateSortOrder(contact.id, index)
+        }
+    }
+
+    suspend fun toggleFavoriteContact(id: Long, isFavorite: Boolean) {
+        db.contactDao().getById(id)?.let { entity ->
+            db.contactDao().update(entity.copy(isFavorite = isFavorite))
+        }
+    }
+
     // ── Vouchers ──────────────────────────────────────────────────────────────
 
     suspend fun getVoucherEntity(id: Long): VoucherEntity? = db.voucherDao().getById(id)

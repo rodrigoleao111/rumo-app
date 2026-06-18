@@ -77,7 +77,9 @@ data class Contact(
     val phone: String?,
     val type: ContactType,
     val hasWhatsApp: Boolean = false,
-    val isEmergency: Boolean = false
+    val isEmergency: Boolean = false,
+    val sortOrder: Int = 0,
+    val isFavorite: Boolean = false
 )
 
 // ── BOARDING PASSES ──────────────────────────────────────────────────────

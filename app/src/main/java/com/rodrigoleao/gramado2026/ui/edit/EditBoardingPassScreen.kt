@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,9 +31,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
+import java.time.LocalDate
+
+private val PT_MONTHS = listOf("Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez")
+
+private fun dateStringToMillis(s: String): Long? {
+    val parts = s.trim().split(" ")
+    if (parts.size != 3) return null
+    val day   = parts[0].toIntOrNull() ?: return null
+    val month = PT_MONTHS.indexOf(parts[1]).takeIf { it >= 0 }?.plus(1) ?: return null
+    val year  = parts[2].toIntOrNull() ?: return null
+    return runCatching { LocalDate.of(year, month, day).toEpochDay() * 86_400_000L }.getOrNull()
+}
+
+private fun millisToDateString(millis: Long): String {
+    val d = LocalDate.ofEpochDay(millis / 86_400_000L)
+    return "%02d %s %d".format(d.dayOfMonth, PT_MONTHS[d.monthValue - 1], d.year)
+}
+
+private fun parseTime(s: String): Pair<Int, Int>? {
+    val parts = s.split("h")
+    if (parts.size != 2) return null
+    return Pair(parts[0].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null)
+}
+
+private fun formatTime(hour: Int, minute: Int) = "%02dh%02d".format(hour, minute)
 
 private data class TransportOption(val type: String, val emoji: String, val label: String)
 
@@ -52,6 +81,10 @@ fun EditBoardingPassScreen(
     val isDirty by viewModel.isDirty.collectAsStateWithLifecycle()
     var showDeleteDialog  by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+    var showDatePicker    by remember { mutableStateOf(false) }
+    var showTimePicker    by remember { mutableStateOf(false) }
+
+
 
     val isEditing = state.entity != null
     val canSave   = state.origin.isNotBlank() && state.destination.isNotBlank() && state.passenger.isNotBlank()
@@ -222,11 +255,45 @@ fun EditBoardingPassScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     EditSectionLabel("Data")
-                    EditTextField(value = state.date, onValueChange = viewModel::updateDate, placeholder = "09 Jun 2026")
+                    Box {
+                        OutlinedTextField(
+                            value         = state.date,
+                            onValueChange = {},
+                            readOnly      = true,
+                            placeholder   = { Text("09 Jun 2026", color = TextSecondary) },
+                            trailingIcon  = { Icon(Icons.Default.DateRange, contentDescription = null, tint = GreenMoss) },
+                            modifier      = Modifier.fillMaxWidth(),
+                            shape         = RoundedCornerShape(12.dp),
+                            colors        = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor      = GreenMoss,
+                                unfocusedBorderColor    = CardBorder,
+                                focusedContainerColor   = SurfaceWhite,
+                                unfocusedContainerColor = SurfaceWhite
+                            )
+                        )
+                        Box(Modifier.matchParentSize().clickable { showDatePicker = true })
+                    }
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     EditSectionLabel("Horário de partida")
-                    EditTextField(value = state.boardingTime, onValueChange = viewModel::updateBoardingTime, placeholder = "06h30")
+                    Box {
+                        OutlinedTextField(
+                            value         = state.boardingTime,
+                            onValueChange = {},
+                            readOnly      = true,
+                            placeholder   = { Text("06h30", color = TextSecondary) },
+                            trailingIcon  = { Icon(Icons.Default.Schedule, contentDescription = null, tint = GreenMoss) },
+                            modifier      = Modifier.fillMaxWidth(),
+                            shape         = RoundedCornerShape(12.dp),
+                            colors        = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor      = GreenMoss,
+                                unfocusedBorderColor    = CardBorder,
+                                focusedContainerColor   = SurfaceWhite,
+                                unfocusedContainerColor = SurfaceWhite
+                            )
+                        )
+                        Box(Modifier.matchParentSize().clickable { showTimePicker = true })
+                    }
                 }
             }
 
@@ -279,6 +346,78 @@ fun EditBoardingPassScreen(
                     fontWeight = FontWeight.SemiBold,
                     color      = AmberPrimary
                 )
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dateStringToMillis(state.date)
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDatePicker = false
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        viewModel.updateDate(millisToDateString(millis))
+                    }
+                }) { Text("OK", color = GreenMoss) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(
+                state  = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    selectedDayContainerColor = GreenMoss,
+                    todayDateBorderColor      = GreenMoss
+                )
+            )
+        }
+    }
+
+    if (showTimePicker) {
+        val parsedTime = parseTime(state.boardingTime)
+        val timePickerState = rememberTimePickerState(
+            initialHour   = parsedTime?.first  ?: 6,
+            initialMinute = parsedTime?.second ?: 0,
+            is24Hour      = true
+        )
+        Dialog(onDismissRequest = { showTimePicker = false }) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier              = Modifier.padding(24.dp),
+                    horizontalAlignment   = Alignment.CenterHorizontally,
+                    verticalArrangement   = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Horário de partida", style = MaterialTheme.typography.titleMedium)
+                    TimePicker(
+                        state  = timePickerState,
+                        colors = TimePickerDefaults.colors(
+                            selectorColor          = GreenMoss,
+                            clockDialSelectedContentColor = Color.White,
+                            timeSelectorSelectedContainerColor = GreenMoss.copy(alpha = 0.15f),
+                            timeSelectorSelectedContentColor  = GreenMoss
+                        )
+                    )
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { showTimePicker = false }) { Text("Cancelar") }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            showTimePicker = false
+                            viewModel.updateBoardingTime(formatTime(timePickerState.hour, timePickerState.minute))
+                        }) { Text("OK", color = GreenMoss) }
+                    }
+                }
             }
         }
     }

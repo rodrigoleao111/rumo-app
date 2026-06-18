@@ -21,7 +21,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         VoucherGroupEntity::class,
         BoardingPassEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 abstract class TravelDatabase : RoomDatabase() {
@@ -97,6 +97,14 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v14 → v15: sortOrder e isFavorite em contacts
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE contacts ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE contacts ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -133,7 +141,7 @@ abstract class TravelDatabase : RoomDatabase() {
                     TravelDatabase::class.java,
                     "travel_db"
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                     .fallbackToDestructiveMigrationFrom(1, 2) // versões iniciais sem dados reais
                     .build()
                     .also { INSTANCE = it }

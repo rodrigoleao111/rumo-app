@@ -191,6 +191,8 @@ class TravelExporter(
             put("type",        contact.type.name)
             put("hasWhatsApp", contact.hasWhatsApp)
             put("isEmergency", contact.isEmergency)
+            put("sortOrder",   contact.sortOrder)
+            put("isFavorite",  contact.isFavorite)
         }
 
     private fun buildVoucherJson(voucher: Voucher): JSONObject =

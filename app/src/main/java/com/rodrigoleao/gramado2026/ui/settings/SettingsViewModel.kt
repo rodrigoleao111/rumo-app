@@ -19,6 +19,14 @@ class SettingsViewModel(
         _autoOpenActiveTrip.value = enabled
     }
 
+    private val _showEmergencyContacts = MutableStateFlow(settings.showEmergencyContacts)
+    val showEmergencyContacts: StateFlow<Boolean> = _showEmergencyContacts.asStateFlow()
+
+    fun setShowEmergencyContacts(enabled: Boolean) {
+        settings.showEmergencyContacts = enabled
+        _showEmergencyContacts.value = enabled
+    }
+
     companion object {
         fun Factory(settings: SettingsRepository) =
             object : ViewModelProvider.Factory {
