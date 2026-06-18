@@ -2,6 +2,39 @@
 
 App Android nativo para organizar roteiros de viagem com previsão do tempo ao vivo, geração de itinerário por IA e compartilhamento entre dispositivos.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/01_lista_viagens.webp" width="180"/><br/>
+      <sub><b>Lista de viagens</b><br/>Badge de status automático: Concluída, Em curso e countdown de dias. Swipe revela ações de compartilhar, editar e excluir.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/02_home.webp" width="180"/><br/>
+      <sub><b>Home da viagem</b><br/>Cards por dia com clima ao vivo (Open-Meteo), temperatura e condição. Card do hotel com botões Maps, Uber e Ligar.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/03_vouchers.webp" width="180"/><br/>
+      <sub><b>Vouchers</b><br/>Cards agrupados por categoria com acento colorido por tipo (PDF/Imagem/Link). Drag-to-reorder por long press e toggle "Usado".</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/04_passagens.webp" width="180"/><br/>
+      <sub><b>Passagens aéreas</b><br/>Cards adaptativos por tipo de transporte. Cabeçalho com código IATA, número do voo e portão editável. Um card por passageiro.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/05_contatos.webp" width="180"/><br/>
+      <sub><b>Contatos</b><br/>Agrupados por categoria com grupo Favoritos no topo. Drag-to-reorder com sombra animada ao arrastar. Botões de ligar e WhatsApp.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/06_novo_voucher.png" width="180"/><br/>
+      <sub><b>Novo voucher</b><br/>Formulário com seleção de categoria, ícone, pessoa, arquivo ou link e dia da viagem. Suporte a categorias personalizadas.</sub>
+    </td>
+  </tr>
+</table>
+
 ## Stack
 
 | Camada | Tecnologia |
