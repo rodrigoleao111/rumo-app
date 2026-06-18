@@ -25,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +80,7 @@ import com.rodrigoleao.gramado2026.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
 import com.rodrigoleao.gramado2026.ui.settings.SettingsScreen
 import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
+import androidx.compose.runtime.MutableState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
@@ -129,7 +131,7 @@ private const val ANIM_DURATION = 320
 // ── NAVEGAÇÃO PRINCIPAL ───────────────────────────────────────────────────────
 
 @Composable
-fun AppNavigation(initialImportUri: android.net.Uri? = null) {
+fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mutableStateOf(null) }) {
     val navController = rememberNavController()
     val context       = LocalContext.current
     val db            = remember { TravelDatabase.getInstance(context) }
@@ -139,9 +141,18 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
     val scope         = rememberCoroutineScope()
     var showEmergencyContacts by remember { mutableStateOf(settings.showEmergencyContacts) }
 
+    val importUri = importUriState.value
+
     val startDestination = when {
-        initialImportUri != null -> Screen.ImportTrip.route
-        else                     -> Screen.Splash.route
+        importUri != null -> Screen.ImportTrip.route
+        else              -> Screen.Splash.route
+    }
+
+    // Trata onNewIntent: app já aberto, novo arquivo .travel aberto externamente
+    LaunchedEffect(importUri) {
+        if (importUri != null && navController.currentDestination?.route != Screen.ImportTrip.route) {
+            navController.navigate(Screen.ImportTrip.route) { launchSingleTop = true }
+        }
     }
 
     NavHost(
@@ -216,13 +227,17 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
             val vm: ImportTripViewModel = viewModel(factory = ImportTripViewModel.Factory(repo, ctx))
             ImportTripScreen(
                 viewModel   = vm,
-                initialUri  = initialImportUri,
+                initialUri  = importUriState.value,
                 onImported  = { tripId ->
+                    importUriState.value = null
                     navController.navigate(Screen.TripMain.createRoute(tripId)) {
                         popUpTo(Screen.TripsList.route)
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    importUriState.value = null
+                    navController.popBackStack()
+                }
             )
         }
 

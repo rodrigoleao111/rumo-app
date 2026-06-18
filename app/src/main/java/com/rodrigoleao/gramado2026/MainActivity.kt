@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.rodrigoleao.gramado2026.data.db.TravelDatabase
@@ -17,6 +18,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    // Estado reativo: atualizado tanto em onCreate (intent inicial) quanto em onNewIntent
+    private val importUriState = mutableStateOf<Uri?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -29,12 +34,18 @@ class MainActivity : ComponentActivity() {
             DatabaseSeeder.seedIfEmpty(db)
         }
 
-        val initialImportUri: Uri? = if (intent?.action == Intent.ACTION_VIEW) intent.data else null
+        if (intent?.action == Intent.ACTION_VIEW) importUriState.value = intent.data
 
         setContent {
             GramadoTheme {
-                AppNavigation(initialImportUri = initialImportUri)
+                AppNavigation(importUriState = importUriState)
             }
         }
+    }
+
+    // Chamado quando o app já está em foreground e outro arquivo .travel é aberto
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == Intent.ACTION_VIEW) importUriState.value = intent.data
     }
 }

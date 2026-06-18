@@ -284,7 +284,7 @@ private fun DayLinkCard(label: String, url: String, context: android.content.Con
     Card(
         onClick = {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            context.startActivity(intent)
+            runCatching { context.startActivity(intent) }
         },
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         shape    = RoundedCornerShape(12.dp),

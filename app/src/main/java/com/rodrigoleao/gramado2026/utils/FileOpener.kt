@@ -72,7 +72,8 @@ fun dialPhone(context: Context, phone: String) {
 }
 
 fun openWhatsApp(context: Context, phone: String) {
-    val number = if (phone.startsWith("55")) phone else "55$phone"
+    val digits = phone.filter { it.isDigit() }
+    val number = if (digits.startsWith("55")) digits else "55$digits"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$number"))
     context.startActivity(intent)
 }
