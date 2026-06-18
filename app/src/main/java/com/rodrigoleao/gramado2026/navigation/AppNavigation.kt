@@ -230,9 +230,12 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 initialUri  = importUriState.value,
                 onImported  = { tripId ->
                     importUriState.value = null
-                    navController.navigate(Screen.TripMain.createRoute(tripId)) {
-                        popUpTo(Screen.TripsList.route)
+                    // Garante TripsList na backstack mesmo quando o app foi aberto via intent externo
+                    // (nesse caso ImportTrip é o startDestination e TripsList nunca foi empilhada)
+                    navController.navigate(Screen.TripsList.route) {
+                        popUpTo(0) { inclusive = true }
                     }
+                    navController.navigate(Screen.TripMain.createRoute(tripId))
                 },
                 onBack = {
                     importUriState.value = null
