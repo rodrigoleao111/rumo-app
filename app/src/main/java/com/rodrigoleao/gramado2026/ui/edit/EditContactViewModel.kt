@@ -39,7 +39,8 @@ class EditContactViewModel(
     val state: StateFlow<EditContactState> = _state.asStateFlow()
 
     val isDirty: StateFlow<Boolean> = _state.map { s ->
-        val e = s.entity ?: return@map false
+        val e = s.entity
+        if (e == null) return@map s.name.isNotBlank()  // novo contato: sujo se o nome foi preenchido
         val entityCategory = if (e.contactType == ContactType.CUSTOM.name) e.customTypeName else e.contactType
         s.name != e.name || s.role != e.role || s.phone != (e.phone ?: "") ||
         s.selectedCategory != entityCategory || s.hasWhatsApp != e.hasWhatsApp || s.isEmergency != e.isEmergency
@@ -60,13 +61,24 @@ class EditContactViewModel(
                 } else {
                     e?.contactType ?: "ATTRACTION"
                 }
+                // Garante que a categoria atual do contato esteja na lista, mesmo que tenha sido
+                // removida do repositório global (ex: SharedPreferences corrompido ou outra instalação).
+                val enrichedCategories = if (
+                    e?.contactType == ContactType.CUSTOM.name &&
+                    e.customTypeName.isNotBlank() &&
+                    !customCategories.contains(e.customTypeName)
+                ) {
+                    (customCategories + e.customTypeName).sorted()
+                } else {
+                    customCategories
+                }
                 _state.value = EditContactState(
                     entity           = e,
                     name             = e?.name ?: "",
                     role             = e?.role ?: "",
                     phone            = e?.phone ?: "",
                     selectedCategory = selectedCategory,
-                    customCategories = customCategories,
+                    customCategories = enrichedCategories,
                     hasWhatsApp      = e?.hasWhatsApp ?: false,
                     isEmergency      = e?.isEmergency ?: false,
                     isLoading        = false

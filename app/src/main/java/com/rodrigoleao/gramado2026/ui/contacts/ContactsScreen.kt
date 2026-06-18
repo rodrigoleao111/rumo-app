@@ -94,12 +94,12 @@ fun ContactsScreen(
             }
             // Custom groups: contacts with type == CUSTOM, grouped by customTypeName
             val customContacts = localContacts.filter { it.type == ContactType.CUSTOM && !it.isFavorite }
-            val customGroups = customContacts.groupBy { it.customTypeName }.entries.sortedBy { it.key }
+            val customGroups = customContacts
+                .groupBy { it.customTypeName.ifBlank { "Outros" } }
+                .entries.sortedBy { it.key }
             customGroups.forEach { (groupName, groupContacts) ->
-                if (groupName.isNotBlank()) {
-                    add(ContactListItem.Header(groupName, "🏷️"))
-                    groupContacts.sortedBy { it.sortOrder }.forEach { add(ContactListItem.Item(it, "custom_$groupName")) }
-                }
+                add(ContactListItem.Header(groupName, "🏷️"))
+                groupContacts.sortedBy { it.sortOrder }.forEach { add(ContactListItem.Item(it, "custom_$groupName")) }
             }
         }
     }
@@ -182,12 +182,17 @@ fun ContactsScreen(
                     } else {
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
+                                // Só abre o dialog se nenhum outro já estiver aberto
+                                if (value == SwipeToDismissBoxValue.EndToStart && contactToDelete == null) {
                                     contactToDelete = contact
                                 }
                                 false
                             }
                         )
+                        // Reseta o swipe quando o dialog é fechado (cancelar ou confirmar)
+                        LaunchedEffect(contactToDelete) {
+                            if (contactToDelete == null) dismissState.reset()
+                        }
 
                         ReorderableItem(
                             state = reorderState,
