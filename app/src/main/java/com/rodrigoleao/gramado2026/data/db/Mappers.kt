@@ -16,7 +16,12 @@ fun TravelDay.toEntity(tripId: Long): TravelDayEntity = TravelDayEntity(
     minTemp          = weather.minTemp,
     maxTemp          = weather.maxTemp,
     weatherCondition = weather.condition,
-    dayAlert         = dayAlert
+    dayAlert         = dayAlert,
+    dayLinkUrl       = dayLinkUrl,
+    dayLinkLabel     = dayLinkLabel,
+    dayDocumentPath  = dayDocumentPath,
+    dayDocumentName  = dayDocumentName,
+    dayDocumentTitle = dayDocumentTitle
 )
 
 fun TravelActivity.toEntity(dayId: Long, position: Int): TravelActivityEntity = TravelActivityEntity(
@@ -47,15 +52,16 @@ fun WalkStop.toEntity(activityId: Long, position: Int): WalkStopEntity = WalkSto
 )
 
 fun Contact.toEntity(tripId: Long): ContactEntity = ContactEntity(
-    tripId      = tripId,
-    name        = name,
-    role        = role,
-    phone       = phone,
-    contactType = type.name,
-    hasWhatsApp = hasWhatsApp,
-    isEmergency = isEmergency,
-    sortOrder   = sortOrder,
-    isFavorite  = isFavorite
+    tripId         = tripId,
+    name           = name,
+    role           = role,
+    phone          = phone,
+    contactType    = type.name,
+    hasWhatsApp    = hasWhatsApp,
+    isEmergency    = isEmergency,
+    customTypeName = customTypeName,
+    sortOrder      = sortOrder,
+    isFavorite     = isFavorite
 )
 
 fun Voucher.toEntity(tripId: Long): VoucherEntity = VoucherEntity(
@@ -66,7 +72,8 @@ fun Voucher.toEntity(tripId: Long): VoucherEntity = VoucherEntity(
     name      = name,
     person    = person,
     assetPath = assetPath,
-    sortOrder = sortOrder
+    sortOrder = sortOrder,
+    isUsed    = isUsed
 )
 
 fun BoardingPass.toEntity(tripId: Long): BoardingPassEntity = BoardingPassEntity(
@@ -135,15 +142,16 @@ fun WalkStopEntity.toDomain(): WalkStop = WalkStop(
 )
 
 fun ContactEntity.toDomain(): Contact = Contact(
-    id          = id,
-    name        = name,
-    role        = role,
-    phone       = phone,
-    type        = ContactType.valueOf(contactType),
-    hasWhatsApp = hasWhatsApp,
-    isEmergency = isEmergency,
-    sortOrder   = sortOrder,
-    isFavorite  = isFavorite
+    id             = id,
+    name           = name,
+    role           = role,
+    phone          = phone,
+    type           = runCatching { ContactType.valueOf(contactType) }.getOrDefault(ContactType.CUSTOM),
+    hasWhatsApp    = hasWhatsApp,
+    isEmergency    = isEmergency,
+    customTypeName = customTypeName,
+    sortOrder      = sortOrder,
+    isFavorite     = isFavorite
 )
 
 fun VoucherEntity.toDomain(): Voucher = Voucher(

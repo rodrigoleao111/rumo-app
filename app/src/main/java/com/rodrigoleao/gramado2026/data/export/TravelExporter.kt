@@ -145,8 +145,9 @@ class TravelExporter(
             put("dayAlert",     day.dayAlert ?: JSONObject.NULL)
             put("linkUrl",      day.dayLinkUrl ?: JSONObject.NULL)
             put("linkLabel",    day.dayLinkLabel)
-            put("documentName", docName)
-            put("activities",   activitiesArray)
+            put("documentName",  docName)
+            put("documentTitle", day.dayDocumentTitle.ifEmpty { JSONObject.NULL })
+            put("activities",    activitiesArray)
         }
     }
 
@@ -185,14 +186,15 @@ class TravelExporter(
 
     private fun buildContactJson(contact: Contact): JSONObject =
         JSONObject().apply {
-            put("name",        contact.name)
-            put("role",        contact.role)
-            put("phone",       contact.phone ?: JSONObject.NULL)
-            put("type",        contact.type.name)
-            put("hasWhatsApp", contact.hasWhatsApp)
-            put("isEmergency", contact.isEmergency)
-            put("sortOrder",   contact.sortOrder)
-            put("isFavorite",  contact.isFavorite)
+            put("name",           contact.name)
+            put("role",           contact.role)
+            put("phone",          contact.phone ?: JSONObject.NULL)
+            put("type",           contact.type.name)
+            put("hasWhatsApp",    contact.hasWhatsApp)
+            put("isEmergency",    contact.isEmergency)
+            put("customTypeName", contact.customTypeName.ifEmpty { JSONObject.NULL })
+            put("sortOrder",      contact.sortOrder)
+            put("isFavorite",     contact.isFavorite)
         }
 
     private fun buildVoucherJson(voucher: Voucher): JSONObject =

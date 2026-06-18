@@ -24,6 +24,7 @@ data class ContactEntity(
     val contactType: String,    // ContactType.name
     val hasWhatsApp: Boolean,
     val isEmergency: Boolean,
+    val customTypeName: String = "",
     val sortOrder: Int = 0,
     val isFavorite: Boolean = false
 )

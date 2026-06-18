@@ -48,53 +48,7 @@ private val BUILTIN_EMERGENCY_CONTACTS = listOf(
     Contact(id = -3L, name = "Polícia Militar",  role = "Emergências policiais",                    phone = "190", type = ContactType.EMERGENCY, isEmergency = true),
 )
 
-// ── Groups definition ─────────────────────────────────────────────────────────
-
-private data class ContactGroup(
-    val key: String,
-    val label: String,
-    val emoji: String,
-    val filter: (Contact) -> Boolean,
-    val sorter: Comparator<Contact>
-)
-
-private val CONTACT_GROUPS = listOf(
-    ContactGroup(
-        key    = "favorites",
-        label  = "Favoritos",
-        emoji  = "⭐",
-        filter = { it.isFavorite },
-        sorter = compareBy { it.sortOrder }
-    ),
-    ContactGroup(
-        key    = "agency",
-        label  = "Agência & Transfers",
-        emoji  = "📋",
-        filter = { it.type == ContactType.AGENCY && !it.isFavorite },
-        sorter = compareBy { it.sortOrder }
-    ),
-    ContactGroup(
-        key    = "hotel",
-        label  = "Hospedagem",
-        emoji  = "🏨",
-        filter = { it.type == ContactType.HOTEL && !it.isFavorite },
-        sorter = compareBy { it.sortOrder }
-    ),
-    ContactGroup(
-        key    = "attraction",
-        label  = "Atrações",
-        emoji  = "🎡",
-        filter = { it.type == ContactType.ATTRACTION && !it.isFavorite },
-        sorter = compareBy { it.sortOrder }
-    ),
-    ContactGroup(
-        key    = "emergency",
-        label  = "Emergências",
-        emoji  = "🚨",
-        filter = { it.type == ContactType.EMERGENCY && !it.isFavorite },
-        sorter = compareBy { it.sortOrder }
-    )
-)
+// ── Groups definition — replaced by dynamic listItems building ────────────────
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -119,14 +73,32 @@ fun ContactsScreen(
 
     val listItems: List<ContactListItem> = remember(localContacts, showEmergencyContacts) {
         buildList {
-            CONTACT_GROUPS.forEach { group ->
-                val userContacts = localContacts.filter(group.filter).sortedWith(group.sorter)
-                val builtins = if (group.key == "emergency" && showEmergencyContacts)
-                    BUILTIN_EMERGENCY_CONTACTS else emptyList()
-                val allInGroup = builtins + userContacts
-                if (allInGroup.isNotEmpty()) {
-                    add(ContactListItem.Header(group.label, group.emoji))
-                    allInGroup.forEach { add(ContactListItem.Item(it, group.key)) }
+            // Fixed groups in order
+            val fixedGroups = listOf(
+                Triple("favorites", "Favoritos", "⭐")         to { c: Contact -> c.isFavorite },
+                Triple("agency",    "Agência & Transfers", "📋") to { c: Contact -> c.type == ContactType.AGENCY && !c.isFavorite },
+                Triple("hotel",     "Hospedagem", "🏨")         to { c: Contact -> c.type == ContactType.HOTEL && !c.isFavorite },
+                Triple("family",    "Família", "👨‍👩‍👧")            to { c: Contact -> c.type == ContactType.FAMILY && !c.isFavorite },
+                Triple("attraction","Atrações", "🎡")           to { c: Contact -> c.type == ContactType.ATTRACTION && !c.isFavorite },
+                Triple("emergency", "Emergências", "🚨")        to { c: Contact -> c.type == ContactType.EMERGENCY && !c.isFavorite },
+            )
+            fixedGroups.forEach { (meta, filter) ->
+                val (key, label, emoji) = meta
+                val builtins = if (key == "emergency" && showEmergencyContacts) BUILTIN_EMERGENCY_CONTACTS else emptyList()
+                val userContacts = localContacts.filter(filter).sortedBy { it.sortOrder }
+                val all = builtins + userContacts
+                if (all.isNotEmpty()) {
+                    add(ContactListItem.Header(label, emoji))
+                    all.forEach { add(ContactListItem.Item(it, key)) }
+                }
+            }
+            // Custom groups: contacts with type == CUSTOM, grouped by customTypeName
+            val customContacts = localContacts.filter { it.type == ContactType.CUSTOM && !it.isFavorite }
+            val customGroups = customContacts.groupBy { it.customTypeName }.entries.sortedBy { it.key }
+            customGroups.forEach { (groupName, groupContacts) ->
+                if (groupName.isNotBlank()) {
+                    add(ContactListItem.Header(groupName, "🏷️"))
+                    groupContacts.sortedBy { it.sortOrder }.forEach { add(ContactListItem.Item(it, "custom_$groupName")) }
                 }
             }
         }

@@ -75,6 +75,7 @@ import com.rodrigoleao.gramado2026.ui.trips.TripsListScreen
 import com.rodrigoleao.gramado2026.ui.trips.TripsListViewModel
 import com.rodrigoleao.gramado2026.ui.trips.TripViewModel
 import com.rodrigoleao.gramado2026.ui.vouchers.VouchersScreen
+import com.rodrigoleao.gramado2026.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
 import com.rodrigoleao.gramado2026.ui.settings.SettingsScreen
 import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
@@ -132,6 +133,7 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
     val db            = remember { TravelDatabase.getInstance(context) }
     val repo          = remember { TripRepository(db) }
     val settings      = remember { SettingsRepository(context) }
+    val categoryRepo  = remember { ContactCategoryRepository(context) }
     val scope         = rememberCoroutineScope()
     var showEmergencyContacts by remember { mutableStateOf(settings.showEmergencyContacts) }
 
@@ -429,7 +431,7 @@ fun AppNavigation(initialImportUri: android.net.Uri? = null) {
         ) { entry ->
             val tripId    = entry.arguments!!.getLong("tripId")
             val contactId = entry.arguments!!.getLong("contactId")
-            val vm: EditContactViewModel = viewModel(factory = EditContactViewModel.Factory(repo, tripId, contactId))
+            val vm: EditContactViewModel = viewModel(factory = EditContactViewModel.Factory(repo, tripId, contactId, categoryRepo))
             EditContactScreen(
                 viewModel = vm,
                 onBack    = {

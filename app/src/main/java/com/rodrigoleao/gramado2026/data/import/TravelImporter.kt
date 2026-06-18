@@ -68,6 +68,7 @@ private data class ExportedDay(
     val linkUrl: String?,
     val linkLabel: String,
     val documentName: String?,
+    val documentTitle: String,
     val activities: List<ExportedActivity>
 )
 
@@ -103,6 +104,7 @@ private data class ExportedContact(
     val type: String,
     val hasWhatsApp: Boolean,
     val isEmergency: Boolean,
+    val customTypeName: String = "",
     val sortOrder: Int,
     val isFavorite: Boolean
 )
@@ -161,12 +163,13 @@ class TravelImporter(
             val docName = expDay.documentName
 
             repo.updateDay(dayEntity.copy(
-                title            = expDay.title,
-                dayAlert         = expDay.dayAlert,
-                dayLinkUrl       = expDay.linkUrl,
-                dayLinkLabel     = expDay.linkLabel,
-                dayDocumentPath  = docPath,
-                dayDocumentName  = docName ?: ""
+                title             = expDay.title,
+                dayAlert          = expDay.dayAlert,
+                dayLinkUrl        = expDay.linkUrl,
+                dayLinkLabel      = expDay.linkLabel,
+                dayDocumentPath   = docPath,
+                dayDocumentName   = docName ?: "",
+                dayDocumentTitle  = expDay.documentTitle
             ))
 
             for (expAct in expDay.activities.sortedBy { it.position }) {
@@ -208,22 +211,22 @@ class TravelImporter(
 
         // Importa contatos
         for (expContact in exported.contacts) {
-            val type = runCatching {
-                com.rodrigoleao.gramado2026.data.model.ContactType.valueOf(expContact.type)
-            }.getOrDefault(com.rodrigoleao.gramado2026.data.model.ContactType.AGENCY)
+            val isBuiltinType = com.rodrigoleao.gramado2026.data.model.ContactType.entries
+                .any { it.name == expContact.type && it != com.rodrigoleao.gramado2026.data.model.ContactType.CUSTOM }
 
             repo.upsertContact(
                 tripId = tripId,
                 entity = ContactEntity(
-                    tripId      = tripId,
-                    name        = expContact.name,
-                    role        = expContact.role,
-                    phone       = expContact.phone,
-                    contactType = type.name,
-                    hasWhatsApp = expContact.hasWhatsApp,
-                    isEmergency = expContact.isEmergency,
-                    sortOrder   = expContact.sortOrder,
-                    isFavorite  = expContact.isFavorite
+                    tripId         = tripId,
+                    name           = expContact.name,
+                    role           = expContact.role,
+                    phone          = expContact.phone,
+                    contactType    = if (isBuiltinType) expContact.type else com.rodrigoleao.gramado2026.data.model.ContactType.CUSTOM.name,
+                    customTypeName = if (isBuiltinType) "" else expContact.customTypeName,
+                    hasWhatsApp    = expContact.hasWhatsApp,
+                    isEmergency    = expContact.isEmergency,
+                    sortOrder      = expContact.sortOrder,
+                    isFavorite     = expContact.isFavorite
                 )
             )
         }
@@ -361,7 +364,8 @@ class TravelImporter(
                 dayAlert     = day.optString("dayAlert").takeIf { it.isNotBlank() && it != "null" },
                 linkUrl      = day.optString("linkUrl").takeIf   { it.isNotBlank() && it != "null" },
                 linkLabel    = day.optString("linkLabel", ""),
-                documentName = day.optString("documentName").takeIf { it.isNotBlank() && it != "null" },
+                documentName  = day.optString("documentName").takeIf { it.isNotBlank() && it != "null" },
+                documentTitle = day.optString("documentTitle").takeIf { it.isNotBlank() && it != "null" } ?: "",
                 activities   = (0 until acts.length()).map { j ->
                     val act    = acts.getJSONObject(j)
                     val badges = act.optJSONArray("badges")
@@ -403,14 +407,15 @@ class TravelImporter(
             (0 until contactsArray.length()).map { i ->
                 val c = contactsArray.getJSONObject(i)
                 ExportedContact(
-                    name        = c.getString("name"),
-                    role        = c.optString("role", ""),
-                    phone       = c.optString("phone").takeIf { it.isNotBlank() && it != "null" },
-                    type        = c.optString("type", "AGENCY"),
-                    hasWhatsApp = c.optBoolean("hasWhatsApp", false),
-                    isEmergency = c.optBoolean("isEmergency", false),
-                    sortOrder   = c.optInt("sortOrder", 0),
-                    isFavorite  = c.optBoolean("isFavorite", false)
+                    name           = c.getString("name"),
+                    role           = c.optString("role", ""),
+                    phone          = c.optString("phone").takeIf { it.isNotBlank() && it != "null" },
+                    type           = c.optString("type", "AGENCY"),
+                    hasWhatsApp    = c.optBoolean("hasWhatsApp", false),
+                    isEmergency    = c.optBoolean("isEmergency", false),
+                    customTypeName = c.optString("customTypeName", "").let { if (it == "null") "" else it },
+                    sortOrder      = c.optInt("sortOrder", 0),
+                    isFavorite     = c.optBoolean("isFavorite", false)
                 )
             } else emptyList()
 

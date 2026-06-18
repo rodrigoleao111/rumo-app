@@ -21,7 +21,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         VoucherGroupEntity::class,
         BoardingPassEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class TravelDatabase : RoomDatabase() {
@@ -105,6 +105,13 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v15 → v16: customTypeName em contacts (para categorias personalizadas)
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE contacts ADD COLUMN customTypeName TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -141,7 +148,7 @@ abstract class TravelDatabase : RoomDatabase() {
                     TravelDatabase::class.java,
                     "travel_db"
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
+                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                     .fallbackToDestructiveMigrationFrom(1, 2) // versões iniciais sem dados reais
                     .build()
                     .also { INSTANCE = it }

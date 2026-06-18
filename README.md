@@ -119,7 +119,7 @@ Veja `docs/travel-export-schema.md` para o schema completo do `trip.json`.
 
 ## Banco de dados
 
-Room versão 14. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
+Room versão 16. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
 
 Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `version` no `@Database` e registre em `.addMigrations(...)`.
 

@@ -35,7 +35,6 @@ data class TravelActivity(
     val name: String,
     val detail: String,
     val badges: List<Badge> = emptyList(),
-    val alert: String? = null,
     val mapQuery: String? = null,
     val uberDestination: String? = null,
     val walkStops: List<WalkStop> = emptyList()
@@ -68,7 +67,7 @@ data class TravelDay(
 }
 
 // ── CONTACTS ─────────────────────────────────────────────────────────────
-enum class ContactType { AGENCY, HOTEL, ATTRACTION, EMERGENCY }
+enum class ContactType { AGENCY, HOTEL, ATTRACTION, EMERGENCY, FAMILY, CUSTOM }
 
 data class Contact(
     val id: Long = 0,
@@ -78,6 +77,7 @@ data class Contact(
     val type: ContactType,
     val hasWhatsApp: Boolean = false,
     val isEmergency: Boolean = false,
+    val customTypeName: String = "",
     val sortOrder: Int = 0,
     val isFavorite: Boolean = false
 )
