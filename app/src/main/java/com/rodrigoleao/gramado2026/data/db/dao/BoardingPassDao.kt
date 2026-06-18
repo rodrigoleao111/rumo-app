@@ -5,7 +5,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.BoardingPassEntity
 
 @Dao
 interface BoardingPassDao {
-    @Query("SELECT * FROM boarding_passes WHERE tripId = :tripId")
+    @Query("SELECT * FROM boarding_passes WHERE tripId = :tripId ORDER BY date ASC, boardingTime ASC")
     suspend fun getPassesForTrip(tripId: Long): List<BoardingPassEntity>
 
     @Query("SELECT * FROM boarding_passes WHERE id = :id")
@@ -19,4 +19,7 @@ interface BoardingPassDao {
 
     @Delete
     suspend fun delete(pass: BoardingPassEntity)
+
+    @Query("DELETE FROM boarding_passes WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

@@ -28,4 +28,7 @@ interface VoucherDao {
 
     @Delete
     suspend fun delete(voucher: VoucherEntity)
+
+    @Query("DELETE FROM vouchers WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

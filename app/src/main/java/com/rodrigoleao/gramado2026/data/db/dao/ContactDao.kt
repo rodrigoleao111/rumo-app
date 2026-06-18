@@ -20,6 +20,12 @@ interface ContactDao {
     @Delete
     suspend fun delete(contact: ContactEntity)
 
+    @Query("DELETE FROM contacts WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("UPDATE contacts SET sortOrder = :order WHERE id = :id")
     suspend fun updateSortOrder(id: Long, order: Int)
+
+    @Query("UPDATE contacts SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateIsFavorite(id: Long, isFavorite: Boolean)
 }

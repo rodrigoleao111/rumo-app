@@ -1,5 +1,6 @@
 package com.rodrigoleao.gramado2026.data.repository
 
+import androidx.room.withTransaction
 import com.rodrigoleao.gramado2026.data.ai.ItineraryGenerator
 import com.rodrigoleao.gramado2026.data.db.TravelDatabase
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
@@ -32,15 +33,31 @@ class TripRepository(private val db: TravelDatabase) {
     // Lista reativa de viagens — usada na TripsListScreen (Fase 2)
     val allTrips: Flow<List<TripEntity>> = db.tripDao().getAllTrips()
 
-    // Carrega todos os dados de uma viagem como domain models
+    // Carrega todos os dados de uma viagem como domain models.
+    // Usa queries bulk (IN) para evitar N+1: 1 trip + 1 days + 1 activities + 1 badges
+    // + 1 walkstops + 1 contacts + 1 vouchers + 1 boardingPasses = 8 queries fixas.
     suspend fun getTripData(tripId: Long): TripData? {
         val trip = db.tripDao().getById(tripId) ?: return null
 
-        val days = db.dayDao().getDaysForTrip(tripId).map { dayEntity ->
-            val activities = db.activityDao().getActivitiesForDay(dayEntity.id).map { actEntity ->
-                val badges    = db.activityDao().getBadgesForActivity(actEntity.id).map { it.toDomain() }
-                val walkStops = db.activityDao().getWalkStopsForActivity(actEntity.id).map { it.toDomain() }
-                actEntity.toDomain(badges, walkStops)
+        val dayEntities = db.dayDao().getDaysForTrip(tripId)
+        val dayIds      = dayEntities.map { it.id }
+
+        val allActivities = if (dayIds.isNotEmpty()) db.activityDao().getActivitiesForDays(dayIds) else emptyList()
+        val activityIds   = allActivities.map { it.id }
+
+        val allBadges    = if (activityIds.isNotEmpty()) db.activityDao().getBadgesForActivities(activityIds) else emptyList()
+        val allWalkStops = if (activityIds.isNotEmpty()) db.activityDao().getWalkStopsForActivities(activityIds) else emptyList()
+
+        val badgesByActivity = allBadges.groupBy { it.activityId }
+        val stopsByActivity  = allWalkStops.groupBy { it.activityId }
+        val activitiesByDay  = allActivities.groupBy { it.dayId }
+
+        val days = dayEntities.map { dayEntity ->
+            val activities = (activitiesByDay[dayEntity.id] ?: emptyList()).map { actEntity ->
+                actEntity.toDomain(
+                    badges    = (badgesByActivity[actEntity.id] ?: emptyList()).map { it.toDomain() },
+                    walkStops = (stopsByActivity[actEntity.id] ?: emptyList()).map { it.toDomain() }
+                )
             }
             dayEntity.toDomain(activities)
         }
@@ -49,13 +66,7 @@ class TripRepository(private val db: TravelDatabase) {
         val vouchers      = db.voucherDao().getVouchersForTrip(tripId).map { it.toDomain() }
         val boardingPasses = db.boardingPassDao().getPassesForTrip(tripId).map { it.toDomain() }
 
-        return TripData(
-            trip          = trip,
-            days          = days,
-            contacts      = contacts,
-            vouchers      = vouchers,
-            boardingPasses = boardingPasses
-        )
+        return TripData(trip, days, contacts, vouchers, boardingPasses)
     }
 
     // Retorna apenas os dias de uma viagem (para DayDetailScreen)
@@ -98,7 +109,7 @@ class TripRepository(private val db: TravelDatabase) {
         dayEntityId: Long,
         entity: TravelActivityEntity,
         badges: List<ActivityBadgeEntity>
-    ): Long {
+    ): Long = db.withTransaction {
         val actId = if (entity.id == 0L) {
             val position = db.activityDao().countForDay(dayEntityId)
             db.activityDao().insertActivity(entity.copy(dayId = dayEntityId, position = position))
@@ -107,8 +118,8 @@ class TripRepository(private val db: TravelDatabase) {
             entity.id
         }
         db.activityDao().deleteBadgesForActivity(actId)
-        badges.forEach { db.activityDao().insertBadge(it.copy(activityId = actId)) }
-        return actId
+        if (badges.isNotEmpty()) db.activityDao().insertBadges(badges.map { it.copy(activityId = actId) })
+        actId
     }
 
     suspend fun insertWalkStop(entity: com.rodrigoleao.gramado2026.data.db.entity.WalkStopEntity) =
@@ -117,9 +128,7 @@ class TripRepository(private val db: TravelDatabase) {
     suspend fun getBadgesForActivity(activityId: Long) =
         db.activityDao().getBadgesForActivity(activityId)
 
-    suspend fun deleteActivity(activityId: Long) {
-        db.activityDao().getById(activityId)?.let { db.activityDao().deleteActivity(it) }
-    }
+    suspend fun deleteActivity(activityId: Long) = db.activityDao().deleteById(activityId)
 
     suspend fun swapActivityPositions(id1: Long, pos1: Int, id2: Long, pos2: Int) {
         db.activityDao().updatePosition(id1, pos1)
@@ -134,21 +143,16 @@ class TripRepository(private val db: TravelDatabase) {
         if (entity.id == 0L) db.contactDao().insert(entity.copy(tripId = tripId))
         else { db.contactDao().update(entity); entity.id }
 
-    suspend fun deleteContact(id: Long) {
-        db.contactDao().getById(id)?.let { db.contactDao().delete(it) }
-    }
+    suspend fun deleteContact(id: Long) = db.contactDao().deleteById(id)
 
-    suspend fun reorderContacts(contacts: List<Contact>) {
+    suspend fun reorderContacts(contacts: List<Contact>) = db.withTransaction {
         contacts.forEachIndexed { index, contact ->
             if (contact.id > 0) db.contactDao().updateSortOrder(contact.id, index)
         }
     }
 
-    suspend fun toggleFavoriteContact(id: Long, isFavorite: Boolean) {
-        db.contactDao().getById(id)?.let { entity ->
-            db.contactDao().update(entity.copy(isFavorite = isFavorite))
-        }
-    }
+    suspend fun toggleFavoriteContact(id: Long, isFavorite: Boolean) =
+        db.contactDao().updateIsFavorite(id, isFavorite)
 
     // ── Vouchers ──────────────────────────────────────────────────────────────
 
@@ -164,11 +168,9 @@ class TripRepository(private val db: TravelDatabase) {
         }
     }
 
-    suspend fun deleteVoucher(id: Long) {
-        db.voucherDao().getById(id)?.let { db.voucherDao().delete(it) }
-    }
+    suspend fun deleteVoucher(id: Long) = db.voucherDao().deleteById(id)
 
-    suspend fun reorderVouchers(ordered: List<Voucher>) {
+    suspend fun reorderVouchers(ordered: List<Voucher>) = db.withTransaction {
         ordered.forEachIndexed { index, voucher ->
             db.voucherDao().updateSortOrder(voucher.id, index)
         }
@@ -203,9 +205,7 @@ class TripRepository(private val db: TravelDatabase) {
         if (entity.id == 0L) db.boardingPassDao().insert(entity.copy(tripId = tripId))
         else { db.boardingPassDao().update(entity); entity.id }
 
-    suspend fun deleteBoardingPass(id: Long) {
-        db.boardingPassDao().getById(id)?.let { db.boardingPassDao().delete(it) }
-    }
+    suspend fun deleteBoardingPass(id: Long) = db.boardingPassDao().deleteById(id)
 
     suspend fun createTrip(
         name: String,
@@ -274,7 +274,7 @@ class TripRepository(private val db: TravelDatabase) {
      * Salva o roteiro gerado pela IA no banco de dados.
      * Atualiza título/alerta de cada dia e insere as atividades com badges.
      */
-    suspend fun saveGeneratedItinerary(tripId: Long, days: List<ItineraryGenerator.GeneratedDay>) {
+    suspend fun saveGeneratedItinerary(tripId: Long, days: List<ItineraryGenerator.GeneratedDay>) = db.withTransaction {
         val badgeLabels = mapOf(
             "FREE"     to "Grátis",
             "PAID"     to "Pago",
