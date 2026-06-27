@@ -1,16 +1,21 @@
 package com.rodrigoleao.gramado2026.ui.trips
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.TripEntity
+import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TripsListViewModel(
+@HiltViewModel
+class TripsListViewModel @Inject constructor(
     private val repo: TripRepository
 ) : ViewModel() {
 
@@ -22,16 +27,14 @@ class TripsListViewModel(
             initialValue = null
         )
 
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     fun deleteTrip(trip: TripEntity) {
-        viewModelScope.launch { repo.deleteTrip(trip) }
+        viewModelScope.launch {
+            runCatching { repo.deleteTrip(trip) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir viagem")) }
+        }
     }
 
-    companion object {
-        fun Factory(repo: TripRepository) =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    TripsListViewModel(repo) as T
-            }
-    }
 }

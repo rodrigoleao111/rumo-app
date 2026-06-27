@@ -171,5 +171,20 @@ Botões de ação principal: `containerColor = GreenMoss`, ícone/texto `AmberPr
 
 | Arquivo | Conteúdo |
 |---|---|
+| `docs/arquitetura-geral.md` | Análise arquitetural completa: camadas, padrões, decisões de design, guia de onde colocar código novo |
+| `docs/arquitetura-melhorias.md` | Proposta de modernização: 10 melhorias priorizadas por impacto/esforço (DI, repositórios, domínio, erros, DataStore) |
+| `docs/guia-testes.md` | Guia de implementação de testes: 4 fases alinhadas com a sequência de refatoração, dependências, padrões e exemplos por tipo de teste |
+| `docs/design-system.md` | Design system completo: paleta, tipografia, formas, componentes recorrentes, hierarquia de botões, princípios visuais |
 | `docs/travel-export-schema.md` | Schema do `trip.json`, estrutura do ZIP, regras de import/export |
 | `docs/ai-itinerary-schema.md` | Schema JSON para IA, prompt gerado pelo app, modos chat e importar |
+| `docs/modulo-01-lista-viagens.md` | Arquitetura e funcionalidades de `TripsListScreen` |
+| `docs/modulo-02-home.md` | Arquitetura e funcionalidades de `HomeScreen` |
+| `docs/modulo-03-day-detail.md` | Arquitetura e funcionalidades de `DayDetailScreen` |
+| `docs/modulo-04-create-trip.md` | Arquitetura e funcionalidades de `CreateTripScreen` (wizard 4 passos + IA) |
+| `docs/modulo-05-vouchers.md` | Arquitetura e funcionalidades de `VouchersScreen` |
+| `docs/modulo-06-boarding-passes.md` | Arquitetura e funcionalidades de `BoardingPassScreen` e `EditBoardingPassScreen` |
+| `docs/modulo-07-contacts.md` | Arquitetura e funcionalidades de `ContactsScreen` |
+| `docs/modulo-08-edit-activity.md` | Arquitetura e funcionalidades de `EditActivityScreen` e `EditActivityViewModel` |
+| `docs/modulo-09-share-import.md` | Arquitetura e funcionalidades de `ShareTripScreen`, `ImportTripScreen`, `TravelExporter` e `TravelImporter` |
+| `docs/modulo-10-settings.md` | Arquitetura e funcionalidades de `SettingsScreen`, `SettingsViewModel` e `SettingsRepository` |
+| `docs/modulo-11-navegacao.md` | Arquitetura de `AppNavigation`: rotas, transições, splash, pager de abas, FAB contextual, refresh via `SavedStateHandle`, backstack de importação |

@@ -1,21 +1,26 @@
 package com.rodrigoleao.gramado2026.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.TripEntity
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.weather.GeocodingResult
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
+import com.rodrigoleao.gramado2026.data.model.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class EditTripState(
     val entity: TripEntity? = null,
@@ -31,10 +36,19 @@ data class EditTripState(
     val isDeleting: Boolean = false
 )
 
-class EditTripViewModel(private val repo: TripRepository, private val tripId: Long) : ViewModel() {
+@HiltViewModel
+class EditTripViewModel @Inject constructor(
+    private val repo: TripRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val tripId: Long = checkNotNull(savedStateHandle["tripId"])
 
     private val _state = MutableStateFlow(EditTripState())
     val state: StateFlow<EditTripState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     private val _searchResults = MutableStateFlow<List<GeocodingResult>>(emptyList())
     val searchResults: StateFlow<List<GeocodingResult>> = _searchResults.asStateFlow()
@@ -109,39 +123,36 @@ class EditTripViewModel(private val repo: TripRepository, private val tripId: Lo
         _isSearching.value = false
     }
 
-    fun save(onDone: () -> Unit) {
+    fun save() {
         val s = _state.value
         val e = s.entity ?: return
         _state.value = s.copy(isSaving = true)
         viewModelScope.launch {
-            repo.updateTrip(e.copy(
-                name         = s.name.trim(),
-                destination  = s.destination.trim(),
-                coverEmoji   = s.coverEmoji,
-                hotelName    = s.hotelName.trim(),
-                hotelAddress = s.hotelAddress.trim(),
-                hotelPhone   = s.hotelPhone.trim(),
-                latitude     = s.latitude,
-                longitude    = s.longitude
-            ))
-            onDone()
+            runCatching {
+                repo.updateTrip(e.copy(
+                    name         = s.name.trim(),
+                    destination  = s.destination.trim(),
+                    coverEmoji   = s.coverEmoji,
+                    hotelName    = s.hotelName.trim(),
+                    hotelAddress = s.hotelAddress.trim(),
+                    hotelPhone   = s.hotelPhone.trim(),
+                    latitude     = s.latitude,
+                    longitude    = s.longitude
+                ))
+            }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar viagem")) }
         }
     }
 
-    fun deleteTrip(onDone: () -> Unit) {
+    fun deleteTrip() {
         val e = _state.value.entity ?: return
         _state.value = _state.value.copy(isDeleting = true)
         viewModelScope.launch {
-            repo.deleteTrip(e)
-            onDone()
+            runCatching { repo.deleteTrip(e) }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateAfterDelete) }
+                .onFailure { _state.value = _state.value.copy(isDeleting = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir viagem")) }
         }
     }
 
-    companion object {
-        fun Factory(repo: TripRepository, tripId: Long) = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                EditTripViewModel(repo, tripId) as T
-        }
-    }
 }

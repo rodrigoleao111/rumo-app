@@ -1,21 +1,26 @@
 package com.rodrigoleao.gramado2026.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.repository.VoucherRepository
+import com.rodrigoleao.gramado2026.data.model.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class VoucherInputMode { LINK, FILE }
 
-// Par (número do dia, título) para o seletor de dia
 data class DayOption(val number: Int, val title: String)
 
 data class EditVoucherState(
@@ -35,14 +40,21 @@ data class EditVoucherState(
     val isSaving: Boolean = false
 )
 
-class EditVoucherViewModel(
-    private val repo: TripRepository,
-    private val tripId: Long,
-    private val voucherId: Long
+@HiltViewModel
+class EditVoucherViewModel @Inject constructor(
+    private val voucherRepo: VoucherRepository,
+    private val tripRepo: TripRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: Long = checkNotNull(savedStateHandle["tripId"])
+    private val voucherId: Long = checkNotNull(savedStateHandle["voucherId"])
 
     private val _state = MutableStateFlow(EditVoucherState())
     val state: StateFlow<EditVoucherState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     val isDirty: StateFlow<Boolean> = _state.map { s ->
         val e = s.entity ?: return@map false
@@ -54,9 +66,9 @@ class EditVoucherViewModel(
 
     init {
         viewModelScope.launch {
-            val savedGroups = repo.getVoucherGroups(tripId)
+            val savedGroups = voucherRepo.getVoucherGroups(tripId)
             val groups = (DEFAULT_GROUPS + savedGroups).distinct().sorted()
-            val days = repo.getDayTitles(tripId).map { (number, title) ->
+            val days = tripRepo.getDayTitles(tripId).map { (number, title) ->
                 DayOption(number = number, title = title)
             }
 
@@ -67,7 +79,7 @@ class EditVoucherViewModel(
                     isLoading       = false
                 )
             } else {
-                val e = repo.getVoucherEntity(voucherId)
+                val e = voucherRepo.getVoucherEntity(voucherId)
                 val path   = e?.assetPath ?: ""
                 val isLink = path.startsWith("http") || path.isBlank()
                 _state.value = EditVoucherState(
@@ -109,20 +121,20 @@ class EditVoucherViewModel(
         val trimmed = name.trim()
         if (trimmed.isBlank()) return
         viewModelScope.launch {
-            repo.addVoucherGroup(tripId, trimmed)
-            val saved = repo.getVoucherGroups(tripId)
+            voucherRepo.addVoucherGroup(tripId, trimmed)
+            val saved = voucherRepo.getVoucherGroups(tripId)
             val updated = (DEFAULT_GROUPS + saved).distinct().sorted()
             _state.value = _state.value.copy(availableGroups = updated, groupName = trimmed)
         }
     }
 
-    fun save(onDone: () -> Unit) {
+    fun save() {
         val s = _state.value
         val assetPath = if (s.inputMode == VoucherInputMode.LINK) s.linkUrl.trim() else s.filePath.trim()
         if (s.name.isBlank()) return
         _state.value = s.copy(isSaving = true)
         viewModelScope.launch {
-            if (s.groupName.isNotBlank()) repo.addVoucherGroup(tripId, s.groupName)
+            if (s.groupName.isNotBlank()) voucherRepo.addVoucherGroup(tripId, s.groupName)
             val entity = VoucherEntity(
                 id        = voucherId,
                 tripId    = tripId,
@@ -135,24 +147,22 @@ class EditVoucherViewModel(
                 sortOrder = s.entity?.sortOrder ?: 0,
                 isUsed    = s.entity?.isUsed ?: false
             )
-            repo.upsertVoucher(tripId, entity)
-            onDone()
+            runCatching { voucherRepo.upsertVoucher(tripId, entity) }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar voucher")) }
         }
     }
 
-    fun delete(onDone: () -> Unit) {
+    fun delete() {
         if (voucherId == 0L) return
-        viewModelScope.launch { repo.deleteVoucher(voucherId); onDone() }
+        viewModelScope.launch {
+            runCatching { voucherRepo.deleteVoucher(voucherId) }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir voucher")) }
+        }
     }
 
     companion object {
         val DEFAULT_GROUPS = listOf("Hospedagem", "Parques", "Passeios", "Refeições", "Shows", "Transporte")
-
-        fun Factory(repo: TripRepository, tripId: Long, voucherId: Long) =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    EditVoucherViewModel(repo, tripId, voucherId) as T
-            }
     }
 }

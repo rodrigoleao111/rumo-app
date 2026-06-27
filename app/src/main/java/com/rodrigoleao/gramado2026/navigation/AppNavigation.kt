@@ -32,21 +32,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.rodrigoleao.gramado2026.data.db.TravelDatabase
 import com.rodrigoleao.gramado2026.data.model.BoardingPass
 import com.rodrigoleao.gramado2026.data.model.Contact
 import com.rodrigoleao.gramado2026.data.model.TravelDay
 import com.rodrigoleao.gramado2026.data.model.Voucher
-import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.repository.TripData
 import com.rodrigoleao.gramado2026.ui.boarding.BoardingPassScreen
 import com.rodrigoleao.gramado2026.ui.contacts.ContactsScreen
 import com.rodrigoleao.gramado2026.ui.day.DayDetailScreen
@@ -76,13 +74,9 @@ import com.rodrigoleao.gramado2026.ui.trips.TripsListScreen
 import com.rodrigoleao.gramado2026.ui.trips.TripsListViewModel
 import com.rodrigoleao.gramado2026.ui.trips.TripViewModel
 import com.rodrigoleao.gramado2026.ui.vouchers.VouchersScreen
-import com.rodrigoleao.gramado2026.data.preferences.ContactCategoryRepository
-import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
 import com.rodrigoleao.gramado2026.ui.settings.SettingsScreen
 import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
 import androidx.compose.runtime.MutableState
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -133,13 +127,8 @@ private const val ANIM_DURATION = 320
 @Composable
 fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mutableStateOf(null) }) {
     val navController = rememberNavController()
-    val context       = LocalContext.current
-    val db            = remember { TravelDatabase.getInstance(context) }
-    val repo          = remember { TripRepository(db) }
-    val settings      = remember { SettingsRepository(context) }
-    val categoryRepo  = remember { ContactCategoryRepository(context) }
-    val scope         = rememberCoroutineScope()
-    var showEmergencyContacts by remember { mutableStateOf(settings.showEmergencyContacts) }
+    val settingsVm: SettingsViewModel = hiltViewModel()
+    val showEmergencyContacts by settingsVm.showEmergencyContacts.collectAsStateWithLifecycle()
 
     val importUri = importUriState.value
 
@@ -175,12 +164,13 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 
         // ── Lista de viagens (entry point) ───────────────────────────────────
         composable(Screen.TripsList.route) {
-            val vm: TripsListViewModel = viewModel(factory = TripsListViewModel.Factory(repo))
+            val vm: TripsListViewModel = hiltViewModel()
             val trips by vm.trips.collectAsStateWithLifecycle()
+            val autoOpenEnabled by settingsVm.autoOpenActiveTrip.collectAsStateWithLifecycle()
             var autoNavigated by rememberSaveable { mutableStateOf(false) }
 
             LaunchedEffect(trips) {
-                if (!autoNavigated && trips != null && settings.autoOpenActiveTrip) {
+                if (!autoNavigated && trips != null && autoOpenEnabled) {
                     val today = LocalDate.now()
                     val active = trips!!.filter { trip ->
                         val start = runCatching { LocalDate.parse(trip.startDate) }.getOrNull()
@@ -211,20 +201,16 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 
         // ── Configurações ────────────────────────────────────────────────────
         composable(Screen.Settings.route) {
-            val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory(settings))
+            val vm: SettingsViewModel = hiltViewModel()
             SettingsScreen(
                 viewModel = vm,
-                onBack    = {
-                    showEmergencyContacts = settings.showEmergencyContacts
-                    navController.popBackStack()
-                }
+                onBack    = { navController.popBackStack() }
             )
         }
 
         // ── Importar viagem ──────────────────────────────────────────────────
         composable(Screen.ImportTrip.route) {
-            val ctx = LocalContext.current
-            val vm: ImportTripViewModel = viewModel(factory = ImportTripViewModel.Factory(repo, ctx))
+            val vm: ImportTripViewModel = hiltViewModel()
             ImportTripScreen(
                 viewModel   = vm,
                 initialUri  = importUriState.value,
@@ -248,10 +234,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
         composable(
             route     = Screen.ShareTrip.route,
             arguments = listOf(navArgument("tripId") { type = NavType.LongType })
-        ) { entry ->
-            val tripId = entry.arguments!!.getLong("tripId")
-            val ctx    = LocalContext.current
-            val vm: ShareTripViewModel = viewModel(factory = ShareTripViewModel.Factory(repo, tripId, ctx))
+        ) {
+            val vm: ShareTripViewModel = hiltViewModel()
             ShareTripScreen(
                 viewModel = vm,
                 onBack    = { navController.popBackStack() }
@@ -260,7 +244,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 
         // ── Wizard de criação de viagem ──────────────────────────────────────
         composable(Screen.CreateTrip.route) {
-            val vm: CreateTripViewModel = viewModel(factory = CreateTripViewModel.Factory(repo))
+            val vm: CreateTripViewModel = hiltViewModel()
             CreateTripScreen(
                 viewModel     = vm,
                 onBack        = { navController.popBackStack() },
@@ -278,7 +262,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
             arguments = listOf(navArgument("tripId") { type = NavType.LongType })
         ) { entry ->
             val tripId = entry.arguments!!.getLong("tripId")
-            val vm: TripViewModel = viewModel(factory = TripViewModel.Factory(repo, tripId))
+            val vm: TripViewModel = hiltViewModel()
             val tripData by vm.tripData.collectAsStateWithLifecycle()
 
             val refreshKey by entry.savedStateHandle
@@ -286,55 +270,32 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 .collectAsStateWithLifecycle()
             LaunchedEffect(refreshKey) { if (refreshKey > 0L) vm.refresh() }
 
-            // Re-lê a preferência toda vez que esta tela volta ao foco (ON_RESUME do NavBackStackEntry),
-            // garantindo que o toggle de emergência reflita o valor atual mesmo após voltar via swipe.
-            var showEmergencyContactsCurrent by remember { mutableStateOf(settings.showEmergencyContacts) }
-            DisposableEffect(entry) {
-                val observer = LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_RESUME) {
-                        showEmergencyContactsCurrent = settings.showEmergencyContacts
-                    }
-                }
-                entry.lifecycle.addObserver(observer)
-                onDispose { entry.lifecycle.removeObserver(observer) }
-            }
-
-            val tripEntity = tripData?.trip
             MainPagerScreen(
-                tripId         = tripId,
-                tripName       = tripEntity?.name ?: "",
-                days           = tripData?.days           ?: emptyList(),
-                contacts       = tripData?.contacts       ?: emptyList(),
-                vouchers       = tripData?.vouchers       ?: emptyList(),
-                boardingPasses = tripData?.boardingPasses ?: emptyList(),
-                hotelName      = tripEntity?.hotelName    ?: "",
-                hotelAddress   = tripEntity?.hotelAddress ?: "",
-                hotelPhone     = tripEntity?.hotelPhone   ?: "",
-                tripLat        = tripEntity?.latitude,
-                tripLon        = tripEntity?.longitude,
-                tripStartDate  = tripEntity?.startDate,
-                tripEndDate    = tripEntity?.endDate,
-                refreshKey     = refreshKey,
-                onDayClick        = { dayId -> navController.navigate(Screen.DayDetail.createRoute(tripId, dayId)) },
-                onBustourMapClick = { navController.navigate(Screen.BustourMap.route) },
-                onShareTrip       = { navController.navigate(Screen.ShareTrip.createRoute(tripId)) },
-                onEditTrip        = { navController.navigate(Screen.EditTrip.createRoute(tripId)) },
-                onAddContact   = { navController.navigate(Screen.EditContact.createRoute(tripId, 0L)) },
-                onAddVoucher   = { navController.navigate(Screen.EditVoucher.createRoute(tripId, 0L)) },
-                onAddBoardingPass = { navController.navigate(Screen.EditBoardingPass.createRoute(tripId, 0L)) },
-                onEditContact  = { cId -> navController.navigate(Screen.EditContact.createRoute(tripId, cId)) },
-                onEditVoucher  = { vId -> navController.navigate(Screen.EditVoucher.createRoute(tripId, vId)) },
-                onEditBoardingPass = { pId -> navController.navigate(Screen.EditBoardingPass.createRoute(tripId, pId)) },
-                savedVoucherSortMode = tripEntity?.voucherSortMode ?: "BY_CATEGORY",
-                onReorderVouchers    = { ordered -> vm.reorderVouchers(ordered) },
-                onDeleteVoucher      = { vId -> vm.deleteVoucher(vId) },
-                onVoucherSortMode    = { mode -> vm.setVoucherSortMode(mode) },
-                onToggleVoucherUsed  = { vId, used -> vm.toggleVoucherUsed(vId, used) },
-                onDeleteContact      = { cId -> scope.launch { repo.deleteContact(cId); vm.refresh() } },
-                onReorderContacts    = { list -> scope.launch { repo.reorderContacts(list) } },
-                onToggleFavoriteContact = { cId, fav -> scope.launch { repo.toggleFavoriteContact(cId, fav); vm.refresh() } },
-                showEmergencyContacts = showEmergencyContactsCurrent,
-                onBack               = { navController.popBackStack() }
+                state = TripScreenState(
+                    tripData              = tripData,
+                    refreshKey            = refreshKey,
+                    showEmergencyContacts = showEmergencyContacts
+                ),
+                actions = TripScreenActions(
+                    onDayClick          = { dayId -> navController.navigate(Screen.DayDetail.createRoute(tripId, dayId)) },
+                    onBustourMapClick   = { navController.navigate(Screen.BustourMap.route) },
+                    onShareTrip         = { navController.navigate(Screen.ShareTrip.createRoute(tripId)) },
+                    onEditTrip          = { navController.navigate(Screen.EditTrip.createRoute(tripId)) },
+                    onAddContact        = { navController.navigate(Screen.EditContact.createRoute(tripId, 0L)) },
+                    onAddVoucher        = { navController.navigate(Screen.EditVoucher.createRoute(tripId, 0L)) },
+                    onAddBoardingPass   = { navController.navigate(Screen.EditBoardingPass.createRoute(tripId, 0L)) },
+                    onEditContact       = { cId -> navController.navigate(Screen.EditContact.createRoute(tripId, cId)) },
+                    onEditVoucher       = { vId -> navController.navigate(Screen.EditVoucher.createRoute(tripId, vId)) },
+                    onEditBoardingPass  = { pId -> navController.navigate(Screen.EditBoardingPass.createRoute(tripId, pId)) },
+                    onReorderVouchers   = { ordered -> vm.reorderVouchers(ordered) },
+                    onDeleteVoucher     = { vId -> vm.deleteVoucher(vId) },
+                    onVoucherSortMode   = { mode -> vm.setVoucherSortMode(mode) },
+                    onToggleVoucherUsed = { vId, used -> vm.toggleVoucherUsed(vId, used) },
+                    onDeleteContact         = { cId -> vm.deleteContact(cId) },
+                    onReorderContacts       = { list -> vm.reorderContacts(list) },
+                    onToggleFavoriteContact = { cId, fav -> vm.toggleFavoriteContact(cId, fav) },
+                    onBack                  = { navController.popBackStack() }
+                )
             )
         }
 
@@ -348,7 +309,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
         ) { entry ->
             val tripId    = entry.arguments!!.getLong("tripId")
             val dayNumber = entry.arguments!!.getInt("dayId")
-            val vm: TripViewModel = viewModel(factory = TripViewModel.Factory(repo, tripId))
+            val vm: TripViewModel = hiltViewModel()
             val tripData by vm.tripData.collectAsStateWithLifecycle()
 
             val refreshKey by entry.savedStateHandle
@@ -371,20 +332,12 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                     onBustourMapClick = { navController.navigate(Screen.BustourMap.route) },
                     onEditDay         = { navController.navigate(Screen.EditDay.createRoute(tripId, dayNumber)) },
                     onEditActivity    = { actId -> navController.navigate(Screen.EditActivity.createRoute(tripId, dayNumber, actId)) },
-                    onDeleteActivity  = { actId ->
-                        scope.launch {
-                            repo.deleteActivity(actId)
-                            vm.refresh()
-                        }
-                    },
+                    onDeleteActivity  = { actId -> vm.deleteActivity(actId) },
                     onAddActivity     = { navController.navigate(Screen.EditActivity.createRoute(tripId, dayNumber, 0L)) },
                     onMoveActivity    = { from, to ->
                         val acts = day.activities
                         if (from in acts.indices && to in acts.indices) {
-                            scope.launch {
-                                repo.swapActivityPositions(acts[from].id, from, acts[to].id, to)
-                                vm.refresh()
-                            }
+                            vm.swapActivityPositions(acts[from].id, from, acts[to].id, to)
                         }
                     }
                 )
@@ -395,9 +348,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
         composable(
             route     = Screen.EditTrip.route,
             arguments = listOf(navArgument("tripId") { type = NavType.LongType })
-        ) { entry ->
-            val tripId = entry.arguments!!.getLong("tripId")
-            val vm: EditTripViewModel = viewModel(factory = EditTripViewModel.Factory(repo, tripId))
+        ) {
+            val vm: EditTripViewModel = hiltViewModel()
             EditTripScreen(
                 viewModel = vm,
                 onBack    = {
@@ -419,10 +371,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 navArgument("tripId")    { type = NavType.LongType },
                 navArgument("dayNumber") { type = NavType.IntType  }
             )
-        ) { entry ->
-            val tripId    = entry.arguments!!.getLong("tripId")
-            val dayNumber = entry.arguments!!.getInt("dayNumber")
-            val vm: EditDayViewModel = viewModel(factory = EditDayViewModel.Factory(repo, tripId, dayNumber))
+        ) {
+            val vm: EditDayViewModel = hiltViewModel()
             EditDayScreen(
                 viewModel = vm,
                 onBack    = {
@@ -440,11 +390,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 navArgument("dayNumber")  { type = NavType.IntType  },
                 navArgument("activityId") { type = NavType.LongType }
             )
-        ) { entry ->
-            val tripId     = entry.arguments!!.getLong("tripId")
-            val dayNumber  = entry.arguments!!.getInt("dayNumber")
-            val activityId = entry.arguments!!.getLong("activityId")
-            val vm: EditActivityViewModel = viewModel(factory = EditActivityViewModel.Factory(repo, tripId, dayNumber, activityId))
+        ) {
+            val vm: EditActivityViewModel = hiltViewModel()
             EditActivityScreen(
                 viewModel = vm,
                 onBack    = {
@@ -461,10 +408,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 navArgument("tripId")    { type = NavType.LongType },
                 navArgument("contactId") { type = NavType.LongType }
             )
-        ) { entry ->
-            val tripId    = entry.arguments!!.getLong("tripId")
-            val contactId = entry.arguments!!.getLong("contactId")
-            val vm: EditContactViewModel = viewModel(factory = EditContactViewModel.Factory(repo, tripId, contactId, categoryRepo))
+        ) {
+            val vm: EditContactViewModel = hiltViewModel()
             EditContactScreen(
                 viewModel = vm,
                 onBack    = {
@@ -481,10 +426,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 navArgument("tripId")    { type = NavType.LongType },
                 navArgument("voucherId") { type = NavType.LongType }
             )
-        ) { entry ->
-            val tripId    = entry.arguments!!.getLong("tripId")
-            val voucherId = entry.arguments!!.getLong("voucherId")
-            val vm: EditVoucherViewModel = viewModel(factory = EditVoucherViewModel.Factory(repo, tripId, voucherId))
+        ) {
+            val vm: EditVoucherViewModel = hiltViewModel()
             EditVoucherScreen(
                 viewModel = vm,
                 onBack    = {
@@ -501,10 +444,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 navArgument("tripId") { type = NavType.LongType },
                 navArgument("passId") { type = NavType.LongType }
             )
-        ) { entry ->
-            val tripId = entry.arguments!!.getLong("tripId")
-            val passId = entry.arguments!!.getLong("passId")
-            val vm: EditBoardingPassViewModel = viewModel(factory = EditBoardingPassViewModel.Factory(repo, tripId, passId))
+        ) {
+            val vm: EditBoardingPassViewModel = hiltViewModel()
             EditBoardingPassScreen(
                 viewModel = vm,
                 onBack    = {
@@ -521,59 +462,58 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
     }
 }
 
+// ── TRIP SCREEN CONTRACTS ─────────────────────────────────────────────────────
+
+private data class TripScreenState(
+    val tripData: TripData?,
+    val refreshKey: Long,
+    val showEmergencyContacts: Boolean
+)
+
+private data class TripScreenActions(
+    val onDayClick: (Int) -> Unit,
+    val onBustourMapClick: () -> Unit,
+    val onShareTrip: () -> Unit,
+    val onEditTrip: () -> Unit,
+    val onAddContact: () -> Unit,
+    val onAddVoucher: () -> Unit,
+    val onAddBoardingPass: () -> Unit,
+    val onEditContact: (Long) -> Unit,
+    val onEditVoucher: (Long) -> Unit,
+    val onEditBoardingPass: (Long) -> Unit,
+    val onReorderVouchers: (List<Voucher>) -> Unit,
+    val onDeleteVoucher: (Long) -> Unit,
+    val onVoucherSortMode: (VoucherSortMode) -> Unit,
+    val onToggleVoucherUsed: (Long, Boolean) -> Unit,
+    val onDeleteContact: (Long) -> Unit,
+    val onReorderContacts: (List<Contact>) -> Unit,
+    val onToggleFavoriteContact: (Long, Boolean) -> Unit,
+    val onBack: () -> Unit
+)
+
 // ── PAGER DA VIAGEM ───────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MainPagerScreen(
-    tripId: Long,
-    tripName: String = "",
-    days: List<TravelDay>,
-    contacts: List<Contact>,
-    vouchers: List<Voucher>,
-    boardingPasses: List<BoardingPass>,
-    hotelName: String = "",
-    hotelAddress: String = "",
-    hotelPhone: String = "",
-    tripLat: Double? = null,
-    tripLon: Double? = null,
-    tripStartDate: String? = null,
-    tripEndDate: String? = null,
-    refreshKey: Long = 0L,
-    onDayClick: (Int) -> Unit,
-    onBustourMapClick: () -> Unit,
-    onShareTrip: () -> Unit = {},
-    onEditTrip: () -> Unit = {},
-    onAddContact: () -> Unit = {},
-    onAddVoucher: () -> Unit = {},
-    onAddBoardingPass: () -> Unit = {},
-    onEditContact: (Long) -> Unit = {},
-    onEditVoucher: (Long) -> Unit = {},
-    onEditBoardingPass: (Long) -> Unit = {},
-    savedVoucherSortMode: String = "BY_CATEGORY",
-    onReorderVouchers: (List<Voucher>) -> Unit = {},
-    onDeleteVoucher: (Long) -> Unit = {},
-    onVoucherSortMode: (VoucherSortMode) -> Unit = {},
-    onToggleVoucherUsed: (Long, Boolean) -> Unit = { _, _ -> },
-    onDeleteContact: (Long) -> Unit = {},
-    onReorderContacts: (List<Contact>) -> Unit = {},
-    onToggleFavoriteContact: (Long, Boolean) -> Unit = { _, _ -> },
-    showEmergencyContacts: Boolean = true,
-    onBack: () -> Unit = {}
+    state: TripScreenState,
+    actions: TripScreenActions
 ) {
+    val trip              = state.tripData?.trip
     val pagerState        = rememberPagerState(pageCount = { TAB_ICONS.size })
     val coroutineScope    = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior    = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var voucherSortMode   by remember(savedVoucherSortMode) {
+    val savedSortModeStr  = trip?.voucherSortMode ?: "BY_CATEGORY"
+    var voucherSortMode   by remember(savedSortModeStr) {
         mutableStateOf(
-            VoucherSortMode.entries.find { it.name == savedVoucherSortMode } ?: VoucherSortMode.BY_CATEGORY
+            VoucherSortMode.entries.find { it.name == savedSortModeStr } ?: VoucherSortMode.BY_CATEGORY
         )
     }
     var showSortMenu      by remember { mutableStateOf(false) }
 
-    LaunchedEffect(refreshKey) {
-        if (refreshKey > 0L) snackbarHostState.showSnackbar("Alterações salvas ✓")
+    LaunchedEffect(state.refreshKey) {
+        if (state.refreshKey > 0L) snackbarHostState.showSnackbar("Alterações salvas ✓")
     }
 
     Scaffold(
@@ -582,11 +522,11 @@ private fun MainPagerScreen(
             TopAppBar(
                 title = {
                     val titleText = when (pagerState.currentPage) {
-                        0    -> tripName
-                        1    -> "$tripName  •  Vouchers"
-                        2    -> "$tripName  •  Passagens"
-                        3    -> "$tripName  •  Contatos"
-                        else -> tripName
+                        0    -> trip?.name ?: ""
+                        1    -> "${trip?.name ?: ""}  •  Vouchers"
+                        2    -> "${trip?.name ?: ""}  •  Passagens"
+                        3    -> "${trip?.name ?: ""}  •  Contatos"
+                        else -> trip?.name ?: ""
                     }
                     Text(
                         text       = titleText,
@@ -598,7 +538,7 @@ private fun MainPagerScreen(
                 },
                 navigationIcon = {
                     if (pagerState.currentPage == 0) {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = actions.onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Minhas viagens",
@@ -627,25 +567,25 @@ private fun MainPagerScreen(
                                 SortMenuItem(
                                     label    = "Por categoria",
                                     selected = voucherSortMode == VoucherSortMode.BY_CATEGORY,
-                                    onClick  = { voucherSortMode = VoucherSortMode.BY_CATEGORY; onVoucherSortMode(VoucherSortMode.BY_CATEGORY); showSortMenu = false }
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_CATEGORY; actions.onVoucherSortMode(VoucherSortMode.BY_CATEGORY); showSortMenu = false }
                                 )
                                 SortMenuItem(
                                     label    = "Por pessoa",
                                     selected = voucherSortMode == VoucherSortMode.BY_PERSON,
-                                    onClick  = { voucherSortMode = VoucherSortMode.BY_PERSON; onVoucherSortMode(VoucherSortMode.BY_PERSON); showSortMenu = false }
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_PERSON; actions.onVoucherSortMode(VoucherSortMode.BY_PERSON); showSortMenu = false }
                                 )
                                 SortMenuItem(
                                     label    = "Por dia da viagem",
                                     selected = voucherSortMode == VoucherSortMode.BY_DAY,
-                                    onClick  = { voucherSortMode = VoucherSortMode.BY_DAY; onVoucherSortMode(VoucherSortMode.BY_DAY); showSortMenu = false }
+                                    onClick  = { voucherSortMode = VoucherSortMode.BY_DAY; actions.onVoucherSortMode(VoucherSortMode.BY_DAY); showSortMenu = false }
                                 )
                             }
                         }
                     }
-                    IconButton(onClick = onShareTrip) {
+                    IconButton(onClick = actions.onShareTrip) {
                         Icon(Icons.Default.Share, contentDescription = "Compartilhar viagem")
                     }
-                    IconButton(onClick = onEditTrip) {
+                    IconButton(onClick = actions.onEditTrip) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar viagem")
                     }
                 },
@@ -660,9 +600,9 @@ private fun MainPagerScreen(
         },
         floatingActionButton = {
             val fabAction: (() -> Unit)? = when (pagerState.currentPage) {
-                1    -> onAddVoucher
-                2    -> onAddBoardingPass
-                3    -> onAddContact
+                1    -> actions.onAddVoucher
+                2    -> actions.onAddBoardingPass
+                3    -> actions.onAddContact
                 else -> null
             }
             fabAction?.let { action ->
@@ -726,10 +666,41 @@ private fun MainPagerScreen(
             beyondViewportPageCount = 1
         ) { page ->
             when (page) {
-                0 -> HomeScreen(days = days, hotelName = hotelName, hotelAddress = hotelAddress, hotelPhone = hotelPhone, tripLat = tripLat, tripLon = tripLon, tripStartDate = tripStartDate, tripEndDate = tripEndDate, contentPadding = innerPadding, onDayClick = onDayClick)
-                1 -> VouchersScreen(vouchers = vouchers, contentPadding = innerPadding, sortMode = voucherSortMode, onEditVoucher = onEditVoucher, onReorderVouchers = onReorderVouchers, onDeleteVoucher = onDeleteVoucher, onToggleUsed = onToggleVoucherUsed)
-                2 -> BoardingPassScreen(passes = boardingPasses, contentPadding = innerPadding, onEditBoardingPass = onEditBoardingPass)
-                3 -> ContactsScreen(contacts = contacts, contentPadding = innerPadding, onEditContact = onEditContact, onDeleteContact = onDeleteContact, onReorderContacts = onReorderContacts, onToggleFavoriteContact = onToggleFavoriteContact, showEmergencyContacts = showEmergencyContacts)
+                0 -> HomeScreen(
+                    days          = state.tripData?.days ?: emptyList(),
+                    hotelName     = trip?.hotelName ?: "",
+                    hotelAddress  = trip?.hotelAddress ?: "",
+                    hotelPhone    = trip?.hotelPhone ?: "",
+                    tripLat       = trip?.latitude,
+                    tripLon       = trip?.longitude,
+                    tripStartDate = trip?.startDate,
+                    tripEndDate   = trip?.endDate,
+                    contentPadding = innerPadding,
+                    onDayClick    = actions.onDayClick
+                )
+                1 -> VouchersScreen(
+                    vouchers          = state.tripData?.vouchers ?: emptyList(),
+                    contentPadding    = innerPadding,
+                    sortMode          = voucherSortMode,
+                    onEditVoucher     = actions.onEditVoucher,
+                    onReorderVouchers = actions.onReorderVouchers,
+                    onDeleteVoucher   = actions.onDeleteVoucher,
+                    onToggleUsed      = actions.onToggleVoucherUsed
+                )
+                2 -> BoardingPassScreen(
+                    passes             = state.tripData?.boardingPasses ?: emptyList(),
+                    contentPadding     = innerPadding,
+                    onEditBoardingPass = actions.onEditBoardingPass
+                )
+                3 -> ContactsScreen(
+                    contacts                = state.tripData?.contacts ?: emptyList(),
+                    contentPadding          = innerPadding,
+                    onEditContact           = actions.onEditContact,
+                    onDeleteContact         = actions.onDeleteContact,
+                    onReorderContacts       = actions.onReorderContacts,
+                    onToggleFavoriteContact = actions.onToggleFavoriteContact,
+                    showEmergencyContacts   = state.showEmergencyContacts
+                )
                 else -> Box(Modifier.fillMaxSize())
             }
         }

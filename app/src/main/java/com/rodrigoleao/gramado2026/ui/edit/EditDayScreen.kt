@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
 
@@ -61,7 +62,23 @@ fun EditDayScreen(
         viewModel.updateDocument(destFile.absolutePath, fileName)
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.NavigateBack -> onBack()
+                is UiEvent.NavigateAfterDelete -> onBack()
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -73,7 +90,7 @@ fun EditDayScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.save(onBack) }, enabled = canSave && !state.isSaving) {
+                    IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
                         Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
                     }
                 },
@@ -210,7 +227,7 @@ fun EditDayScreen(
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick  = { viewModel.save(onBack) },
+                onClick  = { viewModel.save() },
                 enabled  = canSave && !state.isSaving,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape    = RoundedCornerShape(14.dp),

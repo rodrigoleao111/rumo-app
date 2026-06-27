@@ -1,38 +1,32 @@
 package com.rodrigoleao.gramado2026.ui.settings
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.preferences.SettingsRepository
-import kotlinx.coroutines.flow.MutableStateFlow
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository
 ) : ViewModel() {
 
-    private val _autoOpenActiveTrip = MutableStateFlow(settings.autoOpenActiveTrip)
-    val autoOpenActiveTrip: StateFlow<Boolean> = _autoOpenActiveTrip.asStateFlow()
+    val autoOpenActiveTrip: StateFlow<Boolean> = settings.autoOpenActiveTrip
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val showEmergencyContacts: StateFlow<Boolean> = settings.showEmergencyContacts
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     fun setAutoOpenActiveTrip(enabled: Boolean) {
-        settings.autoOpenActiveTrip = enabled
-        _autoOpenActiveTrip.value = enabled
+        viewModelScope.launch { settings.setAutoOpenActiveTrip(enabled) }
     }
-
-    private val _showEmergencyContacts = MutableStateFlow(settings.showEmergencyContacts)
-    val showEmergencyContacts: StateFlow<Boolean> = _showEmergencyContacts.asStateFlow()
 
     fun setShowEmergencyContacts(enabled: Boolean) {
-        settings.showEmergencyContacts = enabled
-        _showEmergencyContacts.value = enabled
+        viewModelScope.launch { settings.setShowEmergencyContacts(enabled) }
     }
 
-    companion object {
-        fun Factory(settings: SettingsRepository) =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    SettingsViewModel(settings) as T
-            }
-    }
 }

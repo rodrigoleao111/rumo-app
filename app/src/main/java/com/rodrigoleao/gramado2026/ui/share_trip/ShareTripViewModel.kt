@@ -1,16 +1,16 @@
 package com.rodrigoleao.gramado2026.ui.share_trip
 
-import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.export.TravelExporter
-import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed class SharePhase {
     object Idle      : SharePhase()
@@ -19,13 +19,13 @@ sealed class SharePhase {
     data class Error(val message: String) : SharePhase()
 }
 
-class ShareTripViewModel(
-    private val tripId: Long,
-    private val repo: TripRepository,
-    appContext: Context
+@HiltViewModel
+class ShareTripViewModel @Inject constructor(
+    private val exporter: TravelExporter,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val exporter = TravelExporter(appContext, repo)
+    private val tripId: Long = checkNotNull(savedStateHandle["tripId"])
 
     private val _phase = MutableStateFlow<SharePhase>(SharePhase.Idle)
     val phase: StateFlow<SharePhase> = _phase.asStateFlow()
@@ -45,12 +45,4 @@ class ShareTripViewModel(
     fun clearReady() { _phase.value = SharePhase.Idle }
     fun dismissError() { _phase.value = SharePhase.Idle }
 
-    companion object {
-        fun Factory(repo: TripRepository, tripId: Long, context: Context) =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    ShareTripViewModel(tripId, repo, context.applicationContext) as T
-            }
-    }
 }

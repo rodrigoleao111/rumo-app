@@ -1,17 +1,22 @@
 package com.rodrigoleao.gramado2026.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.BoardingPassEntity
-import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.repository.BoardingPassRepository
+import com.rodrigoleao.gramado2026.data.model.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class PassInputMode { LINK, FILE }
 
@@ -35,14 +40,20 @@ data class EditBoardingPassState(
     val isSaving: Boolean = false
 )
 
-class EditBoardingPassViewModel(
-    private val repo: TripRepository,
-    private val tripId: Long,
-    private val passId: Long
+@HiltViewModel
+class EditBoardingPassViewModel @Inject constructor(
+    private val repo: BoardingPassRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: Long = checkNotNull(savedStateHandle["tripId"])
+    private val passId: Long = checkNotNull(savedStateHandle["passId"])
 
     private val _state = MutableStateFlow(EditBoardingPassState())
     val state: StateFlow<EditBoardingPassState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     val isDirty: StateFlow<Boolean> = _state.map { s ->
         val e = s.entity ?: return@map s.origin.isNotBlank() || s.destination.isNotBlank() || s.passenger.isNotBlank()
@@ -62,8 +73,8 @@ class EditBoardingPassViewModel(
                 val e = repo.getBoardingPassEntity(passId)
                 val hasFile = !e?.documentPath.isNullOrBlank()
                 _state.value = EditBoardingPassState(
-                    entity        = e,
-                    transportType = e?.transportType ?: "FLIGHT",
+                    entity          = e,
+                    transportType   = e?.transportType ?: "FLIGHT",
                     origin          = e?.origin ?: "",
                     originCity      = e?.originCity ?: "",
                     destination     = e?.destination ?: "",
@@ -88,7 +99,6 @@ class EditBoardingPassViewModel(
         val wasFlight = s.transportType == "FLIGHT"
         val isFlight  = v == "FLIGHT"
         _state.value = when {
-            // Voo → não-voo: mescla sigla na cidade para não perder o que foi digitado
             wasFlight && !isFlight -> s.copy(
                 transportType = v,
                 origin      = s.originCity.ifBlank { s.origin },
@@ -96,7 +106,6 @@ class EditBoardingPassViewModel(
                 destination      = s.destinationCity.ifBlank { s.destination },
                 destinationCity  = s.destinationCity.ifBlank { s.destination }
             )
-            // Não-voo → voo: limpa siglas para o usuário preencher corretamente
             !wasFlight && isFlight -> s.copy(
                 transportType = v,
                 origin      = "",
@@ -106,13 +115,10 @@ class EditBoardingPassViewModel(
         }
     }
 
-    // Voo: atualiza só a sigla
     fun updateOrigin(v: String)          { _state.value = _state.value.copy(origin = v.uppercase().take(3)) }
     fun updateOriginCity(v: String)      { _state.value = _state.value.copy(originCity = v) }
     fun updateDestination(v: String)     { _state.value = _state.value.copy(destination = v.uppercase().take(3)) }
     fun updateDestinationCity(v: String) { _state.value = _state.value.copy(destinationCity = v) }
-
-    // Não-voo: campo único → grava em origin E originCity (idem para destino)
     fun updateOriginSingle(v: String)      { _state.value = _state.value.copy(origin = v, originCity = v) }
     fun updateDestinationSingle(v: String) { _state.value = _state.value.copy(destination = v, destinationCity = v) }
     fun updateFlightNumber(v: String)    { _state.value = _state.value.copy(flightNumber = v) }
@@ -125,7 +131,7 @@ class EditBoardingPassViewModel(
     fun clearFile()                      { _state.value = _state.value.copy(documentPath = "", documentName = "") }
     fun updateNotes(v: String)           { _state.value = _state.value.copy(notes = v) }
 
-    fun save(onDone: () -> Unit) {
+    fun save() {
         val s = _state.value
         if (s.origin.isBlank() || s.destination.isBlank() || s.passenger.isBlank()) return
         _state.value = s.copy(isSaving = true)
@@ -147,22 +153,18 @@ class EditBoardingPassViewModel(
                 documentName    = if (s.inputMode == PassInputMode.FILE) s.documentName else "",
                 notes           = s.notes.trim()
             )
-            repo.upsertBoardingPass(tripId, entity)
-            onDone()
+            runCatching { repo.upsertBoardingPass(tripId, entity) }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar passagem")) }
         }
     }
 
-    fun delete(onDone: () -> Unit) {
+    fun delete() {
         if (passId == 0L) return
-        viewModelScope.launch { repo.deleteBoardingPass(passId); onDone() }
-    }
-
-    companion object {
-        fun Factory(repo: TripRepository, tripId: Long, passId: Long) =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    EditBoardingPassViewModel(repo, tripId, passId) as T
-            }
+        viewModelScope.launch {
+            runCatching { repo.deleteBoardingPass(passId) }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir passagem")) }
+        }
     }
 }

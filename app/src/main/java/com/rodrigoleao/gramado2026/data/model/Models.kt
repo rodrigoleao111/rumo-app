@@ -2,6 +2,22 @@ package com.rodrigoleao.gramado2026.data.model
 
 import java.time.LocalDate
 
+// ── TRIP ─────────────────────────────────────────────────────────────────
+data class Trip(
+    val id: Long,
+    val name: String,
+    val destination: String,
+    val coverEmoji: String,
+    val hotelName: String,
+    val hotelAddress: String,
+    val hotelPhone: String,
+    val startDate: String?,
+    val endDate: String?,
+    val latitude: Double?,
+    val longitude: Double?,
+    val voucherSortMode: String
+)
+
 // ── BADGES ──────────────────────────────────────────────────────────────
 enum class BadgeType { FREE, PAID, BOOKED, INCLUDED, UBER, WALKING, CUSTOM }
 
@@ -112,3 +128,7 @@ data class Voucher(
     val sortOrder: Int = 0,
     val isUsed: Boolean = false
 )
+
+fun List<Voucher>.reindexedByGroup(): List<Voucher> =
+    groupBy { it.groupName }
+        .flatMap { (_, items) -> items.mapIndexed { i, v -> v.copy(sortOrder = i) } }

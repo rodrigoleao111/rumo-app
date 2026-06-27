@@ -4,6 +4,23 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
 import com.rodrigoleao.gramado2026.data.model.*
 import java.time.LocalDate
 
+// ── TripEntity → Domain ──────────────────────────────────────────────────────
+
+fun TripEntity.toDomain(): Trip = Trip(
+    id              = id,
+    name            = name,
+    destination     = destination,
+    coverEmoji      = coverEmoji,
+    hotelName       = hotelName,
+    hotelAddress    = hotelAddress,
+    hotelPhone      = hotelPhone,
+    startDate       = startDate,
+    endDate         = endDate,
+    latitude        = latitude,
+    longitude       = longitude,
+    voucherSortMode = voucherSortMode
+)
+
 // ── Domain → Entity (usados no seeder) ───────────────────────────────────────
 
 fun TravelDay.toEntity(tripId: Long): TravelDayEntity = TravelDayEntity(

@@ -9,10 +9,18 @@ import com.rodrigoleao.gramado2026.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
 import com.rodrigoleao.gramado2026.data.db.entity.WalkStopEntity
 import com.rodrigoleao.gramado2026.data.model.BadgeType
+import com.rodrigoleao.gramado2026.data.repository.ActivityRepository
+import com.rodrigoleao.gramado2026.data.repository.BoardingPassRepository
+import com.rodrigoleao.gramado2026.data.repository.ContactRepository
+import com.rodrigoleao.gramado2026.data.repository.DayRepository
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.repository.VoucherRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONObject
 import java.io.File
 import java.util.zip.ZipInputStream
+import javax.inject.Inject
+import javax.inject.Singleton
 
 // ── Estruturas de dados do export ─────────────────────────────────────────────
 
@@ -111,9 +119,15 @@ private data class ExportedContact(
 
 // ── Importer ──────────────────────────────────────────────────────────────────
 
-class TravelImporter(
-    private val context: Context,
-    private val repo: TripRepository
+@Singleton
+class TravelImporter @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val tripRepo: TripRepository,
+    private val dayRepo: DayRepository,
+    private val activityRepo: ActivityRepository,
+    private val contactRepo: ContactRepository,
+    private val voucherRepo: VoucherRepository,
+    private val boardingPassRepo: BoardingPassRepository
 ) {
 
     /** Importa a viagem completa para o banco e retorna o novo tripId. */
@@ -128,7 +142,7 @@ class TravelImporter(
             throw Exception("Arquivo inválido: datas ausentes.")
 
         // Cria a viagem e os dias no banco
-        val tripId = repo.createTrip(
+        val tripId = tripRepo.createTrip(
             name         = exported.name,
             destination  = exported.destination,
             coverEmoji   = exported.coverEmoji,
@@ -143,7 +157,7 @@ class TravelImporter(
 
         // Grava preferência de agrupamento de vouchers
         if (exported.voucherSortMode != "BY_CATEGORY") {
-            repo.saveVoucherSortMode(tripId, exported.voucherSortMode)
+            tripRepo.saveVoucherSortMode(tripId, exported.voucherSortMode)
         }
 
         // Copia documentos para filesDir/Arquivos/
@@ -157,12 +171,12 @@ class TravelImporter(
 
         // Atualiza cada dia com título, alerta, link e atividades
         for (expDay in exported.days) {
-            val dayEntity = repo.getDayEntity(tripId, expDay.dayNumber) ?: continue
+            val dayEntity = dayRepo.getDayEntity(tripId, expDay.dayNumber) ?: continue
 
             val docPath = expDay.documentName?.let { docPaths[it] }
             val docName = expDay.documentName
 
-            repo.updateDay(dayEntity.copy(
+            dayRepo.updateDay(dayEntity.copy(
                 title             = expDay.title,
                 dayAlert          = expDay.dayAlert,
                 dayLinkUrl        = expDay.linkUrl,
@@ -173,7 +187,7 @@ class TravelImporter(
             ))
 
             for (expAct in expDay.activities.sortedBy { it.position }) {
-                val actId = repo.upsertActivity(
+                val actId = activityRepo.upsertActivity(
                     dayEntityId = dayEntity.id,
                     entity      = TravelActivityEntity(
                         dayId           = dayEntity.id,
@@ -197,7 +211,7 @@ class TravelImporter(
                     }
                 )
                 expAct.walkStops.forEach { stop ->
-                    repo.insertWalkStop(WalkStopEntity(
+                    activityRepo.insertWalkStop(WalkStopEntity(
                         activityId = actId,
                         position   = stop.order,
                         emoji      = stop.emoji,
@@ -214,7 +228,7 @@ class TravelImporter(
             val isBuiltinType = com.rodrigoleao.gramado2026.data.model.ContactType.entries
                 .any { it.name == expContact.type && it != com.rodrigoleao.gramado2026.data.model.ContactType.CUSTOM }
 
-            repo.upsertContact(
+            contactRepo.upsertContact(
                 tripId = tripId,
                 entity = ContactEntity(
                     tripId         = tripId,
@@ -242,7 +256,7 @@ class TravelImporter(
                 dest.absolutePath
             } ?: expVoucher.assetPath
 
-            repo.upsertVoucher(
+            voucherRepo.upsertVoucher(
                 tripId = tripId,
                 entity = VoucherEntity(
                     tripId    = tripId,
@@ -269,7 +283,7 @@ class TravelImporter(
                 }
             } else null
 
-            repo.upsertBoardingPass(
+            boardingPassRepo.upsertBoardingPass(
                 tripId = tripId,
                 entity = BoardingPassEntity(
                     tripId          = tripId,

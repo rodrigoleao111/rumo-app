@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.db.entity.TripEntity
+import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -63,6 +64,15 @@ fun TripsListScreen(
     val activity = LocalContext.current as? Activity
 
     BackHandler { showExitDialog = true }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> snackbarHost.showSnackbar(event.message)
+                else -> Unit
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = {

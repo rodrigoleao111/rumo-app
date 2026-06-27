@@ -1,18 +1,23 @@
 package com.rodrigoleao.gramado2026.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.TravelDayEntity
-import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.repository.DayRepository
+import com.rodrigoleao.gramado2026.data.model.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
 data class EditDayState(
     val entity: TravelDayEntity? = null,
@@ -26,14 +31,20 @@ data class EditDayState(
     val isSaving: Boolean = false
 )
 
-class EditDayViewModel(
-    private val repo: TripRepository,
-    private val tripId: Long,
-    private val dayNumber: Int
+@HiltViewModel
+class EditDayViewModel @Inject constructor(
+    private val repo: DayRepository,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val tripId: Long = checkNotNull(savedStateHandle["tripId"])
+    private val dayNumber: Int = checkNotNull(savedStateHandle["dayNumber"])
 
     private val _state = MutableStateFlow(EditDayState())
     val state: StateFlow<EditDayState> = _state.asStateFlow()
+
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     val isDirty: StateFlow<Boolean> = _state.map { s ->
         val e = s.entity ?: return@map false
@@ -73,29 +84,24 @@ class EditDayViewModel(
         _state.value = _state.value.copy(dayDocumentPath = "", dayDocumentName = "", dayDocumentTitle = "")
     }
 
-    fun save(onDone: () -> Unit) {
+    fun save() {
         val s = _state.value
         val e = s.entity ?: return
         _state.value = s.copy(isSaving = true)
         viewModelScope.launch {
-            repo.updateDay(e.copy(
-                title           = s.title.trim(),
-                dayAlert        = s.dayAlert.trim().ifEmpty { null },
-                dayLinkUrl      = s.dayLinkUrl.trim().ifEmpty { null },
-                dayLinkLabel    = s.dayLinkLabel.trim(),
-                dayDocumentPath  = s.dayDocumentPath.trim().ifEmpty { null },
-                dayDocumentName  = s.dayDocumentName.trim(),
-                dayDocumentTitle = s.dayDocumentTitle.trim()
-            ))
-            onDone()
-        }
-    }
-
-    companion object {
-        fun Factory(repo: TripRepository, tripId: Long, dayNumber: Int) = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                EditDayViewModel(repo, tripId, dayNumber) as T
+            runCatching {
+                repo.updateDay(e.copy(
+                    title           = s.title.trim(),
+                    dayAlert        = s.dayAlert.trim().ifEmpty { null },
+                    dayLinkUrl      = s.dayLinkUrl.trim().ifEmpty { null },
+                    dayLinkLabel    = s.dayLinkLabel.trim(),
+                    dayDocumentPath  = s.dayDocumentPath.trim().ifEmpty { null },
+                    dayDocumentName  = s.dayDocumentName.trim(),
+                    dayDocumentTitle = s.dayDocumentTitle.trim()
+                ))
+            }
+                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar dia")) }
         }
     }
 }

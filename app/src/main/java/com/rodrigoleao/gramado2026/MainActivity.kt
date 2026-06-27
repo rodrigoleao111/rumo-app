@@ -14,9 +14,11 @@ import com.rodrigoleao.gramado2026.data.seeder.DatabaseSeeder
 import com.rodrigoleao.gramado2026.navigation.AppNavigation
 import com.rodrigoleao.gramado2026.notifications.NotificationHelper
 import com.rodrigoleao.gramado2026.ui.theme.GramadoTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     // Estado reativo: atualizado tanto em onCreate (intent inicial) quanto em onNewIntent

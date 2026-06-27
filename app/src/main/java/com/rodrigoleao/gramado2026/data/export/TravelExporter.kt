@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.rodrigoleao.gramado2026.data.model.*
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -12,9 +13,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TravelExporter(
-    private val context: Context,
+@Singleton
+class TravelExporter @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repo: TripRepository
 ) {
 

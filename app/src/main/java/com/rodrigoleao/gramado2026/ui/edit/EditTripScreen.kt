@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 
 private val EMOJI_OPTIONS = listOf(
@@ -43,7 +44,23 @@ fun EditTripScreen(
 
     val canSave = state.name.isNotBlank() && state.destination.isNotBlank() && state.coverEmoji.isNotEmpty()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.NavigateBack -> onBack()
+                is UiEvent.NavigateAfterDelete -> onDeleted()
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -62,7 +79,7 @@ fun EditTripScreen(
                         Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White.copy(alpha = 0.85f))
                     }
                     IconButton(
-                        onClick = { viewModel.save(onBack) },
+                        onClick = { viewModel.save() },
                         enabled = canSave && !state.isSaving
                     ) {
                         Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
@@ -177,7 +194,7 @@ fun EditTripScreen(
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick  = { viewModel.save(onBack) },
+                onClick  = { viewModel.save() },
                 enabled  = canSave && !state.isSaving,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape    = RoundedCornerShape(14.dp),
@@ -197,7 +214,7 @@ fun EditTripScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
-                    viewModel.deleteTrip(onDeleted)
+                    viewModel.deleteTrip()
                 }) { Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {

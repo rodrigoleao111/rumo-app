@@ -1,11 +1,11 @@
 package com.rodrigoleao.gramado2026.ui.trips
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.BuildConfig
 import com.rodrigoleao.gramado2026.data.ai.ItineraryGenerator
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
+import com.rodrigoleao.gramado2026.data.usecase.SaveGeneratedItineraryUseCase
 import com.rodrigoleao.gramado2026.data.weather.GeocodingResult
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
 import kotlinx.coroutines.Job
@@ -17,8 +17,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import javax.inject.Inject
 
 // ── Wizard form ───────────────────────────────────────────────────────────────
 
@@ -49,7 +51,11 @@ enum class ChatPhase { CHOOSING, CHATTING, IMPORTING, GENERATING, PREVIEW, SAVIN
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class CreateTripViewModel(private val repo: TripRepository) : ViewModel() {
+@HiltViewModel
+class CreateTripViewModel @Inject constructor(
+    private val repo: TripRepository,
+    private val saveItineraryUseCase: SaveGeneratedItineraryUseCase
+) : ViewModel() {
 
     // ── Wizard form state ─────────────────────────────────────────────────────
 
@@ -338,7 +344,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         val days   = _generatedDays.value
         _chatPhase.value = ChatPhase.SAVING
         viewModelScope.launch {
-            repo.saveGeneratedItinerary(tripId, days)
+            saveItineraryUseCase(tripId, days)
             _readyToNavigate.value = true
         }
     }
@@ -377,11 +383,4 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         }
     }
 
-    companion object {
-        fun Factory(repo: TripRepository) = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                CreateTripViewModel(repo) as T
-        }
-    }
 }

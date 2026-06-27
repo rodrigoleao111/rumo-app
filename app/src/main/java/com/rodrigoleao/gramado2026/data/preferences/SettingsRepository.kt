@@ -1,22 +1,34 @@
 package com.rodrigoleao.gramado2026.data.preferences
 
 import android.content.Context
-import androidx.core.content.edit
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-class SettingsRepository(context: Context) {
+val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "rumo_settings")
 
-    private val prefs = context.getSharedPreferences("rumo_settings", Context.MODE_PRIVATE)
+class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
-    var autoOpenActiveTrip: Boolean
-        get()      = prefs.getBoolean(KEY_AUTO_OPEN, true)
-        set(value) = prefs.edit { putBoolean(KEY_AUTO_OPEN, value) }
+    val autoOpenActiveTrip: Flow<Boolean> = dataStore.data
+        .map { it[KEY_AUTO_OPEN] ?: true }
 
-    var showEmergencyContacts: Boolean
-        get()      = prefs.getBoolean(KEY_EMERGENCY_CONTACTS, true)
-        set(value) = prefs.edit { putBoolean(KEY_EMERGENCY_CONTACTS, value) }
+    val showEmergencyContacts: Flow<Boolean> = dataStore.data
+        .map { it[KEY_EMERGENCY_CONTACTS] ?: true }
+
+    suspend fun setAutoOpenActiveTrip(enabled: Boolean) {
+        dataStore.edit { it[KEY_AUTO_OPEN] = enabled }
+    }
+
+    suspend fun setShowEmergencyContacts(enabled: Boolean) {
+        dataStore.edit { it[KEY_EMERGENCY_CONTACTS] = enabled }
+    }
 
     companion object {
-        private const val KEY_AUTO_OPEN           = "auto_open_active_trip"
-        private const val KEY_EMERGENCY_CONTACTS  = "show_emergency_contacts"
+        private val KEY_AUTO_OPEN          = booleanPreferencesKey("auto_open_active_trip")
+        private val KEY_EMERGENCY_CONTACTS = booleanPreferencesKey("show_emergency_contacts")
     }
 }
