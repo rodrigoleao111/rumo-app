@@ -18,7 +18,9 @@ fun TripEntity.toDomain(): Trip = Trip(
     endDate         = endDate,
     latitude        = latitude,
     longitude       = longitude,
-    voucherSortMode = voucherSortMode
+    voucherSortMode = voucherSortMode,
+    tripUuid        = tripUuid,
+    lastEditedAt    = lastEditedAt
 )
 
 // ── Domain → Entity (usados no seeder) ───────────────────────────────────────

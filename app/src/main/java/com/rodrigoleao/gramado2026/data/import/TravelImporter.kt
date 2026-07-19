@@ -9,10 +9,12 @@ import com.rodrigoleao.gramado2026.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
 import com.rodrigoleao.gramado2026.data.db.entity.WalkStopEntity
 import com.rodrigoleao.gramado2026.data.model.BadgeType
+import com.rodrigoleao.gramado2026.data.model.DuplicateTripException
 import com.rodrigoleao.gramado2026.data.repository.ActivityRepository
 import com.rodrigoleao.gramado2026.data.repository.BoardingPassRepository
 import com.rodrigoleao.gramado2026.data.repository.ContactRepository
 import com.rodrigoleao.gramado2026.data.repository.DayRepository
+import com.rodrigoleao.gramado2026.data.repository.TripData
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.repository.VoucherRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +28,8 @@ import javax.inject.Singleton
 
 private data class ExportedTrip(
     val schemaVersion: Int,
+    val tripUuid: String,          // F1 — vazio em arquivos v1
+    val lastEditedAt: Long,        // F1 — 0 em arquivos v1
     val name: String,
     val destination: String,
     val coverEmoji: String,
@@ -130,9 +134,52 @@ class TravelImporter @Inject constructor(
     private val boardingPassRepo: BoardingPassRepository
 ) {
 
-    /** Importa a viagem completa para o banco e retorna o novo tripId. */
+    /**
+     * Importa a viagem como uma nova entrada no banco e retorna o novo tripId.
+     *
+     * F1: se o `tripUuid` do arquivo já existir no banco, lança [DuplicateTripException]
+     * (o ViewModel decide entre manter local e sobrescrever via [overwriteImport]).
+     * UUID vazio (arquivos v1) nunca casa — importação normal.
+     */
     suspend fun import(uri: Uri): Long {
         val parsed = parseZip(uri)
+        val exported = parsed.trip
+
+        tripRepo.findByUuid(exported.tripUuid)?.let { existing ->
+            throw DuplicateTripException(
+                existingTripId       = existing.id,
+                existingTripName     = existing.name,
+                existingLastEditedAt = existing.lastEditedAt,
+                incomingLastEditedAt = exported.lastEditedAt
+            )
+        }
+
+        return writeToDb(parsed)
+    }
+
+    /**
+     * F1: sobrescreve a viagem local `existingTripId` pelo conteúdo de `uri`.
+     *
+     * Ordem deliberada (mais segura que delete-antes-de-inserir): importa a nova
+     * viagem PRIMEIRO; só depois remove a antiga. Se a importação falhar, a viagem
+     * local permanece intacta (UC-F1-10). Ao final, remove do disco apenas os
+     * arquivos da viagem antiga que a nova não reutiliza.
+     */
+    suspend fun overwriteImport(uri: Uri, existingTripId: Long): Long {
+        val oldPaths = collectManagedFilePaths(tripRepo.getTripData(existingTripId))
+
+        val newTripId = writeToDb(parseZip(uri))   // pode lançar → antiga preservada
+
+        tripRepo.getTripEntity(existingTripId)?.let { tripRepo.deleteTrip(it) }
+
+        val newPaths = collectManagedFilePaths(tripRepo.getTripData(newTripId))
+        (oldPaths - newPaths).forEach { runCatching { File(it).delete() } }
+
+        return newTripId
+    }
+
+    /** Insere a viagem parseada como nova entrada. Não faz detecção de duplicata. */
+    private suspend fun writeToDb(parsed: ParsedZip): Long {
         val exported     = parsed.trip
         val documents    = parsed.documents
         val voucherFiles = parsed.voucherFiles
@@ -141,7 +188,8 @@ class TravelImporter @Inject constructor(
         if (exported.startDate == null || exported.endDate == null)
             throw Exception("Arquivo inválido: datas ausentes.")
 
-        // Cria a viagem e os dias no banco
+        // Cria a viagem e os dias no banco.
+        // F1: preserva UUID/timestamp do arquivo (v2); arquivos v1 (uuid vazio) geram novo UUID.
         val tripId = tripRepo.createTrip(
             name         = exported.name,
             destination  = exported.destination,
@@ -152,7 +200,9 @@ class TravelImporter @Inject constructor(
             longitude    = exported.longitude,
             hotelName    = exported.hotelName,
             hotelAddress = exported.hotelAddress,
-            hotelPhone   = exported.hotelPhone
+            hotelPhone   = exported.hotelPhone,
+            tripUuid     = exported.tripUuid.ifBlank { null },
+            lastEditedAt = exported.lastEditedAt.takeIf { it > 0L }
         )
 
         // Grava preferência de agrupamento de vouchers
@@ -305,6 +355,19 @@ class TravelImporter @Inject constructor(
         }
 
         return tripId
+    }
+
+    // Coleta os caminhos de arquivo gerenciados pelo app (dentro de filesDir) que
+    // pertencem a uma viagem — documentos de dia, vouchers salvos e docs de passagem.
+    // Ignora URLs/links e caminhos fora do sandbox, para nunca apagar algo externo.
+    private fun collectManagedFilePaths(data: TripData?): Set<String> {
+        if (data == null) return emptySet()
+        val base = context.filesDir.absolutePath
+        val paths = mutableSetOf<String>()
+        data.days.forEach { d -> d.dayDocumentPath?.let { if (it.startsWith(base)) paths += it } }
+        data.vouchers.forEach { v -> if (v.assetPath.startsWith(base)) paths += v.assetPath }
+        data.boardingPasses.forEach { p -> p.documentPath?.let { if (it.startsWith(base)) paths += it } }
+        return paths
     }
 
     // ── Parser ────────────────────────────────────────────────────────────────
@@ -471,6 +534,8 @@ class TravelImporter @Inject constructor(
 
         return ExportedTrip(
             schemaVersion = schemaVer,
+            tripUuid      = trip.optString("tripUuid").let { if (it == "null") "" else it },
+            lastEditedAt  = trip.optLong("lastEditedAt", 0L),
             name          = trip.getString("name"),
             destination   = trip.getString("destination"),
             coverEmoji    = trip.optString("coverEmoji", "✈️"),
@@ -490,6 +555,6 @@ class TravelImporter @Inject constructor(
     }
 
     companion object {
-        private const val SUPPORTED_SCHEMA_VERSION = 1
+        private const val SUPPORTED_SCHEMA_VERSION = 2   // F1: tripUuid + lastEditedAt
     }
 }

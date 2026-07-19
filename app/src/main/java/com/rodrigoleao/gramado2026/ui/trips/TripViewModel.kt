@@ -50,6 +50,7 @@ class TripViewModel @Inject constructor(
         val remaining = _tripData.value?.vouchers?.filter { it.id != voucherId } ?: return
         _tripData.update { it?.copy(vouchers = remaining.reindexedByGroup()) }
         viewModelScope.launch { voucherRepo.deleteVoucherAndReindex(voucherId, tripId) }
+        touch()
     }
 
     fun toggleVoucherUsed(voucherId: Long, isUsed: Boolean) {
@@ -59,11 +60,13 @@ class TripViewModel @Inject constructor(
             })
         }
         viewModelScope.launch { voucherRepo.toggleVoucherUsed(voucherId, isUsed) }
+        touch()
     }
 
     fun reorderVouchers(ordered: List<Voucher>) {
         _tripData.update { it?.copy(vouchers = ordered) }
         viewModelScope.launch { voucherRepo.reorderVouchers(ordered) }
+        touch()
     }
 
     // ── Contatos ──────────────────────────────────────────────────────────────
@@ -73,11 +76,13 @@ class TripViewModel @Inject constructor(
             data?.copy(contacts = data.contacts.filter { it.id != contactId })
         }
         viewModelScope.launch { contactRepo.deleteContact(contactId) }
+        touch()
     }
 
     fun reorderContacts(contacts: List<Contact>) {
         _tripData.update { it?.copy(contacts = contacts) }
         viewModelScope.launch { contactRepo.reorderContacts(contacts) }
+        touch()
     }
 
     fun toggleFavoriteContact(contactId: Long, isFavorite: Boolean) {
@@ -87,6 +92,7 @@ class TripViewModel @Inject constructor(
             })
         }
         viewModelScope.launch { contactRepo.toggleFavoriteContact(contactId, isFavorite) }
+        touch()
     }
 
     // ── Atividades ────────────────────────────────────────────────────────────
@@ -96,6 +102,7 @@ class TripViewModel @Inject constructor(
             activityRepo.deleteActivity(activityId)
             load()
         }
+        touch()
     }
 
     fun swapActivityPositions(id1: Long, pos1: Int, id2: Long, pos2: Int) {
@@ -103,6 +110,13 @@ class TripViewModel @Inject constructor(
             activityRepo.swapActivityPositions(id1, pos1, id2, pos2)
             load()
         }
+        touch()
+    }
+
+    // F1: registra edição de conteúdo. A importação NÃO passa por aqui (usa o
+    // TravelImporter direto), então o lastEditedAt do arquivo é preservado.
+    private fun touch() {
+        viewModelScope.launch { tripRepo.touchLastEditedAt(tripId) }
     }
 
     private fun load() {

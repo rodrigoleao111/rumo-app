@@ -16,7 +16,7 @@
 
 | # | Funcionalidade | Trilha | Firebase | Esforço |
 |---|---|---|---|---|
-| F1 | Identificador de viagem e detecção de duplicatas | A | Não | Pequeno |
+| F1 ✅ | Identificador de viagem e detecção de duplicatas | A | Não | Pequeno |
 | F2 | Cadastro e autenticação de usuários | B | Auth + Firestore | Grande |
 | F3 | Adicionar pessoas à viagem | B | Firestore | Grande |
 | F4 | Tela de notas | A | Não | Médio |
@@ -112,6 +112,8 @@ A tabela abaixo lista todas as APIs, SDKs e serviços externos referenciados nes
 ---
 
 ## F1 — Identificador de viagem e detecção de duplicatas
+
+> **Status: ✅ Implementada.** `tripUuid` + `lastEditedAt` no schema (Migration 17), `trip.json` v2, detecção de duplicata na importação com diálogo de conflito e `overwriteImport` atômico. Cobertura por testes de migração e de round-trip/detecção. Notas de implementação que divergem desta spec: o `touchLastEditedAt` é disparado na **camada ViewModel** (a importação não deve tocá-lo); o `overwriteImport` importa **antes** de deletar a antiga (mais seguro que delete-then-insert com arquivos); os botões do diálogo foram unificados em "Manter local" / "Importar". O teste de UI Compose ficou pendente por incompatibilidade do emulador API 37 com o toolchain de instrumentação.
 
 ### Descrição
 

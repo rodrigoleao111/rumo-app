@@ -150,6 +150,61 @@ fun ImportTripScreen(
         }
     }
 
+    // ── Dialog de conflito de duplicata (F1) ─────────────────────────────────
+    if (phase is ImportPhase.Duplicate) {
+        val d = phase as ImportPhase.Duplicate
+        val identical     = d.incomingLastEditedAt == d.existingLastEditedAt
+        val incomingNewer = d.incomingLastEditedAt > d.existingLastEditedAt
+        val localNewer    = !identical && !incomingNewer
+
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDuplicate() },
+            icon  = { Text("⚠️", fontSize = 28.sp) },
+            title = { Text("Viagem já importada") },
+            text  = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text  = "\"${d.existingTripName}\" já existe no app.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DuplicateDateRow("Versão local:", formatEditTimestamp(d.existingLastEditedAt))
+                        DuplicateDateRow("Versão importada:", formatEditTimestamp(d.incomingLastEditedAt))
+                    }
+                    Text(
+                        text = when {
+                            identical     -> "As versões são idênticas."
+                            incomingNewer -> "A versão importada é mais recente. Deseja substituir a versão local?"
+                            else          -> "⚠ Atenção: a versão local é mais recente. Importar substituirá dados mais novos."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (localNewer) MaterialTheme.colorScheme.error else TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.overwriteImport(d.pendingUri, d.existingTripId) },
+                    colors  = ButtonDefaults.buttonColors(
+                        containerColor = if (localNewer) MaterialTheme.colorScheme.error else GreenMoss
+                    )
+                ) {
+                    Text(
+                        "Importar",
+                        color      = if (localNewer) Color.White else AmberPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDuplicate() }) {
+                    Text("Manter local", color = GreenMoss, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        )
+    }
+
     // ── Dialog de erro ───────────────────────────────────────────────────────
     if (phase is ImportPhase.Error) {
         AlertDialog(
@@ -174,6 +229,24 @@ fun ImportTripScreen(
         )
     }
 }
+
+@Composable
+private fun DuplicateDateRow(label: String, value: String) {
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        Text(value, style = MaterialTheme.typography.bodySmall, color = TextPrimary, fontWeight = FontWeight.Medium)
+    }
+}
+
+/** Formata um unix-ms como "dd/MM/yyyy HH:mm". 0 (viagem pré-F1) vira "—". */
+private fun formatEditTimestamp(ms: Long): String =
+    if (ms <= 0L) "—"
+    else java.time.Instant.ofEpochMilli(ms)
+        .atZone(java.time.ZoneId.systemDefault())
+        .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", java.util.Locale("pt", "BR")))
 
 @Composable
 private fun InfoRow(emoji: String, text: String) {

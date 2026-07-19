@@ -140,7 +140,7 @@ class EditTripViewModel @Inject constructor(
                     longitude    = s.longitude
                 ))
             }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { repo.touchLastEditedAt(e.id); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar viagem")) }
         }
     }

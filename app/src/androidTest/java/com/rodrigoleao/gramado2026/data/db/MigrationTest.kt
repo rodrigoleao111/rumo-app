@@ -2,6 +2,8 @@ package com.rodrigoleao.gramado2026.data.db
 
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
+import androidx.room.testing.MigrationTestHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
@@ -9,6 +11,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.VoucherGroupEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -44,6 +47,16 @@ class MigrationTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val dbFile: File get() = context.getDatabasePath(TEST_DB)
     private var roomDb: TravelDatabase? = null
+
+    // A partir da v16 os schemas JSON são exportados (app/schemas/, expostos como asset
+    // do androidTest), então migrations novas podem usar o MigrationTestHelper padrão.
+    @get:Rule
+    val migrationHelper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        TravelDatabase::class.java,
+        emptyList(),
+        FrameworkSQLiteOpenHelperFactory()
+    )
 
     @Before
     fun deleteExistingDb() {
@@ -268,6 +281,40 @@ class MigrationTest {
             val groups = db.voucherGroupDao().getForTrip(1)
             assertThat(groups).hasSize(1)
             assertThat(groups[0].name).isEqualTo("Passeios")
+        }
+    }
+
+    // ── F1: migração 16 → 17 via MigrationTestHelper (16.json já exportado) ───────
+
+    /**
+     * Cria um banco v16 com uma viagem, aplica a 16→17 e valida o schema resultante
+     * contra as entities. Confirma que os DEFAULTs (tripUuid='', lastEditedAt=0) são
+     * aplicados à linha existente — nenhum dado é perdido (F1, UC de migração).
+     */
+    @Test
+    fun migracao16Para17_adicionaUuidETimestampComDefaults() {
+        val migrationDb = "migration-16-17.db"
+        migrationHelper.createDatabase(migrationDb, 16).apply {
+            execSQL(
+                """INSERT INTO trips (id, name, destination, coverEmoji, hotelName, hotelAddress,
+                   hotelPhone, startDate, endDate, createdAt, latitude, longitude, voucherSortMode)
+                   VALUES (1, 'Gramado & Canela', 'Gramado, RS', '⛰️', 'Hotel San Lucas',
+                   'Rua João Carniel, 73', '', '2026-06-09', '2026-06-13', 1700000000000,
+                   -29.37, -50.87, 'BY_CATEGORY')"""
+            )
+            close()
+        }
+
+        // runMigrationsAndValidate valida o schema final contra o 17.json/entities
+        val db = migrationHelper.runMigrationsAndValidate(
+            migrationDb, 17, true, *TravelDatabase.ALL_MIGRATIONS
+        )
+
+        db.query("SELECT name, tripUuid, lastEditedAt FROM trips WHERE id = 1").use { c ->
+            assertThat(c.moveToFirst()).isTrue()
+            assertThat(c.getString(0)).isEqualTo("Gramado & Canela")  // dado preservado
+            assertThat(c.getString(1)).isEqualTo("")                  // default tripUuid
+            assertThat(c.getLong(2)).isEqualTo(0L)                    // default lastEditedAt
         }
     }
 }

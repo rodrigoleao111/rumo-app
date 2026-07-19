@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.UUID
 
 data class TripData(
     val trip: Trip,
@@ -83,6 +84,14 @@ class TripRepository(private val db: TravelDatabase) {
 
     suspend fun deleteTrip(entity: TripEntity) = db.tripDao().delete(entity)
 
+    /** Busca uma viagem pelo UUID estável. Retorna null para UUID vazio (F1 — detecção de duplicata). */
+    suspend fun findByUuid(uuid: String): TripEntity? =
+        if (uuid.isBlank()) null else db.tripDao().findByUuid(uuid)
+
+    /** Registra que o conteúdo da viagem foi editado agora. Chamado pela camada ViewModel (F1). */
+    suspend fun touchLastEditedAt(tripId: Long) =
+        db.tripDao().touchLastEditedAt(tripId, System.currentTimeMillis())
+
     suspend fun saveVoucherSortMode(tripId: Long, mode: String) =
         db.tripDao().updateVoucherSortMode(tripId, mode)
 
@@ -96,7 +105,11 @@ class TripRepository(private val db: TravelDatabase) {
         longitude: Double? = null,
         hotelName: String = "",
         hotelAddress: String = "",
-        hotelPhone: String = ""
+        hotelPhone: String = "",
+        // F1: null → gera novo UUID / usa "agora" (criação local).
+        // Não-null → preserva os valores do arquivo (usado pelo TravelImporter).
+        tripUuid: String? = null,
+        lastEditedAt: Long? = null
     ): Long {
         val tripId = db.tripDao().insert(
             TripEntity(
@@ -109,7 +122,9 @@ class TripRepository(private val db: TravelDatabase) {
                 startDate    = startDate,
                 endDate      = endDate,
                 latitude     = latitude,
-                longitude    = longitude
+                longitude    = longitude,
+                tripUuid     = tripUuid ?: UUID.randomUUID().toString(),
+                lastEditedAt = lastEditedAt ?: System.currentTimeMillis()
             )
         )
 

@@ -8,6 +8,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.gramado2026.data.model.BadgeType
 import com.rodrigoleao.gramado2026.data.repository.ActivityRepository
 import com.rodrigoleao.gramado2026.data.repository.DayRepository
+import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -41,6 +42,7 @@ data class EditActivityState(
 class EditActivityViewModel @Inject constructor(
     private val activityRepo: ActivityRepository,
     private val dayRepo: DayRepository,
+    private val tripRepo: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -145,7 +147,7 @@ class EditActivityViewModel @Inject constructor(
                 ActivityBadgeEntity(activityId = 0L, badgeType = BadgeType.CUSTOM.name, label = cb.name, color = cb.colorHex)
             }
             runCatching { activityRepo.upsertActivity(s.dayEntityId, entity, badges) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar atividade")) }
         }
     }
@@ -156,7 +158,7 @@ class EditActivityViewModel @Inject constructor(
         _state.value = _state.value.copy(isSaving = true)
         viewModelScope.launch {
             runCatching { activityRepo.deleteActivity(id) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir atividade")) }
         }
     }

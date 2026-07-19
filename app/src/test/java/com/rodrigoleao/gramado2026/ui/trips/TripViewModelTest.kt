@@ -54,6 +54,7 @@ class TripViewModelTest {
         voucherRepo  = mockk()
         contactRepo  = mockk()
         activityRepo = mockk()
+        coEvery { tripRepo.touchLastEditedAt(any()) } just Runs   // F1: chamado por toda mutação
     }
 
     private fun buildVm(initialData: com.rodrigoleao.gramado2026.data.repository.TripData = fakeTripData()): TripViewModel {

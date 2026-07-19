@@ -9,6 +9,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
 import com.rodrigoleao.gramado2026.data.db.inMemoryDb
 import com.rodrigoleao.gramado2026.data.db.TravelDatabase
 import com.rodrigoleao.gramado2026.data.import_trip.TravelImporter
+import com.rodrigoleao.gramado2026.data.model.DuplicateTripException
 import com.rodrigoleao.gramado2026.data.repository.*
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -139,6 +140,12 @@ class ExportImportRoundTripTest {
         return tripId
     }
 
+    /** Remove a viagem do banco — simula importar num aparelho que ainda não a tem
+     *  (com F1, reimportar no mesmo banco dispararia DuplicateTripException). */
+    private suspend fun clearTripFromDb(tripId: Long) {
+        tripRepo.getTripEntity(tripId)?.let { tripRepo.deleteTrip(it) }
+    }
+
     // ── Testes ──────────────────────────────────────────────────────────────────
 
     @Test
@@ -146,11 +153,12 @@ class ExportImportRoundTripTest {
         runBlocking {
             val tripId = seedFullTrip("RoundTrip Roteiro")
 
+            val orig = tripRepo.getTripData(tripId)!!   // captura antes de limpar
             val uri = exporter.export(tripId)
+            clearTripFromDb(tripId)                      // device limpo
             val importedId = importer.import(uri)
             assertThat(importedId).isNotEqualTo(tripId)
 
-            val orig = tripRepo.getTripData(tripId)!!
             val imp  = tripRepo.getTripData(importedId)!!
 
             // Viagem
@@ -212,7 +220,9 @@ class ExportImportRoundTripTest {
     fun roundTrip_preservaContatosVouchersEPassagens() {
         runBlocking {
             val tripId = seedFullTrip("RoundTrip Anexos")
-            val importedId = importer.import(exporter.export(tripId))
+            val uri = exporter.export(tripId)
+            clearTripFromDb(tripId)
+            val importedId = importer.import(uri)
             val imp = tripRepo.getTripData(importedId)!!
 
             // Contatos
@@ -279,7 +289,9 @@ class ExportImportRoundTripTest {
             val tripId = seedFullTrip("RoundTrip SortMode")
             tripRepo.saveVoucherSortMode(tripId, "BY_DAY")
 
-            val importedId = importer.import(exporter.export(tripId))
+            val uri = exporter.export(tripId)
+            clearTripFromDb(tripId)
+            val importedId = importer.import(uri)
 
             assertThat(tripRepo.getTripData(importedId)!!.trip.voucherSortMode).isEqualTo("BY_DAY")
         }
@@ -327,8 +339,10 @@ class ExportImportRoundTripTest {
 
             val uri = exporter.export(tripId)
 
-            // Apaga os originais: prova que o import restaura a partir do ZIP, não de sobras
+            // Apaga os originais + a viagem do banco: prova que o import restaura a
+            // partir do ZIP (não de sobras) e que roda num "device limpo"
             voucherFile.delete(); docFile.delete(); passFile.delete()
+            clearTripFromDb(tripId)
 
             val importedId = importer.import(uri)
             val imp = tripRepo.getTripData(importedId)!!
@@ -353,18 +367,93 @@ class ExportImportRoundTripTest {
         }
     }
 
+    // ── F1: detecção de duplicata e sobrescrita ──────────────────────────────────
+
     @Test
-    fun import_sempreCriaNovaViagem() {
+    fun import_uuidExistente_lancaDuplicateException() {
         runBlocking {
             val tripId = seedFullTrip("RoundTrip Duplicado")
+            tripRepo.touchLastEditedAt(tripId)          // garante lastEditedAt > 0
             val uri = exporter.export(tripId)
 
-            val firstImport  = importer.import(uri)
-            val secondImport = importer.import(uri)
+            // Reimportar SEM limpar → o UUID já existe no banco
+            val ex = runCatching { importer.import(uri) }.exceptionOrNull()
 
-            assertThat(firstImport).isNotEqualTo(tripId)
-            assertThat(secondImport).isNotEqualTo(firstImport)
-            assertThat(db.tripDao().count()).isEqualTo(3)   // original + 2 importações
+            assertThat(ex).isInstanceOf(DuplicateTripException::class.java)
+            val dup = ex as DuplicateTripException
+            assertThat(dup.existingTripId).isEqualTo(tripId)
+            assertThat(dup.existingTripName).isEqualTo("RoundTrip Duplicado")
+            assertThat(db.tripDao().count()).isEqualTo(1)   // nada foi importado
+        }
+    }
+
+    @Test
+    fun import_arquivoV1SemUuid_importaNormalETripRecebeUuidNovo() {
+        runBlocking {
+            // .travel v1 forjado (schemaVersion 1, sem tripUuid)
+            val json = """
+                {"schemaVersion":1,"trip":{"name":"Viagem Antiga","destination":"Gramado, RS",
+                "coverEmoji":"⛰️","startDate":"2026-06-09","endDate":"2026-06-09",
+                "hotel":{"name":"","address":"","phone":""},"days":[],"contacts":[],
+                "vouchers":[],"boardingPasses":[]}}
+            """.trimIndent()
+            val uri = writeFakeTravel("v1.travel", "trip.json", json)
+
+            val importedId = importer.import(uri)   // não deve detectar duplicata
+
+            val imp = tripRepo.getTripData(importedId)!!
+            assertThat(imp.trip.name).isEqualTo("Viagem Antiga")
+            assertThat(imp.trip.tripUuid).isNotEmpty()   // UUID gerado na importação
+        }
+    }
+
+    @Test
+    fun overwriteImport_substituiViagemAntigaEArquivos() {
+        runBlocking {
+            // Viagem local "antiga" com um voucher-arquivo próprio
+            val oldId = tripRepo.createTrip(
+                name = "Versão Antiga", destination = "Gramado, RS", coverEmoji = "⛰️",
+                startDate = "2026-06-09", endDate = "2026-06-09"
+            )
+            val oldUuid = tripRepo.getTripEntity(oldId)!!.tripUuid
+            val orphanFile = File(context.filesDir, "Vouchers/antigo/so-na-antiga.pdf")
+            orphanFile.parentFile!!.mkdirs(); orphanFile.writeBytes("ANTIGO".toByteArray())
+            voucherRepo.upsertVoucher(oldId, VoucherEntity(
+                tripId = oldId, dayNumber = null, emoji = "🎫", groupName = "G",
+                name = "Antigo", person = null, assetPath = orphanFile.absolutePath
+            ))
+
+            // Constrói um .travel com o MESMO uuid mas conteúdo novo (nome diferente, sem o voucher)
+            val donorId = tripRepo.createTrip(
+                name = "Versão Nova", destination = "Gramado, RS", coverEmoji = "🌲",
+                startDate = "2026-06-09", endDate = "2026-06-09", tripUuid = oldUuid
+            )
+            val uri = exporter.export(donorId)
+            clearTripFromDb(donorId)   // deixa só a "antiga" no banco antes do overwrite
+
+            val newId = importer.overwriteImport(uri, oldId)
+
+            // A antiga sumiu; a nova é a única com aquele uuid
+            assertThat(tripRepo.getTripEntity(oldId)).isNull()
+            val imp = tripRepo.getTripData(newId)!!
+            assertThat(imp.trip.name).isEqualTo("Versão Nova")
+            assertThat(imp.trip.tripUuid).isEqualTo(oldUuid)
+            // Arquivo órfão da antiga (não usado pela nova) foi removido do disco
+            assertThat(orphanFile.exists()).isFalse()
+        }
+    }
+
+    @Test
+    fun overwriteImport_falhaNaImportacaoPreservaViagemLocal() {
+        runBlocking {
+            val oldId = seedFullTrip("Local Intacta")
+            val bad = writeFakeTravel("corrompido.travel", "leia-me.txt", "não é trip.json")
+
+            val result = runCatching { importer.overwriteImport(bad, oldId) }
+
+            assertThat(result.isFailure).isTrue()
+            // UC-F1-10: a viagem local não foi deletada
+            assertThat(tripRepo.getTripEntity(oldId)).isNotNull()
         }
     }
 
@@ -384,7 +473,7 @@ class ExportImportRoundTripTest {
     @Test
     fun import_schemaVersionSuperior_recusaComMensagemDeAtualizacao() {
         runBlocking {
-            val uri = writeFakeTravel("schema-futuro.travel", "trip.json", """{"schemaVersion": 2}""")
+            val uri = writeFakeTravel("schema-futuro.travel", "trip.json", """{"schemaVersion": 3}""")
 
             val result = runCatching { importer.import(uri) }
 

@@ -55,12 +55,13 @@ class EditViewModelUiEventTest {
         tripRepo     = mockk()
         coEvery { categoryRepo.getCustomCategories() } returns emptyList()
         coEvery { contactRepo.getContactEntity(0L) } returns null
+        coEvery { tripRepo.touchLastEditedAt(any()) } just Runs
     }
 
     // ── EditContactViewModel ──────────────────────────────────────────────────
 
     private fun buildContactVm(contactId: Long = 0L) =
-        EditContactViewModel(contactRepo, categoryRepo, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
+        EditContactViewModel(contactRepo, categoryRepo, tripRepo, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
 
     @Test
     fun save_success_emitsNavigateBack() = runTest {

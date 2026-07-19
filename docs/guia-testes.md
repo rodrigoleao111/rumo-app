@@ -84,7 +84,7 @@ Esses testes não dependem de DI, de modelo de domínio, nem de repositórios se
 
 O maior risco silencioso do app: uma migration esquecida ou errada corrompe o banco dos usuários após uma atualização.
 
-**Arquivo:** `androidTest/data/db/MigrationTest.kt` (3 testes)
+**Arquivo:** `androidTest/data/db/MigrationTest.kt` (4 testes — 3 da cadeia v3→16 + a 16→17 da F1)
 
 **Adaptação necessária:** o plano original usava `MigrationTestHelper`, mas ele exige os schemas JSON exportados de **cada versão antiga** (`3.json`…`15.json`) — e `exportSchema` era `false` até a v16, então esses arquivos nunca existiram e não há como regenerá-los. A estratégia implementada:
 
@@ -93,15 +93,18 @@ O maior risco silencioso do app: uma migration esquecida ou errada corrompe o ba
 3. Abre o banco com `Room.databaseBuilder(...).addMigrations(*TravelDatabase.ALL_MIGRATIONS)` — o Room executa as 13 migrations e **valida o schema resultante contra as entities anotadas**, lançando `IllegalStateException("Migration didn't properly handle…")` em qualquer divergência (o mesmo erro de produção);
 4. Verifica que os dados semeados sobreviveram e que os DEFAULTs de cada migration foram aplicados (`hotelPhone = ''`, `voucherSortMode = 'BY_CATEGORY'`, `is_used = 0`, `transportType = 'FLIGHT'`, etc.), e que a tabela `voucher_groups` (criada pela 8→9) aceita insert com FK.
 
-> **Migrations futuras (16 → N): usar `MigrationTestHelper`.** Com `exportSchema = true`, o `16.json` (e seguintes) ficam em `app/schemas/` — versionados no git e expostos como asset do androidTest. A partir da v17, o padrão clássico funciona:
+> **Migrations a partir da 16→N: `MigrationTestHelper`** (já em uso na F1). Com `exportSchema = true`, o `16.json` (e seguintes) ficam em `app/schemas/` — versionados no git e expostos como asset do androidTest. A migração 16→17 (`migracao16Para17_...`) é o primeiro exemplo real:
 > ```kotlin
 > @get:Rule
-> val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), TravelDatabase::class.java)
+> val migrationHelper = MigrationTestHelper(
+>     InstrumentationRegistry.getInstrumentation(),
+>     TravelDatabase::class.java, emptyList(), FrameworkSQLiteOpenHelperFactory()
+> )
 >
-> @Test
-> fun migration16To17() {
->     helper.createDatabase(TEST_DB, 16).apply { /* semear dados v16 */ ; close() }
->     helper.runMigrationsAndValidate(TEST_DB, 17, true, MIGRATION_16_17)
+> @Test fun migracao16Para17_...() {
+>     migrationHelper.createDatabase("m.db", 16).apply { execSQL("INSERT INTO trips ..."); close() }
+>     // ALL_MIGRATIONS é público; o helper aplica só a 16→17 e valida o schema contra o 17.json
+>     migrationHelper.runMigrationsAndValidate("m.db", 17, true, *TravelDatabase.ALL_MIGRATIONS)
 > }
 > ```
 > **Nunca apagar os JSONs de `app/schemas/`** — são o histórico que torna esse teste possível.
@@ -301,7 +304,7 @@ Coberturas implementadas:
 
 O teste mais valioso do app: garante que export → import não perde nenhum campo. Qualquer campo novo adicionado ao banco que não for adicionado ao exporter/importer quebra esse teste.
 
-**Arquivo:** `androidTest/data/export/ExportImportRoundTripTest.kt` (7 testes)
+**Arquivo:** `androidTest/data/export/ExportImportRoundTripTest.kt` (10 testes — 6 de round-trip/rejeição + 4 da F1: detecção de duplicata, backward-compat v1, `overwriteImport` substitui, `overwriteImport` preserva local em falha)
 
 **Montagem:** banco Room em memória + os 6 repositórios reais construídos à mão (não precisa de Hilt — os `@Inject constructor` são construtores normais) + `TravelExporter`/`TravelImporter` reais. O resto do caminho é o de produção: ZIP em `cacheDir/exports/` via FileProvider, leitura via `ContentResolver`, arquivos restaurados em `filesDir/{Arquivos,Vouchers,Passagens}`.
 
@@ -446,12 +449,14 @@ Não existe cobertura-alvo numérica útil. O critério é: **cada caminho de ne
 
 | Fase | Pré-requisito | O que testar | Ferramenta | Status |
 |---|---|---|---|---|
-| **1 — Agora** | Nenhum | Migrations, `parseJson()`, DAOs básicos | Room testing, JUnit, Truth | ✅ `MigrationTest.kt` (3) · `ItineraryParserTest.kt` (12, JVM) · `VoucherDaoTest.kt` (7) · `ContactDaoTest.kt` (7) · `TravelActivityDaoTest.kt` (9) · `TripDaoTest.kt` (6) |
+| **1 — Agora** | Nenhum | Migrations, `parseJson()`, DAOs básicos | Room testing, JUnit, Truth | ✅ `MigrationTest.kt` (4, inclui 16→17 da F1) · `ItineraryParserTest.kt` (12, JVM) · `VoucherDaoTest.kt` (7) · `ContactDaoTest.kt` (7) · `TravelActivityDaoTest.kt` (9) · `TripDaoTest.kt` (6) |
 | **2 — Após melhoria #3** | Modelo domínio `Trip` | `Mappers.toDomain()`, `toEntity()` | JUnit | ✅ `MappersTest.kt` |
 | **2b — Melhorias #4, #6 e #8** | Lógica nos ViewModels + otimismo + funções puras | `TripViewModel`: todos os métodos de lista, testes de timing; `reindexedByGroup()` | MockK, coroutines-test | ✅ `TripViewModelTest.kt` (20 testes) · `VoucherReindexTest.kt` (7 testes) |
-| **3 — Após melhoria #2** | Repositórios por domínio | Export/import round-trip, reindexação | Room in-memory + exporter/importer reais | ✅ `ExportImportRoundTripTest.kt` (7 testes) |
+| **3 — Após melhoria #2** | Repositórios por domínio | Export/import round-trip, reindexação, detecção de duplicata (F1) | Room in-memory + exporter/importer reais | ✅ `ExportImportRoundTripTest.kt` (10 testes) |
 | **4 — Após melhoria #1** | Hilt DI + `@HiltViewModel` | ViewModels com nav args via `SavedStateHandle`; `UiEvent` emitidos em save/delete | MockK, coroutines-test | ✅ `TripViewModelTest.kt` · `EditViewModelUiEventTest.kt` (27 testes no total) |
 
-**Suite atual: 69 testes JVM (`./gradlew test`) + 39 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo) = 108 testes. Todas as 4 fases do plano estão implementadas.**
+**Suite atual: 69 testes JVM (`./gradlew test`) + 43 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo) = 112 testes. Todas as 4 fases do plano estão implementadas.**
+
+> **Testes de UI Compose:** tentados na F1 (diálogo de conflito), mas o emulador disponível (API 37) é incompatível com o toolchain de instrumentação Compose desta versão (`espresso`/`mockk-android`). Ficam pendentes de um device/emulador API ≤ 34. A lógica do diálogo é coberta indiretamente pelos testes de dados da F1 (detecção + `overwriteImport`).
 
 Próximos alvos naturais (fora do plano original): testes de UI Compose das telas críticas e um workflow de CI que rode `test` em cada push (o `connectedAndroidTest` exige emulador — viável com `gradle-managed devices` ou emulador no runner).

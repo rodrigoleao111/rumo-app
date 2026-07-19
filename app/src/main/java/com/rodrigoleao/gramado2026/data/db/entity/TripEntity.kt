@@ -17,5 +17,7 @@ data class TripEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val voucherSortMode: String = "BY_CATEGORY"
+    val voucherSortMode: String = "BY_CATEGORY",
+    val tripUuid: String = "",         // UUID estável, preservado em export/import (F1)
+    val lastEditedAt: Long = 0L        // unix ms da última edição de conteúdo (F1)
 )

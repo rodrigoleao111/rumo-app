@@ -15,6 +15,12 @@ interface TripDao {
     @Query("SELECT COUNT(*) FROM trips")
     suspend fun count(): Int
 
+    @Query("SELECT * FROM trips WHERE tripUuid = :uuid LIMIT 1")
+    suspend fun findByUuid(uuid: String): TripEntity?
+
+    @Query("UPDATE trips SET lastEditedAt = :timestamp WHERE id = :id")
+    suspend fun touchLastEditedAt(id: Long, timestamp: Long)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(trip: TripEntity): Long
 

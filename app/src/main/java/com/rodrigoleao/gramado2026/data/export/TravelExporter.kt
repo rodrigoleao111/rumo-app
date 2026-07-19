@@ -108,6 +108,8 @@ class TravelExporter @Inject constructor(
         data.boardingPasses.forEach { boardingArray.put(buildBoardingPassJson(it)) }
 
         val tripObj = JSONObject().apply {
+            put("tripUuid",         trip.tripUuid)
+            put("lastEditedAt",     trip.lastEditedAt)
             put("name",             trip.name)
             put("destination",      trip.destination)
             put("coverEmoji",       trip.coverEmoji)
@@ -126,7 +128,7 @@ class TravelExporter @Inject constructor(
         val ts = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
         return JSONObject().apply {
-            put("schemaVersion", 1)
+            put("schemaVersion", 2)   // F1: presença de tripUuid + lastEditedAt
             put("exportedAt",    ts)
             put("trip",          tripObj)
         }.toString(2)

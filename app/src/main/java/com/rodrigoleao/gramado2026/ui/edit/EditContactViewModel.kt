@@ -7,6 +7,7 @@ import com.rodrigoleao.gramado2026.data.db.entity.ContactEntity
 import com.rodrigoleao.gramado2026.data.model.ContactType
 import com.rodrigoleao.gramado2026.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.gramado2026.data.repository.ContactRepository
+import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -37,6 +38,7 @@ data class EditContactState(
 class EditContactViewModel @Inject constructor(
     private val repo: ContactRepository,
     private val categoryRepo: ContactCategoryRepository,
+    private val tripRepo: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -131,7 +133,7 @@ class EditContactViewModel @Inject constructor(
                 isEmergency    = s.isEmergency
             )
             runCatching { repo.upsertContact(tripId, entity) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar contato")) }
         }
     }
@@ -140,7 +142,7 @@ class EditContactViewModel @Inject constructor(
         if (contactId == 0L) return
         viewModelScope.launch {
             runCatching { repo.deleteContact(contactId) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir contato")) }
         }
     }

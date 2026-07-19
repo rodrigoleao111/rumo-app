@@ -148,7 +148,7 @@ class EditVoucherViewModel @Inject constructor(
                 isUsed    = s.entity?.isUsed ?: false
             )
             runCatching { voucherRepo.upsertVoucher(tripId, entity) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar voucher")) }
         }
     }
@@ -157,7 +157,7 @@ class EditVoucherViewModel @Inject constructor(
         if (voucherId == 0L) return
         viewModelScope.launch {
             runCatching { voucherRepo.deleteVoucher(voucherId) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir voucher")) }
         }
     }

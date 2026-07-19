@@ -106,6 +106,13 @@ sealed class ImportPhase {
     object Importing : ImportPhase()
     data class Done(val tripId: Long)      : ImportPhase()
     data class Error(val message: String)  : ImportPhase()
+    data class Duplicate(                    // F1 — UUID já existe no banco
+        val existingTripId: Long,
+        val existingTripName: String,
+        val existingLastEditedAt: Long,
+        val incomingLastEditedAt: Long,
+        val pendingUri: Uri
+    ) : ImportPhase()
 }
 ```
 
@@ -115,6 +122,7 @@ sealed class ImportPhase {
 | `Importing` | `Dialog` não cancelável com spinner ("Importando viagem…") |
 | `Done(tripId)` | `LaunchedEffect` chama `onImported(tripId)` → navega |
 | `Error(msg)` | `AlertDialog` com "Tentar novamente" → `Idle` |
+| `Duplicate(...)` | `AlertDialog` de conflito (F1) — "Manter local" (`dismissDuplicate`) × "Importar" (`overwriteImport`) |
 
 **Diferença entre as telas:** `ShareTripScreen` usa "OK" no dialog de erro; `ImportTripScreen` usa "Tentar novamente". A ação é `dismissError()` em ambos → `Idle`.
 
@@ -244,7 +252,19 @@ LaunchedEffect(phase) {
 }
 ```
 
-**Nota exibida ao usuário:** "Uma nova viagem será criada. Suas viagens atuais não serão alteradas." — evita confusão sobre possível sobrescrita.
+**Nota exibida ao usuário:** "Uma nova viagem será criada. Suas viagens atuais não serão alteradas." — evita confusão sobre possível sobrescrita. **Exceção (F1):** se o arquivo for de uma viagem que já existe (mesmo `tripUuid`), abre-se o diálogo de conflito, onde o usuário pode optar por substituir a versão local.
+
+### Diálogo de conflito (`ImportPhase.Duplicate`)
+
+Renderizado quando `import()` detecta um UUID já existente. Mostra o nome da viagem, "Versão local" × "Versão importada" (`dd/MM/yyyy HH:mm`; timestamp 0 vira `—`) e uma mensagem que varia com a comparação dos timestamps:
+
+| Comparação | Mensagem | Botão "Importar" |
+|---|---|---|
+| importada mais recente | "A versão importada é mais recente. Deseja substituir a versão local?" | `GreenMoss` |
+| local mais recente | "⚠ Atenção: a versão local é mais recente. Importar substituirá dados mais novos." | `colorScheme.error` |
+| idênticas | "As versões são idênticas." | `GreenMoss` |
+
+Dois botões: **"Manter local"** (`dismissDuplicate()` → `Idle`) e **"Importar"** (`overwriteImport(pendingUri, existingTripId)`). O roadmap previa um terceiro botão "Cancelar", unificado com "Manter local" por serem a mesma ação.
 
 ---
 
@@ -330,13 +350,46 @@ if (schemaVer > SUPPORTED_SCHEMA_VERSION)
     throw Exception("Este arquivo foi criado por uma versão mais recente do app. Atualize o app para importá-lo.")
 
 companion object {
-    private const val SUPPORTED_SCHEMA_VERSION = 1
+    private const val SUPPORTED_SCHEMA_VERSION = 2   // F1: tripUuid + lastEditedAt
 }
 ```
 
 Arquivos com `schemaVersion` maior que o suportado lançam exceção — a mensagem chega até o `AlertDialog` de erro via `ImportPhase.Error`.
 
-### Sequência de importação
+### Detecção de duplicata e sobrescrita (F1)
+
+`import(uri)` = **parse → detecção → `writeToDb`**:
+
+```kotlin
+suspend fun import(uri: Uri): Long {
+    val parsed = parseZip(uri)
+    tripRepo.findByUuid(parsed.trip.tripUuid)?.let { existing ->
+        throw DuplicateTripException(existing.id, existing.name, existing.lastEditedAt, parsed.trip.lastEditedAt)
+    }
+    return writeToDb(parsed)   // insere como nova viagem
+}
+```
+
+- `findByUuid` retorna `null` para UUID vazio (arquivos v1) → importação normal, sem detecção.
+- Se encontra, lança `DuplicateTripException`; o `ImportTripViewModel` transforma em `ImportPhase.Duplicate` e a tela abre o diálogo de conflito.
+
+`overwriteImport(uri, existingTripId)` (quando o usuário confirma) segue uma ordem deliberada, **mais segura que delete-antes-de-inserir**:
+
+```kotlin
+suspend fun overwriteImport(uri: Uri, existingTripId: Long): Long {
+    val oldPaths = collectManagedFilePaths(tripRepo.getTripData(existingTripId))
+    val newTripId = writeToDb(parseZip(uri))          // 1. importa a nova PRIMEIRO (pode lançar)
+    tripRepo.getTripEntity(existingTripId)?.let { tripRepo.deleteTrip(it) }  // 2. remove a antiga (CASCADE)
+    val newPaths = collectManagedFilePaths(tripRepo.getTripData(newTripId))
+    (oldPaths - newPaths).forEach { runCatching { File(it).delete() } }      // 3. limpa órfãos
+    return newTripId
+}
+```
+
+- Se a importação (passo 1) falhar, a viagem local **não é deletada** → o usuário não perde dados (UC-F1-10). Escrita de arquivo não é transacional, por isso essa ordem é preferível a envolver tudo num `withTransaction`.
+- A limpeza remove só os arquivos da antiga **que a nova não reutiliza** e **apenas dentro de `filesDir`** (`collectManagedFilePaths`) — nunca apaga anexo de outra viagem.
+
+### Sequência de `writeToDb` (importação propriamente dita)
 
 1. `parseZip(uri)` → `ParsedZip(trip, documents, voucherFiles, boardingFiles)`
    - Lê o ZIP via `ContentResolver.openInputStream(uri)` + `ZipInputStream`
@@ -345,7 +398,7 @@ Arquivos com `schemaVersion` maior que o suportado lançam exceção — a mensa
    - `vouchers/*` → `Map<String, ByteArray>` (chave = caminho relativo sem `vouchers/`)
    - `boarding/*` → `Map<String, ByteArray>` (chave = nome sem prefixo)
 
-2. `tripRepo.createTrip(...)` → cria viagem e dias no banco; retorna `tripId`
+2. `tripRepo.createTrip(..., tripUuid, lastEditedAt)` → cria viagem e dias; **preserva o UUID/timestamp do arquivo** (v2) ou gera novos (v1). Retorna `tripId`
 
 3. `tripRepo.saveVoucherSortMode(tripId, mode)` — só se `mode != "BY_CATEGORY"` (default não precisa ser gravado)
 

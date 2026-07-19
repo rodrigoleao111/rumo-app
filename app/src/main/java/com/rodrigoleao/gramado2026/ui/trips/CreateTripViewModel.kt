@@ -345,6 +345,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         _chatPhase.value = ChatPhase.SAVING
         viewModelScope.launch {
             saveItineraryUseCase(tripId, days)
+            repo.touchLastEditedAt(tripId)   // F1: roteiro gerado por IA conta como edição
             _readyToNavigate.value = true
         }
     }

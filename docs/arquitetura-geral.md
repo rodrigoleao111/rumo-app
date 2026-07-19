@@ -48,7 +48,7 @@ O Rumo é um app Android nativo com arquitetura **MVVM em camadas** com **Hilt**
 ├─────────────────────────────────────────────────────────────────┤
 │  Data Layer                                                      │
 │                                                                  │
-│  TravelDatabase (Room v16)                                       │
+│  TravelDatabase (Room v17)                                       │
 │    ├─ Entities: Trip, TravelDay, TravelActivity,                 │
 │    │   ActivityBadge, WalkStop, Contact,                         │
 │    │   Voucher, VoucherGroup, BoardingPass                       │
@@ -292,7 +292,7 @@ O `TripRepository` é o único lugar que chama `toDomain()` e `toEntity()` — o
 
 ### Migrations explícitas
 
-Todas as 13 migrations (v3→v16) estão em `TravelDatabase.kt` como `MIGRATION_N_(N+1)`. `fallbackToDestructiveMigration()` não é usado — `fallbackToDestructiveMigrationFrom(1, 2)` existe apenas para versões pré-histórico sem schema registrado.
+Todas as 14 migrations (v3→v17) estão em `TravelDatabase.kt` como `MIGRATION_N_(N+1)`, expostas em `ALL_MIGRATIONS` com a versão em `CURRENT_VERSION`. `fallbackToDestructiveMigration()` não é usado — `fallbackToDestructiveMigrationFrom(1, 2)` existe apenas para versões pré-histórico sem schema registrado.
 
 **Regra:** qualquer novo campo no banco exige migration SQL + incremento de `version` + atualização de ambas as direções em `Mappers.kt`.
 
@@ -470,7 +470,7 @@ var showDeleteDialog by remember { mutableStateOf(false) }
 
 ### Testes — estado atual
 
-**108 testes no total: 69 unitários JVM (`./gradlew test`) + 39 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo).** As 4 fases do plano de testes estão implementadas — ver `docs/guia-testes.md`.
+**112 testes no total: 69 unitários JVM (`./gradlew test`) + 43 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo).** As 4 fases do plano de testes estão implementadas — ver `docs/guia-testes.md`.
 
 **Unitários JVM** (`app/src/test/`):
 
@@ -488,7 +488,7 @@ var showDeleteDialog by remember { mutableStateOf(false) }
 
 | Arquivo | Cobertura |
 |---|---|
-| `data/db/MigrationTest.kt` | 3 testes — cadeia de migrations v3→16 validada contra as entities |
+| `data/db/MigrationTest.kt` | 4 testes — cadeia v3→16 (SQLite à mão) + migração 16→17 via `MigrationTestHelper` |
 | `data/db/{Voucher,Contact,TravelActivity,Trip}DaoTest.kt` | 29 testes — SQL real dos DAOs (ordenações, bulk queries, CASCADE) |
 | `data/export/ExportImportRoundTripTest.kt` | 7 testes — round-trip `.travel` (nenhum campo/arquivo perdido; rejeição de schema futuro) |
 | `data/db/DbTestFixtures.kt` | Banco em memória + fixtures de entities |
@@ -502,7 +502,8 @@ Schemas do Room exportados em `app/schemas/` (`exportSchema = true`) — version
 | Tipo de código | Onde vai |
 |---|---|
 | Nova query ao banco | Novo método no DAO correspondente → exposto via `TripRepository` |
-| Novo campo em entidade existente | Migration SQL + `version++` + ambas as direções em `Mappers.kt` |
+| Novo campo em entidade existente | Migration SQL + `CURRENT_VERSION++` + registro em `ALL_MIGRATIONS` + ambas as direções em `Mappers.kt` + teste em `MigrationTest.kt` |
+| Nova operação que edita conteúdo de uma viagem (F1) | Após a escrita, chamar `tripRepo.touchLastEditedAt(tripId)` **na camada ViewModel** (nunca no repo — a importação usa os repos direto e não deve "tocar" o `lastEditedAt` do arquivo) |
 | Nova preferência global | `SettingsRepository` + `SettingsViewModel` + toggle em `SettingsScreen` |
 | Nova preferência volátil por viagem | `SharedPreferences` direto (sem Room) se não precisar de consulta/export |
 | Novo campo no export `.travel` | `TravelExporter.buildJson()` + `TravelImporter.parseTripJson()` + `docs/travel-export-schema.md` |

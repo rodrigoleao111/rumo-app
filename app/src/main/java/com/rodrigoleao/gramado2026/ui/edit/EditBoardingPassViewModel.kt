@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.BoardingPassEntity
 import com.rodrigoleao.gramado2026.data.repository.BoardingPassRepository
+import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -43,6 +44,7 @@ data class EditBoardingPassState(
 @HiltViewModel
 class EditBoardingPassViewModel @Inject constructor(
     private val repo: BoardingPassRepository,
+    private val tripRepo: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -154,7 +156,7 @@ class EditBoardingPassViewModel @Inject constructor(
                 notes           = s.notes.trim()
             )
             runCatching { repo.upsertBoardingPass(tripId, entity) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar passagem")) }
         }
     }
@@ -163,7 +165,7 @@ class EditBoardingPassViewModel @Inject constructor(
         if (passId == 0L) return
         viewModelScope.launch {
             runCatching { repo.deleteBoardingPass(passId) }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir passagem")) }
         }
     }

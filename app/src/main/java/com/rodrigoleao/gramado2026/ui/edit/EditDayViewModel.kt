@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.db.entity.TravelDayEntity
 import com.rodrigoleao.gramado2026.data.repository.DayRepository
+import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -34,6 +35,7 @@ data class EditDayState(
 @HiltViewModel
 class EditDayViewModel @Inject constructor(
     private val repo: DayRepository,
+    private val tripRepo: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -100,7 +102,7 @@ class EditDayViewModel @Inject constructor(
                     dayDocumentTitle = s.dayDocumentTitle.trim()
                 ))
             }
-                .onSuccess { _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar dia")) }
         }
     }

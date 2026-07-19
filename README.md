@@ -43,7 +43,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 | UI | Jetpack Compose + Material 3 |
 | Navegação | Navigation Compose |
 | Arquitetura | MVVM (ViewModel + StateFlow) |
-| Banco de dados | Room (SQLite) v16 |
+| Banco de dados | Room (SQLite) v17 |
 | Clima | Open-Meteo API |
 | IA | Gemini 2.0 Flash (Google AI) |
 | minSdk | 26 (Android 8.0+) |
@@ -155,7 +155,7 @@ Veja `docs/travel-export-schema.md` para o schema completo do `trip.json`.
 
 ## Banco de dados
 
-Room versão 16. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
+Room versão 17. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
 
 Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `CURRENT_VERSION`, registre em `ALL_MIGRATIONS` e escreva um teste de migração com `MigrationTestHelper` (ver `docs/guia-testes.md` §1.1).
 

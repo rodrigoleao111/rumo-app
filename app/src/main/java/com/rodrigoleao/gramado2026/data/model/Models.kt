@@ -15,7 +15,9 @@ data class Trip(
     val endDate: String?,
     val latitude: Double?,
     val longitude: Double?,
-    val voucherSortMode: String
+    val voucherSortMode: String,
+    val tripUuid: String = "",
+    val lastEditedAt: Long = 0L
 )
 
 // ── BADGES ──────────────────────────────────────────────────────────────

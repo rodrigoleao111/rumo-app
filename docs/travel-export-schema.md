@@ -19,9 +19,11 @@ viagem.travel  (ZIP)
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "exportedAt": "2026-06-17T14:30:00",
   "trip": {
+    "tripUuid": "3f2a…-…-…",
+    "lastEditedAt": 1718637000000,
     "name": "Gramado 2026",
     "destination": "Gramado, RS",
     "coverEmoji": "🏔️",
@@ -45,8 +47,10 @@ viagem.travel  (ZIP)
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| `schemaVersion` | `int` | Versão do schema. Atual: `1` |
+| `schemaVersion` | `int` | Versão do schema. Atual: `2` (F1 adicionou `tripUuid` + `lastEditedAt`) |
 | `exportedAt` | `string` | ISO 8601 — informativo, não usado na importação |
+| `trip.tripUuid` | `string` | **F1** — UUID estável da viagem, gerado na criação e preservado em todo export/import. Ausente/vazio em arquivos v1 → tratado como "sem UUID" (importação normal, gera novo) |
+| `trip.lastEditedAt` | `long` | **F1** — unix ms da última edição de conteúdo. Usado na detecção de duplicata para comparar "versão local" × "versão importada" |
 | `trip.latitude` / `trip.longitude` | `number \| null` | Coordenadas do destino para clima |
 | `trip.voucherSortMode` | `string` | `BY_CATEGORY \| BY_PERSON \| BY_DAY` — preferência de agrupamento restaurada na importação |
 
@@ -229,10 +233,10 @@ viagem.travel  (ZIP)
 
 ## Regras gerais
 
-- `schemaVersion` permite migrações futuras. O importador rejeita versões superiores ao `SUPPORTED_SCHEMA_VERSION` atual (`1`) com mensagem de erro clara
+- `schemaVersion` permite migrações futuras. O importador rejeita versões superiores ao `SUPPORTED_SCHEMA_VERSION` atual (`2`) com mensagem de erro clara
 - Campos opcionais ausentes ou `null` devem ser JSON nativo (`null`), nunca a string `"null"`
 - `exportedAt` é apenas informativo — não é usado em nenhuma lógica de importação
-- **A importação sempre cria uma nova viagem** — nunca sobrescreve uma existente
+- **Detecção de duplicata (F1):** se o `tripUuid` importado já existir no banco, a importação **não** cria uma nova viagem — lança `DuplicateTripException` e o usuário decide entre manter a local ou substituí-la (`overwriteImport`). UUID vazio (arquivos v1) nunca casa → importação normal, com novo UUID gerado
 - IDs internos do banco (`dbId`, `id`) não são exportados — novos IDs são gerados na importação
 - O weather **não é exportado** — sempre buscado ao vivo pelo Open-Meteo após a importação
 - Dias ausentes no banco (por `dayNumber`) são silenciosamente ignorados na importação
@@ -249,5 +253,6 @@ viagem.travel  (ZIP)
 | `ui/share_trip/ShareTripScreen.kt` | Tela intermediária antes do `ACTION_SEND` |
 | `ui/share_trip/ShareTripViewModel.kt` | Estados `Idle / Exporting / Ready / Error` |
 | `ui/import_trip/ImportTripScreen.kt` | Seletor de arquivo + feedback de importação |
-| `ui/import_trip/ImportTripViewModel.kt` | Estados `Idle / Importing / Done / Error` |
+| `ui/import_trip/ImportTripViewModel.kt` | Estados `Idle / Importing / Done / Error / Duplicate` |
+| `data/model/DuplicateTripException.kt` | Sinaliza UUID já existente (F1) |
 | `data/db/entity/` | Entidades Room usadas na importação |

@@ -36,7 +36,7 @@ abstract class TravelDatabase : RoomDatabase() {
 
     companion object {
         /** Versão atual do schema — única fonte de verdade (usada na anotação @Database e nos testes). */
-        const val CURRENT_VERSION = 16
+        const val CURRENT_VERSION = 17
 
         @Volatile private var INSTANCE: TravelDatabase? = null
 
@@ -115,6 +115,14 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v16 → v17: UUID estável + timestamp de última edição em trips (F1)
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE trips ADD COLUMN tripUuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE trips ADD COLUMN lastEditedAt INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -148,7 +156,7 @@ abstract class TravelDatabase : RoomDatabase() {
         val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
             MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
-            MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16
+            MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17
         )
 
         fun getInstance(context: Context): TravelDatabase =
