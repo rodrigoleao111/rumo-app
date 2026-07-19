@@ -36,7 +36,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -73,7 +73,6 @@ fun DayDetailScreen(
     tripStartDate: String? = null,
     tripEndDate: String? = null,
     onBack: () -> Unit = {},
-    onBustourMapClick: () -> Unit = {},
     onEditDay: () -> Unit = {},
     onEditActivity: (Long) -> Unit = {},
     onDeleteActivity: (Long) -> Unit = {},
@@ -120,7 +119,7 @@ fun DayDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
                 actions = {
@@ -199,11 +198,6 @@ fun DayDetailScreen(
                         context = context
                     )
                 }
-            }
-
-            // ── Botão mapa Bustour (somente Dia 3) ──────────────────────
-            if (day.id == 3) {
-                item { BustourMapButton(onClick = onBustourMapClick) }
             }
 
             // ── Divisor de início da timeline ────────────────────────────
@@ -337,28 +331,6 @@ private fun DayDocumentCard(name: String, path: String, context: Context) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss, maxLines = 1)
                 Text("Toque para abrir", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-            }
-            Text("›", fontSize = 20.sp, color = GreenMoss, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-// ── BUSTOUR MAP BUTTON ────────────────────────────────────────────────────────
-
-@Composable
-private fun BustourMapButton(onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        shape  = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F0E8)),
-        border = BorderStroke(1.dp, GreenMoss.copy(alpha = 0.4f))
-    ) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("🗺️", fontSize = 24.sp)
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Mapa de Rotas — Bustour", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss)
-                Text("Linha Vermelha e Amarela com todas as paradas", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
             Text("›", fontSize = 20.sp, color = GreenMoss, fontWeight = FontWeight.Bold)
         }

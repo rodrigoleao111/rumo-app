@@ -20,7 +20,6 @@ sealed class Screen(val route: String) {
     object TripsList         : Screen("trips_list")
     object TripMain          : Screen("trip/{tripId}/main")
     object DayDetail         : Screen("trip/{tripId}/day/{dayId}")
-    object BustourMap        : Screen("map/bustour")
     object CreateTrip        : Screen("trip/create")
     object EditTrip          : Screen("trip/{tripId}/edit")
     object EditDay           : Screen("trip/{tripId}/day/{dayNumber}/edit")

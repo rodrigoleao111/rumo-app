@@ -57,10 +57,9 @@ TripViewModel.tripData: StateFlow<TripData?>
 3. VoucherChecklist    ← se day.vouchers.isNotEmpty()
 4. DayLinkCard         ← se day.dayLinkUrl != null/blank
 5. DayDocumentCard     ← se day.dayDocumentPath != null/blank
-6. BustourMapButton    ← apenas se day.id == 3
-7. HorizontalDivider   ← separador da timeline
-8. Empty state         ← se day.activities.isEmpty()
-9. ActivityItem × N    ← um por atividade + HorizontalDivider entre cada
+6. HorizontalDivider   ← separador da timeline
+7. Empty state         ← se day.activities.isEmpty()
+8. ActivityItem × N    ← um por atividade + HorizontalDivider entre cada
 ```
 
 ---
@@ -201,25 +200,7 @@ O MIME type é inferido da extensão do arquivo via `MimeTypeMap`. O `Intent.cre
 
 ---
 
-### 6. Botão Mapa Bustour (`BustourMapButton`)
-
-Renderizado **exclusivamente** quando `day.id == 3`:
-
-```kotlin
-if (day.id == 3) {
-    item { BustourMapButton(onClick = onBustourMapClick) }
-}
-```
-
-**Aparência:** idêntico ao `DayLinkCard` (fundo `#E8F0E8`, borda `GreenMoss` 40%), ícone 🗺️, título fixo "Mapa de Rotas — Bustour", subtexto "Linha Vermelha e Amarela com todas as paradas".
-
-**Ação:** callback `onBustourMapClick` — wired em `AppNavigation` para exibir o asset `images/mapa_rotas_bustour.webp` (detalhes do wiring dependem da implementação de navegação).
-
-> **Regra de padrão:** A condição `day.id == 3` é hardcoded para o contexto da viagem Gramado 2026. Se o app for generalizado para múltiplas viagens, considere substituir por um campo de configuração por viagem.
-
----
-
-### 7. Timeline de atividades colapsáveis (`ActivityItem`)
+### 6. Timeline de atividades colapsáveis (`ActivityItem`)
 
 Cada `TravelActivity` é renderizado como um `ActivityItem` que contém `SwipeToRevealActivity`.
 
@@ -269,7 +250,7 @@ Ambos usam `runCatching` para suprimir exceção se o app não estiver instalado
 
 ---
 
-### 8. Rota de caminhada (`WalkRouteSection`)
+### 7. Rota de caminhada (`WalkRouteSection`)
 
 Renderizado dentro do `ActivityItem` expandido quando `activity.walkStops.isNotEmpty()`.
 
@@ -292,7 +273,7 @@ Renderizado dentro do `ActivityItem` expandido quando `activity.walkStops.isNotE
 
 ---
 
-### 9. Swipe para revelar Editar e Deletar (`SwipeToRevealActivity`)
+### 8. Swipe para revelar Editar e Deletar (`SwipeToRevealActivity`)
 
 **Implementação:** customizada com `Animatable<Float>` + `Modifier.draggable` — mesmo padrão de `SwipeToRevealTrip` na lista de viagens. Não usa `SwipeToDismissBox`.
 
@@ -318,7 +299,7 @@ onDragStopped = { velocity ->
 
 ---
 
-### 10. Confirmação de exclusão
+### 9. Confirmação de exclusão
 
 `activityToDelete: MutableState<Long?>` armazena o ID da atividade aguardando confirmação.
 
@@ -331,7 +312,7 @@ O `AlertDialog` informa que "Esta atividade será removida permanentemente do di
 
 ---
 
-### 11. FAB para nova atividade
+### 10. FAB para nova atividade
 
 ```kotlin
 FloatingActionButton(
@@ -348,7 +329,7 @@ Callback wired em `AppNavigation` para navegar para `EditActivityScreen` em modo
 
 ---
 
-### 12. Snackbar de confirmação após edição
+### 11. Snackbar de confirmação após edição
 
 ```kotlin
 LaunchedEffect(refreshKey) {
@@ -374,7 +355,6 @@ fun DayDetailScreen(
     tripStartDate: String? = null,
     tripEndDate: String? = null,
     onBack: () -> Unit = {},
-    onBustourMapClick: () -> Unit = {},
     onEditDay: () -> Unit = {},
     onEditActivity: (Long) -> Unit = {},
     onDeleteActivity: (Long) -> Unit = {},
@@ -394,7 +374,6 @@ fun DayDetailScreen(
 | `VoucherChecklist` | `vouchers: List<DayVoucher>` | Pills "LEVAR HOJE" em FlowRow |
 | `DayLinkCard` | `label`, `url`, `context` | Card clicável que abre URL no browser |
 | `DayDocumentCard` | `name`, `path`, `context` | Card clicável que abre arquivo via FileProvider |
-| `BustourMapButton` | `onClick` | Card de atalho para o mapa do Bustour (só Dia 3) |
 | `ActivityItem` | `activity`, `expanded`, `onToggle`, `onEdit`, `onDelete`, `onMapClick`, `onUberClick` | Item colapsável da timeline |
 | `SwipeToRevealActivity` | `onEdit`, `onDelete`, `content` | Container de swipe com botões Editar e Excluir |
 | `WalkRouteSection` | `stops: List<WalkStop>` | Stepper visual de paradas de caminhada |
@@ -407,6 +386,6 @@ fun DayDetailScreen(
 - **Novo botão na atividade expandida:** adicionar `OutlinedButton` no bloco `if (expanded)` dentro de `ActivityItem` → criar campo em `TravelActivity` se necessário.
 - **Novo botão no swipe:** adicionar `Box` na `Row` de botões em `SwipeToRevealActivity` → ajustar `actionWidth` (atualmente `128.dp` = 2 × 64dp).
 - **Persistir estado de expansão entre navegações:** mover `expandedActivities` de `remember` local para `TripViewModel` se for necessário que o estado survive à backstack.
-- **Alterar condição do Bustour:** modificar `if (day.id == 3)` — considerar substituir por campo de feature em `TravelDay` ou `TripEntity` para generalizar para múltiplas viagens.
+- **Anexar um mapa/documento a um dia:** usar os mecanismos genéricos já existentes — `dayLinkUrl`/`dayLinkLabel` (link externo, ex: "Mapa de Rotas") ou `dayDocumentPath` (arquivo anexado), ambos editáveis no `EditDayScreen` e exportados no `.travel`. (O antigo botão hardcoded do mapa do Bustour, preso a `day.id == 3`, foi removido em favor dessa abordagem.)
 - **Alterar comportamento do refresh de clima:** a distinção entre fetch inicial (`getWeather`) e manual (`refresh`) está no valor de `refreshTrigger`. `0` → usa cache; `> 0` → força nova busca. Não chamar `refresh()` no fetch inicial para não invalidar o cache desnecessariamente.
 - **Adicionar ação ao snackbar:** `snackbarHostState.showSnackbar(message, actionLabel)` aceita um label de ação. O retorno é `SnackbarResult.ActionPerformed` ou `Dismissed` — verificar o retorno se for necessário agir ao clicar.

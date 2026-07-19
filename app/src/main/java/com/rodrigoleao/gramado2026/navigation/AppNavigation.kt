@@ -49,7 +49,6 @@ import com.rodrigoleao.gramado2026.ui.boarding.BoardingPassScreen
 import com.rodrigoleao.gramado2026.ui.contacts.ContactsScreen
 import com.rodrigoleao.gramado2026.ui.day.DayDetailScreen
 import com.rodrigoleao.gramado2026.ui.home.HomeScreen
-import com.rodrigoleao.gramado2026.ui.map.BustourMapScreen
 import com.rodrigoleao.gramado2026.ui.theme.*
 import com.rodrigoleao.gramado2026.ui.edit.EditActivityScreen
 import com.rodrigoleao.gramado2026.ui.edit.EditActivityViewModel
@@ -90,7 +89,6 @@ sealed class Screen(val route: String) {
     object DayDetail  : Screen("trip/{tripId}/day/{dayId}") {
         fun createRoute(tripId: Long, dayId: Int) = "trip/$tripId/day/$dayId"
     }
-    object BustourMap    : Screen("map/bustour")
     object CreateTrip    : Screen("trip/create")
     object EditTrip      : Screen("trip/{tripId}/edit") {
         fun createRoute(tripId: Long) = "trip/$tripId/edit"
@@ -278,7 +276,6 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 ),
                 actions = TripScreenActions(
                     onDayClick          = { dayId -> navController.navigate(Screen.DayDetail.createRoute(tripId, dayId)) },
-                    onBustourMapClick   = { navController.navigate(Screen.BustourMap.route) },
                     onShareTrip         = { navController.navigate(Screen.ShareTrip.createRoute(tripId)) },
                     onEditTrip          = { navController.navigate(Screen.EditTrip.createRoute(tripId)) },
                     onAddContact        = { navController.navigate(Screen.EditContact.createRoute(tripId, 0L)) },
@@ -329,7 +326,6 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                     tripStartDate     = trip?.startDate,
                     tripEndDate       = trip?.endDate,
                     onBack            = { navController.popBackStack() },
-                    onBustourMapClick = { navController.navigate(Screen.BustourMap.route) },
                     onEditDay         = { navController.navigate(Screen.EditDay.createRoute(tripId, dayNumber)) },
                     onEditActivity    = { actId -> navController.navigate(Screen.EditActivity.createRoute(tripId, dayNumber, actId)) },
                     onDeleteActivity  = { actId -> vm.deleteActivity(actId) },
@@ -455,10 +451,6 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
             )
         }
 
-        // ── Mapa do Bustour ──────────────────────────────────────────────────
-        composable(Screen.BustourMap.route) {
-            BustourMapScreen(contentPadding = WindowInsets.systemBars.asPaddingValues())
-        }
     }
 }
 
@@ -472,7 +464,6 @@ private data class TripScreenState(
 
 private data class TripScreenActions(
     val onDayClick: (Int) -> Unit,
-    val onBustourMapClick: () -> Unit,
     val onShareTrip: () -> Unit,
     val onEditTrip: () -> Unit,
     val onAddContact: () -> Unit,

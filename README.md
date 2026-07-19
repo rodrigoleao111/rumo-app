@@ -43,7 +43,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 | UI | Jetpack Compose + Material 3 |
 | Navegação | Navigation Compose |
 | Arquitetura | MVVM (ViewModel + StateFlow) |
-| Banco de dados | Room (SQLite) v12 |
+| Banco de dados | Room (SQLite) v16 |
 | Clima | Open-Meteo API |
 | IA | Gemini 2.0 Flash (Google AI) |
 | minSdk | 26 (Android 8.0+) |
@@ -74,7 +74,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 
 ### Configuração
 
-1. Abra a pasta `GramadoApp/` no Android Studio
+1. Abra a pasta `rumo-app/` no Android Studio
 2. Crie o arquivo `local.properties` na raiz do projeto (se não existir) e adicione:
    ```
    GEMINI_API_KEY=sua_chave_aqui
@@ -188,3 +188,6 @@ Botões de ação principal: `containerColor = GreenMoss`, ícone/texto `AmberPr
 | `docs/modulo-09-share-import.md` | Arquitetura e funcionalidades de `ShareTripScreen`, `ImportTripScreen`, `TravelExporter` e `TravelImporter` |
 | `docs/modulo-10-settings.md` | Arquitetura e funcionalidades de `SettingsScreen`, `SettingsViewModel` e `SettingsRepository` |
 | `docs/modulo-11-navegacao.md` | Arquitetura de `AppNavigation`: rotas, transições, splash, pager de abas, FAB contextual, refresh via `SavedStateHandle`, backstack de importação |
+| `docs/modulo-12-notificacoes.md` | Lembrete de check-in: `NotificationHelper` (WorkManager + canal), `CheckInReminderWorker`, `CheckInReminderCard` e permissão `POST_NOTIFICATIONS` |
+| `docs/modulo-13-seed-dados-iniciais.md` | Seed da viagem de exemplo: `DatabaseSeeder` (idempotente) e `RoteiroRepository` (fixture de dados iniciais) |
+| `docs/modulo-14-categorias-contato.md` | Categorias de contato personalizadas: `ContactCategoryRepository` (SharedPreferences) e uso em `EditContactViewModel` |

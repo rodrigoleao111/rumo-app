@@ -143,7 +143,7 @@ se autoOpenActiveTrip == true
 
 A condição `== exatamente 1` é importante: se houver zero ou mais de uma viagem ativa, o comportamento é o padrão (lista de viagens). Isso evita ambiguidade quando o usuário tem múltiplas viagens simultâneas.
 
-**Quem consume:** `AppNavigation.kt` — lê `SettingsRepository.autoOpenActiveTrip` diretamente na composição do grafo de navegação.
+**Quem consume:** `AppNavigation.kt` — obtém um `SettingsViewModel` via `hiltViewModel()` e coleta `settingsVm.autoOpenActiveTrip` com `collectAsStateWithLifecycle()` na composição do grafo de navegação (mesmo `SettingsViewModel` usado para `showEmergencyContacts`).
 
 ### Toggle 2 — "Adicionar números de emergência nos contatos das viagens"
 

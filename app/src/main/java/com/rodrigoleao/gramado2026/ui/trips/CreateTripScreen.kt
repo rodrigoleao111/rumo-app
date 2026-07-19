@@ -15,16 +15,16 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -122,11 +122,11 @@ fun CreateTripScreen(
                     ) {
                         if (step < 3) {
                             IconButton(onClick = { if (step > 0) step-- else onBack() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                             }
                         } else if (showBackInStep4) {
                             IconButton(onClick = { viewModel.backToChoosing() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                             }
                         } else {
                             Spacer(Modifier.width(16.dp))
@@ -140,7 +140,7 @@ fun CreateTripScreen(
                         )
                         if (step == 3 && chatPhase == ChatPhase.CHOOSING) {
                             IconButton(onClick = { showHelpSheet = true }) {
-                                Icon(Icons.Default.HelpOutline, contentDescription = "Ajuda", tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "Ajuda", tint = Color.White)
                             }
                         }
                     }
@@ -383,7 +383,7 @@ private fun Step1Content(
             OutlinedTextField(
                 value         = form.destination,
                 onValueChange = onUpdateDest,
-                modifier      = Modifier.menuAnchor().fillMaxWidth(),
+                modifier      = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                 placeholder   = { Text("Ex: Gramado, RS") },
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
@@ -651,7 +651,7 @@ private fun Step3Content(
             OutlinedTextField(
                 value         = form.hotelAddress,
                 onValueChange = onUpdateHotelAddress,
-                modifier      = Modifier.menuAnchor().fillMaxWidth(),
+                modifier      = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                 placeholder   = { Text("Ex: Rua Coberta, Gramado, RS") },
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
@@ -1168,7 +1168,7 @@ private fun ChatScreen(
                                 .background(if (input.isNotBlank()) GreenMoss else CardBorder)
                         ) {
                             Icon(
-                                Icons.Default.Send,
+                                Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Enviar",
                                 tint     = Color.White,
                                 modifier = Modifier.size(20.dp)
