@@ -97,8 +97,11 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 # Instalar no dispositivo conectado
 ./gradlew installDebug
 
-# Testes
+# Testes unitários (JVM)
 ./gradlew test
+
+# Testes de instrumentação (migrations, DAOs — requer emulador/dispositivo)
+./gradlew connectedAndroidTest
 ```
 
 ## Estrutura de pastas
@@ -154,7 +157,9 @@ Veja `docs/travel-export-schema.md` para o schema completo do `trip.json`.
 
 Room versão 16. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
 
-Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `version` no `@Database` e registre em `.addMigrations(...)`.
+Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `CURRENT_VERSION`, registre em `ALL_MIGRATIONS` e escreva um teste de migração com `MigrationTestHelper` (ver `docs/guia-testes.md` §1.1).
+
+Os schemas de cada versão são exportados em `app/schemas/` (`exportSchema = true`) — **versionados no git, nunca apagar**: são o histórico que permite testar migrations.
 
 ## Paleta de cores
 

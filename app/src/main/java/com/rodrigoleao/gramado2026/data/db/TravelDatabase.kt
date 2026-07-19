@@ -21,8 +21,8 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         VoucherGroupEntity::class,
         BoardingPassEntity::class
     ],
-    version = 16,
-    exportSchema = false
+    version = TravelDatabase.CURRENT_VERSION,
+    exportSchema = true
 )
 abstract class TravelDatabase : RoomDatabase() {
 
@@ -35,6 +35,9 @@ abstract class TravelDatabase : RoomDatabase() {
     abstract fun boardingPassDao(): BoardingPassDao
 
     companion object {
+        /** Versão atual do schema — única fonte de verdade (usada na anotação @Database e nos testes). */
+        const val CURRENT_VERSION = 16
+
         @Volatile private var INSTANCE: TravelDatabase? = null
 
         // v3 → v4: hotelPhone adicionado em trips
@@ -141,6 +144,13 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        /** Todas as migrations explícitas, em ordem — usadas em produção e nos testes de migração. */
+        val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
+            MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
+            MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16
+        )
+
         fun getInstance(context: Context): TravelDatabase =
             INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -148,7 +158,7 @@ abstract class TravelDatabase : RoomDatabase() {
                     TravelDatabase::class.java,
                     "travel_db"
                 )
-                    .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
+                    .addMigrations(*ALL_MIGRATIONS)
                     .fallbackToDestructiveMigrationFrom(1, 2) // versões iniciais sem dados reais
                     .build()
                     .also { INSTANCE = it }

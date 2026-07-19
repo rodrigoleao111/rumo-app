@@ -470,16 +470,30 @@ var showDeleteDialog by remember { mutableStateOf(false) }
 
 ### Testes — estado atual
 
-Infraestrutura inicializada. Testes unitários JVM em `app/src/test/`:
+**108 testes no total: 69 unitários JVM (`./gradlew test`) + 39 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo).** As 4 fases do plano de testes estão implementadas — ver `docs/guia-testes.md`.
+
+**Unitários JVM** (`app/src/test/`):
 
 | Arquivo | Cobertura |
 |---|---|
 | `data/db/MappersTest.kt` | 14 testes — todos os mappers `entity → domain` e `domain → entity` |
-| `ui/trips/TripViewModelTest.kt` | 22 testes — todos os métodos de lista do ViewModel, incluindo testes de timing que verificam otimismo real (estado correto sem `advanceUntilIdle`) |
-| `util/MainDispatcherRule.kt` | Helper compartilhado para testes de ViewModel com coroutines |
-| `util/Fixtures.kt` | Funções `fake*` reutilizáveis em toda a suite |
+| `data/ai/ItineraryParserTest.kt` | 12 testes — parser do JSON de roteiro da IA (defaults, `"null"`, cercas de markdown, caminhos de erro); usa `org.json` real via `testImplementation` |
+| `data/model/VoucherReindexTest.kt` | 7 testes — `reindexedByGroup()` (função pura) |
+| `data/preferences/SettingsRepositoryTest.kt` | 7 testes — DataStore em JVM puro |
+| `ui/trips/TripViewModelTest.kt` | 20 testes — métodos de lista do ViewModel + testes de timing de otimismo |
+| `ui/edit/EditViewModelUiEventTest.kt` | 7 testes — `UiEvent` (NavigateBack/ShowSnackbar/NavigateAfterDelete) |
+| `util/MainDispatcherRule.kt`, `util/Fixtures.kt` | Helpers e fixtures compartilhados |
 
-Testes de instrumentação (DAO, migrations, export/import round-trip) estão planejados — ver `docs/guia-testes.md` para o roadmap por fase.
+**Instrumentados** (`app/src/androidTest/`, rodam no emulador/dispositivo):
+
+| Arquivo | Cobertura |
+|---|---|
+| `data/db/MigrationTest.kt` | 3 testes — cadeia de migrations v3→16 validada contra as entities |
+| `data/db/{Voucher,Contact,TravelActivity,Trip}DaoTest.kt` | 29 testes — SQL real dos DAOs (ordenações, bulk queries, CASCADE) |
+| `data/export/ExportImportRoundTripTest.kt` | 7 testes — round-trip `.travel` (nenhum campo/arquivo perdido; rejeição de schema futuro) |
+| `data/db/DbTestFixtures.kt` | Banco em memória + fixtures de entities |
+
+Schemas do Room exportados em `app/schemas/` (`exportSchema = true`) — versionados no git, base para testes de migration a partir da v17.
 
 ---
 

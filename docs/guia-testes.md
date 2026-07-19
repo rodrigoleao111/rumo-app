@@ -15,15 +15,21 @@ app/src/
 ├── main/java/…                  ← código de produção
 ├── test/java/…                  ← testes JVM (rodam no computador, sem emulador)
 │   └── com/rodrigoleao/gramado2026/
-│       ├── parser/              ← ItineraryGeneratorTest, MapperTest
-│       └── viewmodel/           ← testes de ViewModel (após Hilt)
+│       ├── data/ai/             ← ItineraryParserTest (org.json real via testImplementation)
+│       ├── data/db/             ← MappersTest
+│       ├── data/model/          ← VoucherReindexTest
+│       ├── data/preferences/    ← SettingsRepositoryTest (DataStore em JVM)
+│       ├── ui/…                 ← testes de ViewModel (MockK)
+│       └── util/                ← MainDispatcherRule, Fixtures
 └── androidTest/java/…           ← testes instrumentados (rodam no dispositivo/emulador)
     └── com/rodrigoleao/gramado2026/
-        ├── db/                  ← DAO tests, Migration tests
-        └── export/              ← TravelExporter + TravelImporter round-trip
+        ├── data/db/             ← MigrationTest, 4 DAO tests, DbTestFixtures
+        └── data/export/         ← ExportImportRoundTripTest (round-trip .travel)
 ```
 
-**Regra prática:** se o código que você quer testar importa `android.*` ou `androidx.*`, ele vai para `androidTest/`. Se só importa Kotlin/Java puro, vai para `test/`.
+**Regra prática:** se o código que você quer testar **executa** `android.*`/`androidx.*` de verdade (SQLite, ContentResolver…), ele vai para `androidTest/`. Se é Kotlin/Java puro — ou a dependência Android tem substituto na JVM (ex.: `org.json` real, DataStore) — vai para `test/`.
+
+**Comandos:** `./gradlew test` (JVM) · `./gradlew connectedAndroidTest` (instrumentados — exige emulador/dispositivo conectado).
 
 ---
 
@@ -48,225 +54,92 @@ testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 testImplementation("io.mockk:mockk:1.13.12")
 ```
 
-### A adicionar nas próximas fases
+### Adicionadas (Fase 1)
 
 ```kotlin
-// Fase 3 — DAO e export/import
+// JVM
+testImplementation("org.json:json:20240303")   // org.json real (o do SDK é stub na JVM) — ItineraryParserTest
+testImplementation("com.google.truth:truth:1.4.4")
+
+// Instrumentação
 androidTestImplementation("androidx.test:runner:1.6.2")
-androidTestImplementation("androidx.room:room-testing:2.6.1")
+androidTestImplementation("androidx.room:room-testing:$roomVersion")
 androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+androidTestImplementation("com.google.truth:truth:1.4.4")
 ```
 
-> Considerar trocar `assertEquals` por `com.google.truth:truth:1.4.4` nas próximas fases: mensagens de falha mais legíveis (`assertThat(result).hasSize(3)` vs `assertEquals(3, result.size)`).
+Também adicionados na Fase 1 (pré-requisitos de infra que **não existiam**):
+- `testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"` no `defaultConfig` — sem ele, nenhum teste instrumentado roda;
+- `exportSchema = true` + `ksp { arg("room.schemaLocation", "$projectDir/schemas") }` — o schema de cada versão do Room passa a ser exportado em `app/schemas/` (versionado no git);
+- `app/schemas/` exposto como asset do `androidTest` (para `MigrationTestHelper` em migrations futuras);
+- `TravelDatabase.CURRENT_VERSION` e `TravelDatabase.ALL_MIGRATIONS` públicos (a anotação `@Database` referencia `CURRENT_VERSION` — fonte única).
 
 ---
 
-## Fase 1 — Disponível hoje, sem nenhuma refatoração
+## Fase 1 — Disponível hoje, sem nenhuma refatoração ✅ Implementada
 
-Esses testes não dependem de DI, de modelo de domínio, nem de repositórios separados. Podem ser escritos agora.
+Esses testes não dependem de DI, de modelo de domínio, nem de repositórios separados.
 
-### 1.1 Migrations do Room
+### 1.1 Migrations do Room ✅
 
-O maior risco silencioso do app: uma migration esquecida ou errada corrompe o banco dos usuários após uma atualização. `MigrationTestHelper` replica exatamente o que o Room faz em produção.
+O maior risco silencioso do app: uma migration esquecida ou errada corrompe o banco dos usuários após uma atualização.
 
-**Arquivo:** `androidTest/db/MigrationTest.kt`
+**Arquivo:** `androidTest/data/db/MigrationTest.kt` (3 testes)
 
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class MigrationTest {
+**Adaptação necessária:** o plano original usava `MigrationTestHelper`, mas ele exige os schemas JSON exportados de **cada versão antiga** (`3.json`…`15.json`) — e `exportSchema` era `false` até a v16, então esses arquivos nunca existiram e não há como regenerá-los. A estratégia implementada:
 
-    companion object {
-        private const val TEST_DB = "migration-test"
-    }
+1. Cria um arquivo SQLite real com o **schema da v3 escrito à mão** — derivado do `16.json` revertendo cada migration (todas são aditivas: `ADD COLUMN` / `CREATE TABLE`);
+2. Semeia uma linha em cada tabela e grava `user_version = 3`;
+3. Abre o banco com `Room.databaseBuilder(...).addMigrations(*TravelDatabase.ALL_MIGRATIONS)` — o Room executa as 13 migrations e **valida o schema resultante contra as entities anotadas**, lançando `IllegalStateException("Migration didn't properly handle…")` em qualquer divergência (o mesmo erro de produção);
+4. Verifica que os dados semeados sobreviveram e que os DEFAULTs de cada migration foram aplicados (`hotelPhone = ''`, `voucherSortMode = 'BY_CATEGORY'`, `is_used = 0`, `transportType = 'FLIGHT'`, etc.), e que a tabela `voucher_groups` (criada pela 8→9) aceita insert com FK.
 
-    @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        TravelDatabase::class.java
-    )
-
-    // Testa cada migration individualmente
-    @Test
-    fun migration15To16_addsCustomTypeName() {
-        // Cria banco na versão 15
-        helper.createDatabase(TEST_DB, 15).apply {
-            execSQL("""
-                INSERT INTO contacts (id, tripId, name, role, phone, type, hasWhatsApp, isEmergency, sortOrder, isFavorite)
-                VALUES (1, 1, 'Guia', 'AGENCY', NULL, 'AGENCY', 0, 0, 0, 0)
-            """)
-            close()
-        }
-
-        // Aplica a migration 15→16 e valida que o schema bate com as entidades anotadas
-        val db = helper.runMigrationsAndValidate(TEST_DB, 16, true, MIGRATION_15_16)
-
-        // Verifica que a linha existente sobreviveu com o default correto
-        val cursor = db.query("SELECT customTypeName FROM contacts WHERE id = 1")
-        cursor.moveToFirst()
-        assertThat(cursor.getString(0)).isEqualTo("")   // default da migration
-        cursor.close()
-    }
-
-    // Testa o caminho completo: versão 3 até a atual
-    @Test
-    fun allMigrationsFromVersion3() {
-        helper.createDatabase(TEST_DB, 3).close()
-        helper.runMigrationsAndValidate(
-            TEST_DB, TravelDatabase.CURRENT_VERSION, true,
-            *TravelDatabase.ALL_MIGRATIONS   // array com todas as migrations
-        )
-    }
-}
-```
-
-> **Pré-requisito no código de produção:** expor as migrations como constante acessível:
+> **Migrations futuras (16 → N): usar `MigrationTestHelper`.** Com `exportSchema = true`, o `16.json` (e seguintes) ficam em `app/schemas/` — versionados no git e expostos como asset do androidTest. A partir da v17, o padrão clássico funciona:
 > ```kotlin
-> // TravelDatabase.kt
-> companion object {
->     const val CURRENT_VERSION = 16
->     val ALL_MIGRATIONS = arrayOf(
->         MIGRATION_3_4, MIGRATION_4_5, /* ... */ MIGRATION_15_16
->     )
+> @get:Rule
+> val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), TravelDatabase::class.java)
+>
+> @Test
+> fun migration16To17() {
+>     helper.createDatabase(TEST_DB, 16).apply { /* semear dados v16 */ ; close() }
+>     helper.runMigrationsAndValidate(TEST_DB, 17, true, MIGRATION_16_17)
 > }
 > ```
+> **Nunca apagar os JSONs de `app/schemas/`** — são o histórico que torna esse teste possível.
 
 ---
 
-### 1.2 `ItineraryGenerator.parseJson()` — parser de JSON da IA
+### 1.2 `ItineraryGenerator.parseJson()` — parser de JSON da IA ✅
 
-Função estática pura: entra string, sai lista de dias. Nenhuma dependência Android.
+Função estática pura: entra string, sai lista de `GeneratedDay`. Roda **na JVM** — o `org.json` real entra no classpath via `testImplementation("org.json:json")` (o do SDK Android é stub que lança em testes JVM).
 
-**Arquivo:** `test/parser/ItineraryParserTest.kt`
+**Arquivo:** `test/data/ai/ItineraryParserTest.kt` (12 testes)
 
-```kotlin
-class ItineraryParserTest {
+**Contrato real do parser** (os exemplos originais deste guia usavam um schema hipotético — o real está em `docs/ai-itinerary-schema.md`):
 
-    @Test
-    fun parseDiaComAtividadesCompletas() {
-        val json = """
-        {
-          "days": [{
-            "date": "2026-06-09",
-            "title": "Chegada em Gramado",
-            "alert": "Check-in a partir das 14h",
-            "activities": [{
-              "time": "14h00",
-              "name": "Check-in no hotel",
-              "emoji": "🏨",
-              "detail": "Hotel Serra Azul",
-              "address": "Rua Garibaldi, 152",
-              "badges": ["BOOKED"]
-            }]
-          }]
-        }
-        """
-        val result = ItineraryGenerator.parseJson(json)
-
-        assertThat(result).hasSize(1)
-        assertThat(result[0].title).isEqualTo("Chegada em Gramado")
-        assertThat(result[0].alert).isEqualTo("Check-in a partir das 14h")
-        assertThat(result[0].activities).hasSize(1)
-        assertThat(result[0].activities[0].name).isEqualTo("Check-in no hotel")
-        assertThat(result[0].activities[0].badges).contains("BOOKED")
-    }
-
-    @Test
-    fun parseCamposOpcionaisAusentesNaoCrasha() {
-        // IA às vezes omite campos — o parser precisa ser tolerante
-        val json = """{"days": [{"activities": [{"name": "Passeio livre"}]}]}"""
-        val result = ItineraryGenerator.parseJson(json)
-        assertThat(result).hasSize(1)
-        assertThat(result[0].activities[0].name).isEqualTo("Passeio livre")
-        assertThat(result[0].activities[0].emoji).isNotNull()   // deve ter um default
-    }
-
-    @Test
-    fun parseJsonMalformadoNaoCrasha() {
-        // JSON inválido que a IA pode retornar com texto extra antes/depois
-        val json = "Claro! Aqui está o roteiro:\n```json\n{\"days\": []}\n```"
-        // O parser extrai o JSON do bloco de markdown — não deve lançar exceção
-        val result = runCatching { ItineraryGenerator.parseJson(json) }
-        assertThat(result.isSuccess).isTrue()
-    }
-
-    @Test
-    fun parseBadgesCustomizadosPreservaNome() {
-        val json = """
-        {"days": [{"activities": [{
-          "name": "Jantar",
-          "badges": [{"type": "CUSTOM", "label": "Reserva", "color": "#FF5722"}]
-        }]}]}
-        """
-        val result = ItineraryGenerator.parseJson(json)
-        val badge = result[0].activities[0].badges.first()
-        assertThat(badge).contains("Reserva")
-    }
-}
-```
-
----
-
-### 1.3 DAOs básicos — banco em memória
-
-Qualquer DAO pode ser testado com banco Room em memória hoje. Escolha começar pelos mais críticos.
-
-**Arquivo:** `androidTest/db/VoucherDaoTest.kt`
-
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class VoucherDaoTest {
-
-    private lateinit var db: TravelDatabase
-    private lateinit var dao: VoucherDao
-
-    @Before
-    fun setup() {
-        db = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            TravelDatabase::class.java
-        ).allowMainThreadQueries().build()
-        dao = db.voucherDao()
-        // Insere trip de referência (FK obrigatória)
-        runBlocking { db.tripDao().insert(TripEntity(id = 1, name = "Gramado", ...)) }
-    }
-
-    @After fun tearDown() = db.close()
-
-    @Test
-    fun insertAndGetForTrip() = runTest {
-        dao.insert(VoucherEntity(id = 0, tripId = 1, name = "Bondinho", sortOrder = 0, isUsed = false, ...))
-        val result = dao.getForTrip(1)
-        assertThat(result).hasSize(1)
-        assertThat(result[0].name).isEqualTo("Bondinho")
-    }
-
-    @Test
-    fun toggleIsUsed_persisteCorretamente() = runTest {
-        val id = dao.insert(VoucherEntity(id = 0, tripId = 1, name = "Bondinho", isUsed = false, ...))
-        dao.updateIsUsed(id, true)
-        assertThat(dao.getForTrip(1)[0].isUsed).isTrue()
-    }
-
-    @Test
-    fun deletar_removeApenas1Voucher() = runTest {
-        val id1 = dao.insert(VoucherEntity(id = 0, tripId = 1, name = "Bondinho", sortOrder = 0, ...))
-        dao.insert(VoucherEntity(id = 0, tripId = 1, name = "Dreamland", sortOrder = 1, ...))
-        dao.deleteById(id1)
-        val result = dao.getForTrip(1)
-        assertThat(result).hasSize(1)
-        assertThat(result[0].name).isEqualTo("Dreamland")
-    }
-}
-```
-
-**DAOs prioritários para testar primeiro** (por risco de bug):
-
-| DAO | Razão |
+| Campo | Regra |
 |---|---|
-| `VoucherDao` | Lógica de `sortOrder` — fácil de errar na reindexação |
-| `ContactDao` | `sortOrder` por viagem + `isFavorite` + grupo por `type` |
-| `TravelActivityDao` | Queries bulk (`IN (:dayIds)`) — risco de N+1 silencioso |
-| `TripDao` | `Flow<List<TripEntity>>` — verifica que emite corretamente |
+| `days[]`, `dayNumber`, `title`, `activities[]`, `name` | **Obrigatórios** — ausência lança `JSONException` (quem chama trata) |
+| `time`, `emoji`, `detail` | Opcionais — defaults `""`, `"📍"`, `""` |
+| `dayAlert`, `address` | Opcionais — ausente, em branco ou a string `"null"` → `null` |
+| `badges` | Opcional — lista de **strings** (objetos não são suportados); ausente → vazia |
+| Cerca de markdown | ` ```json … ``` ` ou ` ``` … ``` ` **no início** do texto é removida; prosa antes do JSON **não** é suportada (lança) |
+
+Cobertura: dia completo, defaults, `"null"` string → null, cercas de markdown, ordem preservada, lista vazia, e os 4 caminhos de erro (`@Test(expected = JSONException::class)`).
+
+---
+
+### 1.3 DAOs básicos — banco em memória ✅
+
+Os 4 DAOs prioritários estão cobertos com banco Room em memória (`inMemoryDatabaseBuilder`, FKs ativas). As fixtures de entities ficam em `androidTest/data/db/DbTestFixtures.kt` (funções `tripEntity()`, `voucherEntity()`, etc. — defaults mínimos, sobrescreve-se só o que importa no teste).
+
+| Arquivo | Testes | O que cobre |
+|---|---|---|
+| `VoucherDaoTest.kt` | 7 | Ordenação `groupName → sort_order → id`, `updateSortOrder`, `updateIsUsed` (ida e volta), `getMaxSortOrderInGroup` (inclusive `-1` para grupo vazio), `deleteById`, CASCADE ao deletar a viagem |
+| `ContactDaoTest.kt` | 7 | Ordenação por `sortOrder`, telefone nulo, `updateIsFavorite`, `updateSortOrder`, `deleteById`, CASCADE |
+| `TravelActivityDaoTest.kt` | 9 | Queries bulk (`getActivitiesForDays`, `getBadgesForActivities`, `getWalkStopsForActivities`) com ordenação `dayId → position`, `insertBadges` em lote, `deleteBadgesForActivity`, `updatePosition`, `countForDay`, CASCADE badge/walk stop ao deletar atividade |
+| `TripDaoTest.kt` | 6 | `Flow` de `getAllTrips` (emissão + ordenação por `createdAt`), `count`, `updateCoordinates`, `updateVoucherSortMode`, CASCADE transitivo trip → dias → atividades |
+
+> **Armadilha Kotlin + JUnit4:** métodos `@Test` escritos como `fun x() = runBlocking { … }` precisam terminar em expressão `Unit`. Um `assertThat(...).containsExactly(...)` **sem** `.inOrder()` retorna `Ordered` — o método deixa de ser void e o JUnit rejeita a **classe inteira** com `initializationError / Failed to instantiate test runner`. Solução: `runBlocking<Unit> { … }` (aconteceu no `TravelActivityDaoTest`).
 
 ---
 
@@ -375,8 +248,6 @@ class SettingsRepositoryTest {
 
 Coberturas: defaults verdadeiros, persist/emit em false, persist/emit em true-after-false, independência entre as duas chaves.
 
-**Suite atual: 57 testes JVM, todos passando.**
-
 ---
 
 ### 2.3 ViewModel UiEvents — Melhoria #7 ✅ Implementada
@@ -422,98 +293,32 @@ Coberturas implementadas:
 - `NavigateAfterDelete` emitido em deleteTrip com sucesso (`EditTripViewModel`)
 - `isDeleting` resetado para `false` em deleteTrip com falha
 
-**Suite atual:** 57 testes JVM, todos passando.
-
 ---
 
-## Fase 3 — Após melhoria #2 (repositórios por domínio)
+## Fase 3 — Após melhoria #2 (repositórios por domínio) ✅ Implementada
 
-Com repositórios menores e injetáveis, os testes de integração ficam cirúrgicos.
+### 3.1 `TravelExporter` + `TravelImporter` — round-trip ✅
 
-### 3.1 `TravelExporter` + `TravelImporter` — round-trip
+O teste mais valioso do app: garante que export → import não perde nenhum campo. Qualquer campo novo adicionado ao banco que não for adicionado ao exporter/importer quebra esse teste.
 
-O teste mais valioso do app: garante que export → import não perde nenhum campo. Qualquer campo novo adicionado ao banco que não foi adicionado ao exporter quebra esse teste.
+**Arquivo:** `androidTest/data/export/ExportImportRoundTripTest.kt` (7 testes)
 
-**Arquivo:** `androidTest/export/ExportImportRoundTripTest.kt`
+**Montagem:** banco Room em memória + os 6 repositórios reais construídos à mão (não precisa de Hilt — os `@Inject constructor` são construtores normais) + `TravelExporter`/`TravelImporter` reais. O resto do caminho é o de produção: ZIP em `cacheDir/exports/` via FileProvider, leitura via `ContentResolver`, arquivos restaurados em `filesDir/{Arquivos,Vouchers,Passagens}`.
 
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class ExportImportRoundTripTest {
+| Teste | O que garante |
+|---|---|
+| `roundTrip_preservaViagemDiasAtividadesBadgesEWalkStops` | Todos os campos de trip (datas, coordenadas, hotel), dias (título, alerta, link), atividades (horário, endereço em `mapQuery`+`uberDestination`), badges (inclusive `CUSTOM` com cor) e walk stops (ordem, `sublabel` nulo, `isLast`) |
+| `roundTrip_preservaContatosVouchersEPassagens` | Contatos (tipo builtin e `CUSTOM` + `customTypeName`, favorito, telefone nulo), vouchers (`groupName`, `sortOrder`, `isUsed`, `dayId` nulo/preenchido, voucher-link mantém `assetPath` original) e passagem (todos os campos + `notes`) |
+| `roundTrip_preservaVoucherSortMode` | Preferência de agrupamento (`BY_DAY`) sobrevive |
+| `roundTrip_arquivosDeVoucherDocumentoDoDiaEPassagemViajamNoZip` | Bytes dos 3 tipos de anexo entram no ZIP e são restaurados — os originais são **apagados antes do import** para provar que vieram do ZIP, não de sobras no disco |
+| `import_sempreCriaNovaViagem` | Importar 2× o mesmo arquivo cria 2 viagens novas (regra do schema: import nunca sobrescreve) |
+| `import_schemaVersionSuperior_recusaComMensagemDeAtualizacao` | `.travel` forjado com `schemaVersion: 2` é rejeitado com a mensagem de "atualize o app" |
+| `import_zipSemTripJson_recusa` | ZIP sem `trip.json` é rejeitado |
 
-    private lateinit var db: TravelDatabase
-    private lateinit var tripRepo: TripRepository
-    private lateinit var exporter: TravelExporter
-    private lateinit var importer: TravelImporter
-    private val context = ApplicationProvider.getApplicationContext<Context>()
-
-    @Before
-    fun setup() {
-        db = Room.inMemoryDatabaseBuilder(context, TravelDatabase::class.java)
-            .allowMainThreadQueries().build()
-        tripRepo  = TripRepository(db)
-        exporter  = TravelExporter(context, tripRepo)
-        importer  = TravelImporter(context, db)
-    }
-
-    @After fun tearDown() = db.close()
-
-    @Test
-    fun exportAndImport_preservaDiasEAtividades() = runTest {
-        // 1. Cria viagem completa
-        val tripId = tripRepo.createTrip("Gramado 2026", "Gramado, RS", "🏔️",
-            startDate = "2026-06-09", endDate = "2026-06-13")
-        // Adiciona atividade no dia 1
-        tripRepo.upsertActivity(tripId, dayNumber = 1, TravelActivity(
-            id = 0L, time = "14h00", emoji = "🏨", name = "Check-in",
-            detail = "Serra Azul", mapQuery = "Rua Garibaldi", uberDestination = "Rua Garibaldi",
-            badges = listOf(Badge(BadgeType.BOOKED, "Reservado", null)),
-            walkStops = emptyList()
-        ))
-
-        // 2. Exporta
-        val uri = exporter.export(tripId)
-        assertThat(uri).isNotNull()
-
-        // 3. Importa
-        val importedId = importer.import(uri)
-        assertThat(importedId).isGreaterThan(0L)
-
-        // 4. Compara
-        val original = tripRepo.getTripData(tripId)
-        val imported  = tripRepo.getTripData(importedId)
-
-        assertThat(imported.days).hasSize(original.days.size)
-        val origDay1 = original.days.first()
-        val impDay1  = imported.days.first()
-        assertThat(impDay1.activities).hasSize(origDay1.activities.size)
-        assertThat(impDay1.activities[0].name).isEqualTo(origDay1.activities[0].name)
-        assertThat(impDay1.activities[0].badges).hasSize(1)
-    }
-
-    @Test
-    fun exportAndImport_preservaVouchersComSortOrderEIsUsed() = runTest {
-        val tripId = tripRepo.createTrip(...)
-        // Adiciona vouchers com sortOrder e isUsed específicos
-        voucherRepo.insert(DayVoucher(name = "Bondinho", sortOrder = 0, isUsed = true, ...))
-        voucherRepo.insert(DayVoucher(name = "Dreamland", sortOrder = 1, isUsed = false, ...))
-
-        val uri = exporter.export(tripId)
-        val importedId = importer.import(uri)
-
-        val vouchers = tripRepo.getTripData(importedId).vouchers
-        assertThat(vouchers.find { it.name == "Bondinho" }?.isUsed).isTrue()
-        assertThat(vouchers.find { it.name == "Dreamland" }?.sortOrder).isEqualTo(1)
-    }
-
-    @Test
-    fun importZipComSchemaVersionInvalida_lancaExcecao() = runTest {
-        val zipUri = criarZipComSchemaVersion(999)
-        val result = runCatching { importer.import(zipUri) }
-        assertThat(result.isFailure).isTrue()
-        assertThat(result.exceptionOrNull()).isInstanceOf(UnsupportedSchemaVersionException::class.java)
-    }
-}
-```
+> **Notas de implementação** (o pseudo-código original deste guia divergia das APIs reais):
+> - `TravelImporter` recebe os **6 repositórios**, não o `db`; não existe `UnsupportedSchemaVersionException` — o importer lança `Exception` com mensagem (testa-se via `runCatching` + `message`).
+> - O seed usa os repositórios (`createTrip` gera os dias do período automaticamente; `upsertActivity(dayEntityId, entity, badges)`).
+> - Para os `.travel` forjados dos testes de rejeição, basta gravar um ZIP em `cacheDir` e passar `Uri.fromFile(...)` — `ContentResolver.openInputStream` aceita `file://` no próprio processo.
 
 ---
 
@@ -589,8 +394,6 @@ fun fakeContact(id: Long = 1L, sortOrder: Int = 0, isFavorite: Boolean = false) 
     Contact(id = id, name = "Contato $id", sortOrder = sortOrder, isFavorite = isFavorite, ...)
 ```
 
-**Suite atual: 57 testes JVM, todos passando.**
-
 ---
 
 ## Padrões a seguir em todos os testes
@@ -643,10 +446,12 @@ Não existe cobertura-alvo numérica útil. O critério é: **cada caminho de ne
 
 | Fase | Pré-requisito | O que testar | Ferramenta | Status |
 |---|---|---|---|---|
-| **1 — Agora** | Nenhum | Migrations, `parseJson()`, DAOs básicos | Room testing, JUnit | A fazer |
+| **1 — Agora** | Nenhum | Migrations, `parseJson()`, DAOs básicos | Room testing, JUnit, Truth | ✅ `MigrationTest.kt` (3) · `ItineraryParserTest.kt` (12, JVM) · `VoucherDaoTest.kt` (7) · `ContactDaoTest.kt` (7) · `TravelActivityDaoTest.kt` (9) · `TripDaoTest.kt` (6) |
 | **2 — Após melhoria #3** | Modelo domínio `Trip` | `Mappers.toDomain()`, `toEntity()` | JUnit | ✅ `MappersTest.kt` |
 | **2b — Melhorias #4, #6 e #8** | Lógica nos ViewModels + otimismo + funções puras | `TripViewModel`: todos os métodos de lista, testes de timing; `reindexedByGroup()` | MockK, coroutines-test | ✅ `TripViewModelTest.kt` (20 testes) · `VoucherReindexTest.kt` (7 testes) |
-| **3 — Após melhoria #2** | Repositórios por domínio | Export/import round-trip, reindexação | Room in-memory | A fazer |
+| **3 — Após melhoria #2** | Repositórios por domínio | Export/import round-trip, reindexação | Room in-memory + exporter/importer reais | ✅ `ExportImportRoundTripTest.kt` (7 testes) |
 | **4 — Após melhoria #1** | Hilt DI + `@HiltViewModel` | ViewModels com nav args via `SavedStateHandle`; `UiEvent` emitidos em save/delete | MockK, coroutines-test | ✅ `TripViewModelTest.kt` · `EditViewModelUiEventTest.kt` (27 testes no total) |
 
-Comece pela Fase 1. As migrations e o `parseJson()` são os pontos de maior risco atual e não exigem nenhuma mudança no código de produção.
+**Suite atual: 69 testes JVM (`./gradlew test`) + 39 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo) = 108 testes. Todas as 4 fases do plano estão implementadas.**
+
+Próximos alvos naturais (fora do plano original): testes de UI Compose das telas críticas e um workflow de CI que rode `test` em cada push (o `connectedAndroidTest` exige emulador — viável com `gradle-managed devices` ou emulador no runner).

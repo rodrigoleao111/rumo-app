@@ -24,6 +24,8 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"${localProps.getProperty("GEMINI_API_KEY", "")}\"")
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -60,6 +62,17 @@ android {
         compose = true
         buildConfig = true
     }
+
+    sourceSets {
+        // Schemas exportados do Room disponíveis como assets nos testes instrumentados
+        // (necessário para MigrationTestHelper em migrations futuras)
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+ksp {
+    // Exporta o schema JSON de cada versão do Room para app/schemas/ (versionado no git)
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -110,10 +123,16 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.9.24")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.json:json:20240303")  // org.json real na JVM (o do SDK é stub) — usado por ItineraryParserTest
+    testImplementation("com.google.truth:truth:1.4.4")
 
     // Testes de instrumentação (Android)
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.room:room-testing:$roomVersion")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    androidTestImplementation("com.google.truth:truth:1.4.4")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
