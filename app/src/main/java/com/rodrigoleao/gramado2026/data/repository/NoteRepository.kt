@@ -68,6 +68,10 @@ class NoteRepository @Inject constructor(private val db: TravelDatabase) {
 
     suspend fun countNotes(tripId: Long, dayId: Int?): Int = dao.countNotes(tripId, dayId)
 
+    /** Mapa dayNumber → nº de notas daquele dia (para o preview no DayDetailScreen). */
+    suspend fun dayNoteCounts(tripId: Long): Map<Int, Int> =
+        dao.getDayNoteCounts(tripId).associate { it.dayId to it.count }
+
     // Monta Note completo com 3 queries bulk (notes → blocks → items), sem N+1.
     private suspend fun assemble(notes: List<NoteEntity>): List<Note> {
         val blocks = dao.getBlocksForNotes(notes.map { it.id })

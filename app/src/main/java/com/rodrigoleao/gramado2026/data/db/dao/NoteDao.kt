@@ -5,6 +5,8 @@ import com.rodrigoleao.gramado2026.data.db.entity.ChecklistItemEntity
 import com.rodrigoleao.gramado2026.data.db.entity.NoteBlockEntity
 import com.rodrigoleao.gramado2026.data.db.entity.NoteEntity
 
+data class DayNoteCount(val dayId: Int, val count: Int)
+
 @Dao
 interface NoteDao {
 
@@ -22,6 +24,10 @@ interface NoteDao {
 
     @Query("SELECT COUNT(*) FROM notes WHERE tripId = :tripId AND dayId IS :dayId")
     suspend fun countNotes(tripId: Long, dayId: Int?): Int
+
+    // Contagem de notas por dia (só notas de dia) — para o preview no DayDetailScreen.
+    @Query("SELECT dayId AS dayId, COUNT(*) AS count FROM notes WHERE tripId = :tripId AND dayId IS NOT NULL GROUP BY dayId")
+    suspend fun getDayNoteCounts(tripId: Long): List<DayNoteCount>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertNote(note: NoteEntity): Long

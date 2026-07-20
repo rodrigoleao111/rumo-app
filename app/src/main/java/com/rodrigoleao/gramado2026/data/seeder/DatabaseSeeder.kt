@@ -22,7 +22,9 @@ object DatabaseSeeder {
                 hotelName    = "Hotel San Lucas",
                 hotelAddress = "Rua João Carniel, 73, Gramado, RS",
                 startDate    = startDate,
-                endDate      = endDate
+                endDate      = endDate,
+                tripUuid     = java.util.UUID.randomUUID().toString(),   // F1: nasce com UUID
+                lastEditedAt = System.currentTimeMillis()
             )
         )
 

@@ -151,4 +151,18 @@ class NoteRepositoryTest {
         assertThat(repo.countNotes(1, null)).isEqualTo(1)
         assertThat(repo.countNotes(1, 4)).isEqualTo(1)
     }
+
+    @Test
+    fun dayNoteCounts_agrupaPorDiaEIgnoraGerais() = runBlocking {
+        repo.createNote(1, null)   // geral — não entra na contagem por dia
+        repo.createNote(1, 2)
+        repo.createNote(1, 2)
+        repo.createNote(1, 5)
+
+        val counts = repo.dayNoteCounts(1)
+
+        assertThat(counts.keys).containsExactly(2, 5)
+        assertThat(counts[2]).isEqualTo(2)
+        assertThat(counts[5]).isEqualTo(1)
+    }
 }

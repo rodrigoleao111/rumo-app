@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.NoteBlock
 import com.rodrigoleao.gramado2026.data.model.NoteBlockType
 import com.rodrigoleao.gramado2026.ui.theme.*
+import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -132,7 +133,8 @@ fun NoteEditorScreen(
                                     onAddItem      = { viewModel.addChecklistItem(block.id) },
                                     onItemText     = { itemId, text -> viewModel.updateItemText(block.id, itemId, text) },
                                     onItemToggle   = { itemId, checked -> viewModel.toggleChecklistItem(block.id, itemId, checked) },
-                                    onItemDelete   = { itemId -> viewModel.deleteChecklistItem(block.id, itemId) }
+                                    onItemDelete   = { itemId -> viewModel.deleteChecklistItem(block.id, itemId) },
+                                    onReorderItems = { ids -> viewModel.reorderChecklistItems(block.id, ids) }
                                 )
                             }
                         }
@@ -167,7 +169,8 @@ private fun BlockEditor(
     onAddItem: () -> Unit,
     onItemText: (Long, String) -> Unit,
     onItemToggle: (Long, Boolean) -> Unit,
-    onItemDelete: (Long) -> Unit
+    onItemDelete: (Long) -> Unit,
+    onReorderItems: (List<Long>) -> Unit
 ) {
     when (block) {
         is NoteBlock.TextBlock -> BlockTextField(
@@ -184,18 +187,28 @@ private fun BlockEditor(
             modifier = Modifier.padding(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            block.items.forEach { item ->
-                ChecklistItemRow(
-                    text        = item.text,
-                    checked     = item.isChecked,
-                    itemKey     = item.id,
-                    autoFocus   = autoFocusItem == item.id,
-                    onFocused   = onFocused,
-                    onFocusHandled = onFocusHandled,
-                    onToggle    = { onItemToggle(item.id, it) },
-                    onTextChange = { onItemText(item.id, it) },
-                    onDelete    = { onItemDelete(item.id) }
-                )
+            ReorderableColumn(
+                list = block.items,
+                onSettle = { from, to ->
+                    val ids = block.items.toMutableList().apply { add(to, removeAt(from)) }.map { it.id }
+                    onReorderItems(ids)
+                },
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) { _, item, _ ->
+                key(item.id) {
+                    ChecklistItemRow(
+                        text        = item.text,
+                        checked     = item.isChecked,
+                        itemKey     = item.id,
+                        autoFocus   = autoFocusItem == item.id,
+                        onFocused   = onFocused,
+                        onFocusHandled = onFocusHandled,
+                        onToggle    = { onItemToggle(item.id, it) },
+                        onTextChange = { onItemText(item.id, it) },
+                        onDelete    = { onItemDelete(item.id) },
+                        dragHandleModifier = Modifier.draggableHandle()
+                    )
+                }
             }
             TextButton(onClick = onAddItem, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
                 Text("+ Adicionar item", color = GreenMoss, fontSize = 14.sp)
@@ -249,7 +262,8 @@ private fun ChecklistItemRow(
     onFocusHandled: () -> Unit,
     onToggle: (Boolean) -> Unit,
     onTextChange: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    dragHandleModifier: Modifier = Modifier
 ) {
     var value by remember(itemKey) { mutableStateOf(text) }
     val requester = remember(itemKey) { FocusRequester() }
@@ -257,6 +271,9 @@ private fun ChecklistItemRow(
         if (autoFocus) { requester.requestFocus(); onFocusHandled() }
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = {}, modifier = dragHandleModifier.size(28.dp)) {
+            Icon(Icons.Default.DragHandle, contentDescription = "Reordenar item", tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
+        }
         IconButton(onClick = { onToggle(!checked) }, modifier = Modifier.size(36.dp)) {
             Icon(
                 if (checked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,

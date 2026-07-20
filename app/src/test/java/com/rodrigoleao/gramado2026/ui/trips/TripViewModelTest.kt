@@ -58,6 +58,7 @@ class TripViewModelTest {
         noteRepo     = mockk()
         coEvery { tripRepo.touchLastEditedAt(any()) } just Runs   // F1: chamado por toda mutação
         coEvery { noteRepo.getNotes(any(), any()) } returns emptyList()   // F4: notas gerais no load
+        coEvery { noteRepo.dayNoteCounts(any()) } returns emptyMap()      // F4: contagem por dia
     }
 
     private fun buildVm(initialData: com.rodrigoleao.gramado2026.data.repository.TripData = fakeTripData()): TripViewModel {

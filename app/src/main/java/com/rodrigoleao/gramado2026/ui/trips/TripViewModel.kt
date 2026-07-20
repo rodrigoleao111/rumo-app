@@ -41,6 +41,10 @@ class TripViewModel @Inject constructor(
     private val _generalNotes = MutableStateFlow<List<Note>>(emptyList())
     val generalNotes: StateFlow<List<Note>> = _generalNotes.asStateFlow()
 
+    // Contagem de notas por dia (dayNumber → nº) — preview no DayDetailScreen (F4).
+    private val _dayNoteCounts = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val dayNoteCounts: StateFlow<Map<Int, Int>> = _dayNoteCounts.asStateFlow()
+
     init {
         load()
     }
@@ -48,7 +52,10 @@ class TripViewModel @Inject constructor(
     fun refresh() = load()
 
     private fun loadNotes() {
-        viewModelScope.launch { _generalNotes.value = noteRepo.getNotes(tripId, null) }
+        viewModelScope.launch {
+            _generalNotes.value  = noteRepo.getNotes(tripId, null)
+            _dayNoteCounts.value = noteRepo.dayNoteCounts(tripId)
+        }
     }
 
     fun setVoucherSortMode(mode: VoucherSortMode) {

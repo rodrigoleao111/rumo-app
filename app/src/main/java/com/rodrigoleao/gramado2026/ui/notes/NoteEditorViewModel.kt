@@ -116,6 +116,18 @@ class NoteEditorViewModel @Inject constructor(
         viewModelScope.launch { repo.toggleChecklistItem(itemId, checked); repo.touchNote(noteId) }
     }
 
+    fun reorderChecklistItems(blockId: Long, orderedIds: List<Long>) {
+        _state.update { s ->
+            s.copy(blocks = s.blocks.map { b ->
+                if (b is NoteBlock.ChecklistBlock && b.id == blockId) {
+                    val byId = b.items.associateBy { it.id }
+                    b.copy(items = orderedIds.mapNotNull { byId[it] })
+                } else b
+            })
+        }
+        viewModelScope.launch { repo.reorderChecklistItems(orderedIds); repo.touchNote(noteId) }
+    }
+
     fun deleteChecklistItem(blockId: Long, itemId: Long) {
         _state.update { s ->
             s.copy(blocks = s.blocks.map { b ->

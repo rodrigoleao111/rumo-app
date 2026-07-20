@@ -28,7 +28,16 @@ class TripRepository(private val db: TravelDatabase) {
     // Usa queries bulk (IN) para evitar N+1: 1 trip + 1 days + 1 activities + 1 badges
     // + 1 walkstops + 1 contacts + 1 vouchers + 1 boardingPasses = 8 queries fixas.
     suspend fun getTripData(tripId: Long): TripData? {
-        val trip = db.tripDao().getById(tripId) ?: return null
+        var trip = db.tripDao().getById(tripId) ?: return null
+
+        // F1 (heal): viagens criadas antes da F1 têm tripUuid vazio. Gera um UUID
+        // estável na primeira vez que a viagem é carregada, para que a detecção de
+        // duplicata funcione também para viagens antigas.
+        if (trip.tripUuid.isBlank()) {
+            val uuid = UUID.randomUUID().toString()
+            db.tripDao().healUuid(tripId, uuid)
+            trip = trip.copy(tripUuid = uuid)
+        }
 
         val dayEntities = db.dayDao().getDaysForTrip(tripId)
         val dayIds      = dayEntities.map { it.id }

@@ -327,6 +327,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
             val dayNumber = entry.arguments!!.getInt("dayId")
             val vm: TripViewModel = hiltViewModel()
             val tripData by vm.tripData.collectAsStateWithLifecycle()
+            val dayNoteCounts by vm.dayNoteCounts.collectAsStateWithLifecycle()
 
             val refreshKey by entry.savedStateHandle
                 .getStateFlow("refresh", 0L)
@@ -355,7 +356,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                             vm.swapActivityPositions(acts[from].id, from, acts[to].id, to)
                         }
                     },
-                    onOpenDayNotes    = { navController.navigate(Screen.DayNotes.createRoute(tripId, dayNumber)) }
+                    onOpenDayNotes    = { navController.navigate(Screen.DayNotes.createRoute(tripId, dayNumber)) },
+                    dayNotesCount     = dayNoteCounts[dayNumber] ?: 0
                 )
             }
         }

@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.rodrigoleao.gramado2026.data.db.entity.*
 import com.rodrigoleao.gramado2026.data.db.inMemoryDb
+import com.rodrigoleao.gramado2026.data.db.tripEntity
 import com.rodrigoleao.gramado2026.data.db.TravelDatabase
 import com.rodrigoleao.gramado2026.data.import_trip.TravelImporter
 import com.rodrigoleao.gramado2026.data.model.DuplicateTripException
@@ -423,6 +424,22 @@ class ExportImportRoundTripTest {
     }
 
     // ── F1: detecção de duplicata e sobrescrita ──────────────────────────────────
+
+    @Test
+    fun getTripData_curaUuidVazioDeViagemPreF1() {
+        runBlocking {
+            // Simula viagem criada antes da F1: uuid vazio inserido direto
+            val tripId = db.tripDao().insert(
+                tripEntity(name = "Viagem antiga").copy(tripUuid = "", lastEditedAt = 0L)
+            )
+            assertThat(db.tripDao().getById(tripId)!!.tripUuid).isEmpty()
+
+            val data = tripRepo.getTripData(tripId)!!
+
+            assertThat(data.trip.tripUuid).isNotEmpty()                       // curado no retorno
+            assertThat(db.tripDao().getById(tripId)!!.tripUuid).isNotEmpty()  // e persistido
+        }
+    }
 
     @Test
     fun import_uuidExistente_lancaDuplicateException() {

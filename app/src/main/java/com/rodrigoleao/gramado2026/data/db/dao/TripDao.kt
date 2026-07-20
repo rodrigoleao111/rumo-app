@@ -21,6 +21,10 @@ interface TripDao {
     @Query("UPDATE trips SET lastEditedAt = :timestamp WHERE id = :id")
     suspend fun touchLastEditedAt(id: Long, timestamp: Long)
 
+    // F1 (heal): só atribui UUID se ainda estiver vazio (evita corrida).
+    @Query("UPDATE trips SET tripUuid = :uuid WHERE id = :id AND tripUuid = ''")
+    suspend fun healUuid(id: Long, uuid: String)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(trip: TripEntity): Long
 
