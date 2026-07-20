@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.gramado2026.data.model.Contact
+import com.rodrigoleao.gramado2026.data.model.Note
 import com.rodrigoleao.gramado2026.data.model.Voucher
 import com.rodrigoleao.gramado2026.data.model.reindexedByGroup
 import com.rodrigoleao.gramado2026.data.repository.ActivityRepository
 import com.rodrigoleao.gramado2026.data.repository.ContactRepository
+import com.rodrigoleao.gramado2026.data.repository.NoteRepository
 import com.rodrigoleao.gramado2026.data.repository.TripData
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.repository.VoucherRepository
@@ -26,6 +28,7 @@ class TripViewModel @Inject constructor(
     private val voucherRepo: VoucherRepository,
     private val contactRepo: ContactRepository,
     private val activityRepo: ActivityRepository,
+    private val noteRepo: NoteRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -34,11 +37,19 @@ class TripViewModel @Inject constructor(
     private val _tripData = MutableStateFlow<TripData?>(null)
     val tripData: StateFlow<TripData?> = _tripData.asStateFlow()
 
+    // Notas gerais da viagem (F4) — dayId null. Notas de dia vivem no NotesListViewModel.
+    private val _generalNotes = MutableStateFlow<List<Note>>(emptyList())
+    val generalNotes: StateFlow<List<Note>> = _generalNotes.asStateFlow()
+
     init {
         load()
     }
 
     fun refresh() = load()
+
+    private fun loadNotes() {
+        viewModelScope.launch { _generalNotes.value = noteRepo.getNotes(tripId, null) }
+    }
 
     fun setVoucherSortMode(mode: VoucherSortMode) {
         viewModelScope.launch { tripRepo.saveVoucherSortMode(tripId, mode.name) }
@@ -119,7 +130,28 @@ class TripViewModel @Inject constructor(
         viewModelScope.launch { tripRepo.touchLastEditedAt(tripId) }
     }
 
+    // ── Notas gerais (F4) ───────────────────────────────────────────────────
+
+    fun createGeneralNote(onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val id = noteRepo.createNote(tripId, null)
+            loadNotes()
+            onCreated(id)
+        }
+    }
+
+    fun deleteNote(noteId: Long) {
+        _generalNotes.update { list -> list.filterNot { it.id == noteId } }
+        viewModelScope.launch { noteRepo.deleteNote(noteId) }
+    }
+
+    fun reorderNotes(ordered: List<Note>) {
+        _generalNotes.update { ordered }
+        viewModelScope.launch { noteRepo.reorderNotes(ordered.map { it.id }) }
+    }
+
     private fun load() {
         viewModelScope.launch { _tripData.value = tripRepo.getTripData(tripId) }
+        loadNotes()
     }
 }

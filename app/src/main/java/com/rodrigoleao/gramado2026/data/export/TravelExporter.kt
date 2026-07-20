@@ -3,7 +3,10 @@ package com.rodrigoleao.gramado2026.data.export
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import com.rodrigoleao.gramado2026.data.db.contentText
+import com.rodrigoleao.gramado2026.data.db.typeName
 import com.rodrigoleao.gramado2026.data.model.*
+import com.rodrigoleao.gramado2026.data.repository.NoteRepository
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
@@ -19,14 +22,16 @@ import javax.inject.Singleton
 @Singleton
 class TravelExporter @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val repo: TripRepository
+    private val repo: TripRepository,
+    private val noteRepo: NoteRepository
 ) {
 
     suspend fun export(tripId: Long): Uri {
         val data = repo.getTripData(tripId)
             ?: throw Exception("Viagem não encontrada.")
 
-        val json = buildJson(data)
+        val notes = noteRepo.getAllNotes(tripId)   // F4: notas gerais + de dia
+        val json = buildJson(data, notes)
 
         val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
         val safeName  = data.trip.name.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
@@ -84,7 +89,7 @@ class TravelExporter @Inject constructor(
 
     // ── JSON builder ──────────────────────────────────────────────────────────
 
-    private fun buildJson(data: com.rodrigoleao.gramado2026.data.repository.TripData): String {
+    private fun buildJson(data: com.rodrigoleao.gramado2026.data.repository.TripData, notes: List<Note>): String {
         val trip = data.trip
 
         val hotelObj = JSONObject().apply {
@@ -107,6 +112,9 @@ class TravelExporter @Inject constructor(
         val boardingArray = JSONArray()
         data.boardingPasses.forEach { boardingArray.put(buildBoardingPassJson(it)) }
 
+        val notesArray = JSONArray()
+        notes.forEach { notesArray.put(buildNoteJson(it)) }
+
         val tripObj = JSONObject().apply {
             put("tripUuid",         trip.tripUuid)
             put("lastEditedAt",     trip.lastEditedAt)
@@ -123,12 +131,13 @@ class TravelExporter @Inject constructor(
             put("contacts",         contactsArray)
             put("vouchers",         vouchersArray)
             put("boardingPasses",   boardingArray)
+            put("notes",            notesArray)
         }
 
         val ts = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
         return JSONObject().apply {
-            put("schemaVersion", 2)   // F1: presença de tripUuid + lastEditedAt
+            put("schemaVersion", 3)   // F4: presença do array notes[]
             put("exportedAt",    ts)
             put("trip",          tripObj)
         }.toString(2)
@@ -230,6 +239,39 @@ class TravelExporter @Inject constructor(
             put("documentName",    pass.documentName.ifEmpty { JSONObject.NULL })
             put("notes",           pass.notes.ifEmpty { JSONObject.NULL })
         }
+
+    private fun buildNoteJson(note: Note): JSONObject {
+        val blocksArray = JSONArray()
+        note.blocks.forEach { block ->
+            blocksArray.put(JSONObject().apply {
+                put("type",      block.typeName())
+                put("sortOrder", block.sortOrder)
+                when (block) {
+                    is NoteBlock.TextBlock,
+                    is NoteBlock.HeadingBlock -> put("content", block.contentText())
+                    is NoteBlock.ChecklistBlock -> {
+                        val itemsArray = JSONArray()
+                        block.items.forEach { item ->
+                            itemsArray.put(JSONObject().apply {
+                                put("text",      item.text)
+                                put("isChecked", item.isChecked)
+                                put("sortOrder", item.sortOrder)
+                            })
+                        }
+                        put("items", itemsArray)
+                    }
+                }
+            })
+        }
+        return JSONObject().apply {
+            put("dayId",      note.dayId ?: JSONObject.NULL)
+            put("title",      note.title)
+            put("sortOrder",  note.sortOrder)
+            put("createdAt",  note.createdAt)
+            put("updatedAt",  note.updatedAt)
+            put("blocks",     blocksArray)
+        }
+    }
 
     // Tenta ler o arquivo do voucher: primeiro como caminho absoluto (filesDir),
     // depois como asset (quando assetPath é um caminho relativo a assets/).

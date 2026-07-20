@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -42,6 +43,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rodrigoleao.gramado2026.data.model.BoardingPass
 import com.rodrigoleao.gramado2026.data.model.Contact
+import com.rodrigoleao.gramado2026.data.model.Note
 import com.rodrigoleao.gramado2026.data.model.TravelDay
 import com.rodrigoleao.gramado2026.data.model.Voucher
 import com.rodrigoleao.gramado2026.data.repository.TripData
@@ -64,6 +66,11 @@ import com.rodrigoleao.gramado2026.ui.edit.EditVoucherScreen
 import com.rodrigoleao.gramado2026.ui.edit.EditVoucherViewModel
 import com.rodrigoleao.gramado2026.ui.import_trip.ImportTripScreen
 import com.rodrigoleao.gramado2026.ui.import_trip.ImportTripViewModel
+import com.rodrigoleao.gramado2026.ui.notes.DayNotesScreen
+import com.rodrigoleao.gramado2026.ui.notes.NoteEditorScreen
+import com.rodrigoleao.gramado2026.ui.notes.NotesListContent
+import com.rodrigoleao.gramado2026.ui.notes.NoteEditorViewModel
+import com.rodrigoleao.gramado2026.ui.notes.NotesListViewModel
 import com.rodrigoleao.gramado2026.ui.splash.SplashScreen
 import com.rodrigoleao.gramado2026.ui.share_trip.ShareTripScreen
 import com.rodrigoleao.gramado2026.ui.share_trip.ShareTripViewModel
@@ -108,6 +115,12 @@ sealed class Screen(val route: String) {
     object EditBoardingPass : Screen("trip/{tripId}/pass/{passId}") {
         fun createRoute(tripId: Long, passId: Long) = "trip/$tripId/pass/$passId"
     }
+    object NoteEditor : Screen("trip/{tripId}/note/{noteId}") {
+        fun createRoute(tripId: Long, noteId: Long) = "trip/$tripId/note/$noteId"
+    }
+    object DayNotes : Screen("trip/{tripId}/day/{dayNumber}/notes") {
+        fun createRoute(tripId: Long, dayNumber: Int) = "trip/$tripId/day/$dayNumber/notes"
+    }
     object Splash     : Screen("splash")
     object ImportTrip : Screen("import_trip")
     object ShareTrip  : Screen("trip/{tripId}/share") {
@@ -116,8 +129,8 @@ sealed class Screen(val route: String) {
     object Settings   : Screen("settings")
 }
 
-private val TAB_ICONS  = listOf(Icons.Default.Home, Icons.Default.ConfirmationNumber, Icons.Default.FlightTakeoff, Icons.Default.Call)
-private val TAB_LABELS = listOf("Início", "Vouchers", "Embarque", "Contatos")
+private val TAB_ICONS  = listOf(Icons.Default.Home, Icons.Default.ConfirmationNumber, Icons.Default.FlightTakeoff, Icons.Default.Call, Icons.AutoMirrored.Filled.EventNote)
+private val TAB_LABELS = listOf("Início", "Vouchers", "Embarque", "Contatos", "Notas")
 private const val ANIM_DURATION = 320
 
 // ── NAVEGAÇÃO PRINCIPAL ───────────────────────────────────────────────────────
@@ -262,6 +275,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
             val tripId = entry.arguments!!.getLong("tripId")
             val vm: TripViewModel = hiltViewModel()
             val tripData by vm.tripData.collectAsStateWithLifecycle()
+            val generalNotes by vm.generalNotes.collectAsStateWithLifecycle()
 
             val refreshKey by entry.savedStateHandle
                 .getStateFlow("refresh", 0L)
@@ -272,7 +286,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 state = TripScreenState(
                     tripData              = tripData,
                     refreshKey            = refreshKey,
-                    showEmergencyContacts = showEmergencyContacts
+                    showEmergencyContacts = showEmergencyContacts,
+                    generalNotes          = generalNotes
                 ),
                 actions = TripScreenActions(
                     onDayClick          = { dayId -> navController.navigate(Screen.DayDetail.createRoute(tripId, dayId)) },
@@ -291,6 +306,10 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                     onDeleteContact         = { cId -> vm.deleteContact(cId) },
                     onReorderContacts       = { list -> vm.reorderContacts(list) },
                     onToggleFavoriteContact = { cId, fav -> vm.toggleFavoriteContact(cId, fav) },
+                    onAddNote               = { vm.createGeneralNote { noteId -> navController.navigate(Screen.NoteEditor.createRoute(tripId, noteId)) } },
+                    onOpenNote              = { noteId -> navController.navigate(Screen.NoteEditor.createRoute(tripId, noteId)) },
+                    onDeleteNote            = { noteId -> vm.deleteNote(noteId) },
+                    onReorderNotes          = { list -> vm.reorderNotes(list) },
                     onBack                  = { navController.popBackStack() }
                 )
             )
@@ -335,7 +354,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                         if (from in acts.indices && to in acts.indices) {
                             vm.swapActivityPositions(acts[from].id, from, acts[to].id, to)
                         }
-                    }
+                    },
+                    onOpenDayNotes    = { navController.navigate(Screen.DayNotes.createRoute(tripId, dayNumber)) }
                 )
             }
         }
@@ -451,6 +471,53 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
             )
         }
 
+        // ── Editor de nota (F4) ──────────────────────────────────────────────
+        composable(
+            route     = Screen.NoteEditor.route,
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.LongType },
+                navArgument("noteId") { type = NavType.LongType }
+            )
+        ) {
+            val vm: NoteEditorViewModel = hiltViewModel()
+            NoteEditorScreen(
+                viewModel = vm,
+                onBack    = {
+                    // avisa a lista (aba geral ou notas do dia) para recarregar
+                    navController.previousBackStackEntry?.savedStateHandle?.set("refresh", System.currentTimeMillis())
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // ── Notas de um dia (F4) ─────────────────────────────────────────────
+        composable(
+            route     = Screen.DayNotes.route,
+            arguments = listOf(
+                navArgument("tripId")    { type = NavType.LongType },
+                navArgument("dayNumber") { type = NavType.IntType }
+            )
+        ) { entry ->
+            val tripId    = entry.arguments!!.getLong("tripId")
+            val dayNumber = entry.arguments!!.getInt("dayNumber")
+            val vm: NotesListViewModel = hiltViewModel()
+
+            val refreshKey by entry.savedStateHandle
+                .getStateFlow("refresh", 0L)
+                .collectAsStateWithLifecycle()
+            LaunchedEffect(refreshKey) { if (refreshKey > 0L) vm.refresh() }
+
+            DayNotesScreen(
+                viewModel  = vm,
+                dayLabel   = "Dia $dayNumber",
+                onOpenNote = { noteId -> navController.navigate(Screen.NoteEditor.createRoute(tripId, noteId)) },
+                onBack     = {
+                    navController.previousBackStackEntry?.savedStateHandle?.set("refresh", System.currentTimeMillis())
+                    navController.popBackStack()
+                }
+            )
+        }
+
     }
 }
 
@@ -459,7 +526,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 private data class TripScreenState(
     val tripData: TripData?,
     val refreshKey: Long,
-    val showEmergencyContacts: Boolean
+    val showEmergencyContacts: Boolean,
+    val generalNotes: List<Note>
 )
 
 private data class TripScreenActions(
@@ -479,6 +547,10 @@ private data class TripScreenActions(
     val onDeleteContact: (Long) -> Unit,
     val onReorderContacts: (List<Contact>) -> Unit,
     val onToggleFavoriteContact: (Long, Boolean) -> Unit,
+    val onAddNote: () -> Unit,
+    val onOpenNote: (Long) -> Unit,
+    val onDeleteNote: (Long) -> Unit,
+    val onReorderNotes: (List<Note>) -> Unit,
     val onBack: () -> Unit
 )
 
@@ -517,6 +589,7 @@ private fun MainPagerScreen(
                         1    -> "${trip?.name ?: ""}  •  Vouchers"
                         2    -> "${trip?.name ?: ""}  •  Passagens"
                         3    -> "${trip?.name ?: ""}  •  Contatos"
+                        4    -> "${trip?.name ?: ""}  •  Notas"
                         else -> trip?.name ?: ""
                     }
                     Text(
@@ -594,6 +667,7 @@ private fun MainPagerScreen(
                 1    -> actions.onAddVoucher
                 2    -> actions.onAddBoardingPass
                 3    -> actions.onAddContact
+                4    -> actions.onAddNote
                 else -> null
             }
             fabAction?.let { action ->
@@ -691,6 +765,13 @@ private fun MainPagerScreen(
                     onReorderContacts       = actions.onReorderContacts,
                     onToggleFavoriteContact = actions.onToggleFavoriteContact,
                     showEmergencyContacts   = state.showEmergencyContacts
+                )
+                4 -> NotesListContent(
+                    notes          = state.generalNotes,
+                    contentPadding = innerPadding,
+                    onOpenNote     = actions.onOpenNote,
+                    onDeleteNote   = actions.onDeleteNote,
+                    onReorderNotes = actions.onReorderNotes
                 )
                 else -> Box(Modifier.fillMaxSize())
             }

@@ -317,4 +317,38 @@ class MigrationTest {
             assertThat(c.getLong(2)).isEqualTo(0L)                    // default lastEditedAt
         }
     }
+
+    /**
+     * F4: a migração 17→18 cria as tabelas de notas (notes, note_blocks, checklist_items).
+     * `runMigrationsAndValidate` valida o schema resultante contra o 18.json; um insert
+     * confirma que a nova tabela e sua FK para trips funcionam.
+     */
+    @Test
+    fun migracao17Para18_criaTabelasDeNotas() {
+        val migrationDb = "migration-17-18.db"
+        migrationHelper.createDatabase(migrationDb, 17).apply {
+            execSQL(
+                """INSERT INTO trips (id, name, destination, coverEmoji, hotelName, hotelAddress,
+                   hotelPhone, startDate, endDate, createdAt, latitude, longitude, voucherSortMode,
+                   tripUuid, lastEditedAt)
+                   VALUES (1, 'Gramado', 'Gramado, RS', '⛰️', '', '', '', '2026-06-09', '2026-06-09',
+                   1700000000000, NULL, NULL, 'BY_CATEGORY', 'uuid-1', 1700000000000)"""
+            )
+            close()
+        }
+
+        val db = migrationHelper.runMigrationsAndValidate(
+            migrationDb, 18, true, *TravelDatabase.ALL_MIGRATIONS
+        )
+
+        // Insert numa das novas tabelas confirma criação + FK operacional
+        db.execSQL(
+            "INSERT INTO notes (tripId, dayId, title, sortOrder, createdAt, updatedAt) " +
+                "VALUES (1, NULL, 'Packing list', 0, 1700000000000, 1700000000000)"
+        )
+        db.query("SELECT title FROM notes WHERE tripId = 1").use { c ->
+            assertThat(c.moveToFirst()).isTrue()
+            assertThat(c.getString(0)).isEqualTo("Packing list")
+        }
+    }
 }

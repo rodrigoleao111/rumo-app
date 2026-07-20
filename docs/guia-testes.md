@@ -315,7 +315,7 @@ O teste mais valioso do app: garante que export → import não perde nenhum cam
 | `roundTrip_preservaVoucherSortMode` | Preferência de agrupamento (`BY_DAY`) sobrevive |
 | `roundTrip_arquivosDeVoucherDocumentoDoDiaEPassagemViajamNoZip` | Bytes dos 3 tipos de anexo entram no ZIP e são restaurados — os originais são **apagados antes do import** para provar que vieram do ZIP, não de sobras no disco |
 | `import_sempreCriaNovaViagem` | Importar 2× o mesmo arquivo cria 2 viagens novas (regra do schema: import nunca sobrescreve) |
-| `import_schemaVersionSuperior_recusaComMensagemDeAtualizacao` | `.travel` forjado com `schemaVersion: 2` é rejeitado com a mensagem de "atualize o app" |
+| `import_schemaVersionSuperior_recusaComMensagemDeAtualizacao` | `.travel` forjado com `schemaVersion` acima do `SUPPORTED_SCHEMA_VERSION` é rejeitado com a mensagem de "atualize o app" |
 | `import_zipSemTripJson_recusa` | ZIP sem `trip.json` é rejeitado |
 
 > **Notas de implementação** (o pseudo-código original deste guia divergia das APIs reais):
@@ -455,7 +455,7 @@ Não existe cobertura-alvo numérica útil. O critério é: **cada caminho de ne
 | **3 — Após melhoria #2** | Repositórios por domínio | Export/import round-trip, reindexação, detecção de duplicata (F1) | Room in-memory + exporter/importer reais | ✅ `ExportImportRoundTripTest.kt` (10 testes) |
 | **4 — Após melhoria #1** | Hilt DI + `@HiltViewModel` | ViewModels com nav args via `SavedStateHandle`; `UiEvent` emitidos em save/delete | MockK, coroutines-test | ✅ `TripViewModelTest.kt` · `EditViewModelUiEventTest.kt` (27 testes no total) |
 
-**Suite atual: 69 testes JVM (`./gradlew test`) + 43 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo) = 112 testes. Todas as 4 fases do plano estão implementadas.**
+**Suite atual: 69 testes JVM (`./gradlew test`) + 57 instrumentados (`./gradlew connectedAndroidTest`, requer emulador/dispositivo) = 126 testes. Todas as 4 fases do plano estão implementadas.** (Os instrumentados incluem `NoteRepositoryTest` e o round-trip de notas da F4.)
 
 > **Testes de UI Compose:** tentados na F1 (diálogo de conflito), mas o emulador disponível (API 37) é incompatível com o toolchain de instrumentação Compose desta versão (`espresso`/`mockk-android`). Ficam pendentes de um device/emulador API ≤ 34. A lógica do diálogo é coberta indiretamente pelos testes de dados da F1 (detecção + `overwriteImport`).
 

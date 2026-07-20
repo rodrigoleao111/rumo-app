@@ -77,7 +77,9 @@ fun DayDetailScreen(
     onEditActivity: (Long) -> Unit = {},
     onDeleteActivity: (Long) -> Unit = {},
     onAddActivity: () -> Unit = {},
-    onMoveActivity: (from: Int, to: Int) -> Unit = { _, _ -> }
+    onMoveActivity: (from: Int, to: Int) -> Unit = { _, _ -> },
+    onOpenDayNotes: () -> Unit = {},
+    dayNotesCount: Int = 0
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -199,6 +201,9 @@ fun DayDetailScreen(
                     )
                 }
             }
+
+            // ── Notas do dia (F4) ────────────────────────────────────────
+            item { DayNotesButton(count = dayNotesCount, onClick = onOpenDayNotes) }
 
             // ── Divisor de início da timeline ────────────────────────────
             item {
@@ -331,6 +336,31 @@ private fun DayDocumentCard(name: String, path: String, context: Context) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss, maxLines = 1)
                 Text("Toque para abrir", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            }
+            Text("›", fontSize = 20.sp, color = GreenMoss, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+// ── DAY NOTES BUTTON (F4) ───────────────────────────────────────────────────────
+
+@Composable
+private fun DayNotesButton(count: Int, onClick: () -> Unit) {
+    Card(
+        onClick  = onClick,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        shape    = RoundedCornerShape(12.dp),
+        colors   = CardDefaults.cardColors(containerColor = Color(0xFFE8F0E8)),
+        border   = BorderStroke(1.dp, GreenMoss.copy(alpha = 0.4f))
+    ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("📝", fontSize = 24.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Notas do dia", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss)
+                Text(
+                    text  = if (count > 0) "$count ${if (count == 1) "nota" else "notas"}" else "Ver e adicionar anotações",
+                    style = MaterialTheme.typography.bodySmall, color = TextSecondary
+                )
             }
             Text("›", fontSize = 20.sp, color = GreenMoss, fontWeight = FontWeight.Bold)
         }

@@ -19,7 +19,7 @@
 | F1 ✅ | Identificador de viagem e detecção de duplicatas | A | Não | Pequeno |
 | F2 | Cadastro e autenticação de usuários | B | Auth + Firestore | Grande |
 | F3 | Adicionar pessoas à viagem | B | Firestore | Grande |
-| F4 | Tela de notas | A | Não | Médio |
+| F4 ✅ | Tela de notas | A | Não | Médio |
 | F5 | Controle de orçamento | A | Não | Médio |
 | F6 | Divisão de custos entre participantes | A/B | Não | Médio |
 | F7 | O que tem perto de mim? | A | Não | Médio |
@@ -637,6 +637,8 @@ match /trip_participants/{tripUuid}/participants/{participantId} {
 
 ## F4 — Tela de notas
 
+> **Status: ✅ Implementada.** Entidades `notes`/`note_blocks`/`checklist_items` (Migration 18), `NoteRepository`, editor completo (`NoteEditorScreen` — blocos texto/checklist/título, drag-to-reorder, toolbar sobre o teclado, foco automático), lista com swipe-delete e reorder, aba "Notas" no pager + notas de dia no `DayDetailScreen`, e export/import no `.travel` (schema v3). Ver `docs/modulo-15-notas.md`. Notas de implementação que divergem desta spec: notas usam `load+refresh` (não `Flow`); as notas gerais são geridas pelo `TripViewModel` (não entram no `TripData`); o doc do módulo é `modulo-15-notas.md` (o `14` já era categorias de contato); o contador "X notas" no card do dia ficou como refinamento. O teste de UI Compose do editor ficou pendente (emulador API 37 incompatível com o toolchain Compose).
+
 ### Descrição
 
 Uma área de notas livre dentro de cada viagem, inspirada na organização do Notion: o usuário pode criar blocos de conteúdo variado — texto livre, listas de tarefas (checklists), separadores — tanto em nível geral da viagem quanto vinculadas a um dia específico. O objetivo é centralizar no app tudo que hoje vive em papel, WhatsApp ou outros apps (packing list, coisas para não esquecer, ideias de restaurantes, anotações em viagem).
@@ -879,7 +881,7 @@ Notas exportadas como array `notes` no `trip.json`:
 | Modificar | `data/export/TravelExporter.kt` — serializar notas |
 | Modificar | `data/import/TravelImporter.kt` — deserializar e salvar notas |
 | Atualizar | `docs/travel-export-schema.md` |
-| Criar | `docs/modulo-14-notas.md` |
+| Criar | `docs/modulo-15-notas.md` (o `14` já era categorias de contato) |
 
 ---
 

@@ -43,7 +43,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 | UI | Jetpack Compose + Material 3 |
 | Navegação | Navigation Compose |
 | Arquitetura | MVVM (ViewModel + StateFlow) |
-| Banco de dados | Room (SQLite) v17 |
+| Banco de dados | Room (SQLite) v18 |
 | Clima | Open-Meteo API |
 | IA | Gemini 2.0 Flash (Google AI) |
 | minSdk | 26 (Android 8.0+) |
@@ -62,6 +62,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 - **Configurações** — toggle para abrir automaticamente a viagem em curso; toggle para exibir SAMU, Bombeiros e PM automaticamente nos contatos de todas as viagens
 - **Contatos** — agrupados por categoria com grupo Favoritos no topo; favoritar por estrela; swipe para deletar; drag-to-reorder com ordem persistida; card com faixa colorida; contatos fixos de emergência configuráveis
 - **Passagens** — suporte a qualquer tipo de transporte (avião, trem, ônibus, navio); card adaptativo com ícone, labels e campos conforme o tipo; anexo de arquivo ou link da passagem; campo de observações; portão de embarque editável (somente voos)
+- **Notas** — notas livres por viagem (aba própria) ou por dia, com blocos de texto, checklist e título de seção; editor com drag-to-reorder de blocos e toolbar de inserção; ordenação manual; incluídas no compartilhamento `.travel`
 
 ## Setup
 
@@ -155,7 +156,7 @@ Veja `docs/travel-export-schema.md` para o schema completo do `trip.json`.
 
 ## Banco de dados
 
-Room versão 17. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
+Room versão 18. Migrations explícitas em `TravelDatabase.kt` — **nunca usar `fallbackToDestructiveMigration()`**.
 
 Para adicionar campos: crie `MIGRATION_N_(N+1)`, incremente `CURRENT_VERSION`, registre em `ALL_MIGRATIONS` e escreva um teste de migração com `MigrationTestHelper` (ver `docs/guia-testes.md` §1.1).
 
@@ -196,3 +197,4 @@ Botões de ação principal: `containerColor = GreenMoss`, ícone/texto `AmberPr
 | `docs/modulo-12-notificacoes.md` | Lembrete de check-in: `NotificationHelper` (WorkManager + canal), `CheckInReminderWorker`, `CheckInReminderCard` e permissão `POST_NOTIFICATIONS` |
 | `docs/modulo-13-seed-dados-iniciais.md` | Seed da viagem de exemplo: `DatabaseSeeder` (idempotente) e `RoteiroRepository` (fixture de dados iniciais) |
 | `docs/modulo-14-categorias-contato.md` | Categorias de contato personalizadas: `ContactCategoryRepository` (SharedPreferences) e uso em `EditContactViewModel` |
+| `docs/modulo-15-notas.md` | Notas por viagem/dia (F4): entidades, `NoteRepository`, editor de blocos, lista, navegação e export/import |

@@ -9,11 +9,16 @@ import com.rodrigoleao.gramado2026.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.gramado2026.data.db.entity.VoucherEntity
 import com.rodrigoleao.gramado2026.data.db.entity.WalkStopEntity
 import com.rodrigoleao.gramado2026.data.model.BadgeType
+import com.rodrigoleao.gramado2026.data.model.ChecklistItem
 import com.rodrigoleao.gramado2026.data.model.DuplicateTripException
+import com.rodrigoleao.gramado2026.data.model.Note
+import com.rodrigoleao.gramado2026.data.model.NoteBlock
+import com.rodrigoleao.gramado2026.data.model.NoteBlockType
 import com.rodrigoleao.gramado2026.data.repository.ActivityRepository
 import com.rodrigoleao.gramado2026.data.repository.BoardingPassRepository
 import com.rodrigoleao.gramado2026.data.repository.ContactRepository
 import com.rodrigoleao.gramado2026.data.repository.DayRepository
+import com.rodrigoleao.gramado2026.data.repository.NoteRepository
 import com.rodrigoleao.gramado2026.data.repository.TripData
 import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.repository.VoucherRepository
@@ -44,7 +49,8 @@ private data class ExportedTrip(
     val days: List<ExportedDay>,
     val contacts: List<ExportedContact>,
     val vouchers: List<ExportedVoucher>,
-    val boardingPasses: List<ExportedBoardingPass>
+    val boardingPasses: List<ExportedBoardingPass>,
+    val notes: List<Note>          // F4 — domain models prontos p/ inserção
 )
 
 private data class ExportedVoucher(
@@ -131,7 +137,8 @@ class TravelImporter @Inject constructor(
     private val activityRepo: ActivityRepository,
     private val contactRepo: ContactRepository,
     private val voucherRepo: VoucherRepository,
-    private val boardingPassRepo: BoardingPassRepository
+    private val boardingPassRepo: BoardingPassRepository,
+    private val noteRepo: NoteRepository
 ) {
 
     /**
@@ -354,6 +361,11 @@ class TravelImporter @Inject constructor(
             )
         }
 
+        // Importa notas (F4) — cada nota preserva dayId, blocos, itens e timestamps
+        for (note in exported.notes) {
+            noteRepo.insertImportedNote(tripId, note)
+        }
+
         return tripId
     }
 
@@ -532,6 +544,47 @@ class TravelImporter @Inject constructor(
                 )
             } else emptyList()
 
+        // F4 — notas (parseadas direto para domain models, prontas p/ inserção)
+        val notesJsonArray = trip.optJSONArray("notes")
+        val notes = if (notesJsonArray != null)
+            (0 until notesJsonArray.length()).map { i ->
+                val n = notesJsonArray.getJSONObject(i)
+                val blocksArr = n.optJSONArray("blocks")
+                val blocks = if (blocksArr != null)
+                    (0 until blocksArr.length()).map { j ->
+                        val b         = blocksArr.getJSONObject(j)
+                        val sortOrder = b.optInt("sortOrder", j)
+                        when (b.optString("type", "TEXT")) {
+                            NoteBlockType.CHECKLIST.name -> {
+                                val itemsArr = b.optJSONArray("items")
+                                val items = if (itemsArr != null)
+                                    (0 until itemsArr.length()).map { k ->
+                                        val it = itemsArr.getJSONObject(k)
+                                        ChecklistItem(
+                                            text = it.optString("text", ""),
+                                            isChecked = it.optBoolean("isChecked", false),
+                                            sortOrder = it.optInt("sortOrder", k)
+                                        )
+                                    } else emptyList()
+                                NoteBlock.ChecklistBlock(items = items, sortOrder = sortOrder)
+                            }
+                            NoteBlockType.HEADING.name ->
+                                NoteBlock.HeadingBlock(content = b.optString("content", ""), sortOrder = sortOrder)
+                            else ->
+                                NoteBlock.TextBlock(content = b.optString("content", ""), sortOrder = sortOrder)
+                        }
+                    } else emptyList()
+                Note(
+                    tripId    = 0L,   // definido no insert
+                    dayId     = if (n.isNull("dayId")) null else n.optInt("dayId"),
+                    title     = n.optString("title", ""),
+                    blocks    = blocks,
+                    sortOrder = n.optInt("sortOrder", i),
+                    createdAt = n.optLong("createdAt", 0L),
+                    updatedAt = n.optLong("updatedAt", 0L)
+                )
+            } else emptyList()
+
         return ExportedTrip(
             schemaVersion = schemaVer,
             tripUuid      = trip.optString("tripUuid").let { if (it == "null") "" else it },
@@ -550,11 +603,12 @@ class TravelImporter @Inject constructor(
             days            = days,
             contacts      = contacts,
             vouchers      = vouchers,
-            boardingPasses = boardingPasses
+            boardingPasses = boardingPasses,
+            notes          = notes
         )
     }
 
     companion object {
-        private const val SUPPORTED_SCHEMA_VERSION = 2   // F1: tripUuid + lastEditedAt
+        private const val SUPPORTED_SCHEMA_VERSION = 3   // F4: array notes[]
     }
 }

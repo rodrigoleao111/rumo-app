@@ -19,7 +19,7 @@ viagem.travel  (ZIP)
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "exportedAt": "2026-06-17T14:30:00",
   "trip": {
     "tripUuid": "3f2a…-…-…",
@@ -40,14 +40,15 @@ viagem.travel  (ZIP)
     "days": [...],
     "contacts": [...],
     "vouchers": [...],
-    "boardingPasses": [...]
+    "boardingPasses": [...],
+    "notes": [...]
   }
 }
 ```
 
 | Campo | Tipo | Notas |
 |---|---|---|
-| `schemaVersion` | `int` | Versão do schema. Atual: `2` (F1 adicionou `tripUuid` + `lastEditedAt`) |
+| `schemaVersion` | `int` | Versão do schema. Atual: `3` (F4 adicionou `notes[]`; F1 adicionou `tripUuid` + `lastEditedAt`) |
 | `exportedAt` | `string` | ISO 8601 — informativo, não usado na importação |
 | `trip.tripUuid` | `string` | **F1** — UUID estável da viagem, gerado na criação e preservado em todo export/import. Ausente/vazio em arquivos v1 → tratado como "sem UUID" (importação normal, gera novo) |
 | `trip.lastEditedAt` | `long` | **F1** — unix ms da última edição de conteúdo. Usado na detecção de duplicata para comparar "versão local" × "versão importada" |
@@ -231,9 +232,42 @@ viagem.travel  (ZIP)
 
 ---
 
+## `notes[]` (F4)
+
+Notas da viagem (gerais e de dia), cada uma com seus blocos.
+
+```json
+{
+  "dayId": null,
+  "title": "Packing list",
+  "sortOrder": 0,
+  "createdAt": 1718637000000,
+  "updatedAt": 1718637000000,
+  "blocks": [
+    { "type": "HEADING", "sortOrder": 0, "content": "Documentos" },
+    { "type": "TEXT", "sortOrder": 1, "content": "Levar cópia do seguro" },
+    { "type": "CHECKLIST", "sortOrder": 2, "items": [
+      { "text": "Passaporte", "isChecked": true, "sortOrder": 0 },
+      { "text": "Carregador", "isChecked": false, "sortOrder": 1 }
+    ]}
+  ]
+}
+```
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `dayId` | `int \| null` | `null` = nota geral da viagem; senão = `dayNumber` (1-N) da nota de dia |
+| `title` | `string` | Título da nota (pode ser vazio) |
+| `sortOrder` / `createdAt` / `updatedAt` | `int` / `long` / `long` | Ordem manual e timestamps preservados no round-trip |
+| `blocks[].type` | `string` | `TEXT \| CHECKLIST \| HEADING` |
+| `blocks[].content` | `string` | Texto do bloco (`TEXT`/`HEADING`); ausente em `CHECKLIST` |
+| `blocks[].items[]` | `array` | Só em `CHECKLIST` — `{ text, isChecked, sortOrder }` |
+
+---
+
 ## Regras gerais
 
-- `schemaVersion` permite migrações futuras. O importador rejeita versões superiores ao `SUPPORTED_SCHEMA_VERSION` atual (`2`) com mensagem de erro clara
+- `schemaVersion` permite migrações futuras. O importador rejeita versões superiores ao `SUPPORTED_SCHEMA_VERSION` atual (`3`) com mensagem de erro clara
 - Campos opcionais ausentes ou `null` devem ser JSON nativo (`null`), nunca a string `"null"`
 - `exportedAt` é apenas informativo — não é usado em nenhuma lógica de importação
 - **Detecção de duplicata (F1):** se o `tripUuid` importado já existir no banco, a importação **não** cria uma nova viagem — lança `DuplicateTripException` e o usuário decide entre manter a local ou substituí-la (`overwriteImport`). UUID vazio (arquivos v1) nunca casa → importação normal, com novo UUID gerado

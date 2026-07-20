@@ -19,7 +19,10 @@ import com.rodrigoleao.gramado2026.data.db.entity.*
         ContactEntity::class,
         VoucherEntity::class,
         VoucherGroupEntity::class,
-        BoardingPassEntity::class
+        BoardingPassEntity::class,
+        NoteEntity::class,
+        NoteBlockEntity::class,
+        ChecklistItemEntity::class
     ],
     version = TravelDatabase.CURRENT_VERSION,
     exportSchema = true
@@ -33,10 +36,11 @@ abstract class TravelDatabase : RoomDatabase() {
     abstract fun voucherDao(): VoucherDao
     abstract fun voucherGroupDao(): VoucherGroupDao
     abstract fun boardingPassDao(): BoardingPassDao
+    abstract fun noteDao(): NoteDao
 
     companion object {
         /** Versão atual do schema — única fonte de verdade (usada na anotação @Database e nos testes). */
-        const val CURRENT_VERSION = 17
+        const val CURRENT_VERSION = 18
 
         @Volatile private var INSTANCE: TravelDatabase? = null
 
@@ -123,6 +127,39 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v17 → v18: tabelas de notas (F4) — notes, note_blocks, checklist_items
+        private val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // SQL espelha exatamente o createSql do 18.json (sem DEFAULT — Room não os persiste)
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `notes` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`tripId` INTEGER NOT NULL, `dayId` INTEGER, `title` TEXT NOT NULL, " +
+                        "`sortOrder` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`tripId`) REFERENCES `trips`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_tripId` ON `notes` (`tripId`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `note_blocks` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`noteId` INTEGER NOT NULL, `type` TEXT NOT NULL, " +
+                        "`content` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`noteId`) REFERENCES `notes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blocks_noteId` ON `note_blocks` (`noteId`)")
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `checklist_items` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`blockId` INTEGER NOT NULL, `text` TEXT NOT NULL, " +
+                        "`isChecked` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`blockId`) REFERENCES `note_blocks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_checklist_items_blockId` ON `checklist_items` (`blockId`)")
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -156,7 +193,7 @@ abstract class TravelDatabase : RoomDatabase() {
         val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
             MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
-            MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17
+            MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18
         )
 
         fun getInstance(context: Context): TravelDatabase =

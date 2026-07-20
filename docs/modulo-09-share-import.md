@@ -350,7 +350,7 @@ if (schemaVer > SUPPORTED_SCHEMA_VERSION)
     throw Exception("Este arquivo foi criado por uma versão mais recente do app. Atualize o app para importá-lo.")
 
 companion object {
-    private const val SUPPORTED_SCHEMA_VERSION = 2   // F1: tripUuid + lastEditedAt
+    private const val SUPPORTED_SCHEMA_VERSION = 3   // F1: tripUuid+lastEditedAt · F4: notes[]
 }
 ```
 
@@ -415,6 +415,8 @@ suspend fun overwriteImport(uri: Uri, existingTripId: Long): Long {
 7. Vouchers: copia arquivo de `voucherFiles[assetPath]` → `filesDir/Vouchers/<assetPath>`. Se o arquivo não está no ZIP (voucher de outro dispositivo sem o original), mantém `assetPath` original. `voucherRepo.upsertVoucher()`.
 
 8. Boarding passes: copia arquivo de `boardingFiles[documentName]` → `filesDir/Passagens/<documentName>`. `boardingPassRepo.upsertBoardingPass()`.
+
+9. Notas (F4): parseia `notes[]` para domain models e chama `noteRepo.insertImportedNote(tripId, note)` por nota — preserva `dayId`, blocos, itens, ordem e timestamps. Ver `docs/modulo-15-notas.md`.
 
 ### `parseTripJson` — parsing defensivo
 

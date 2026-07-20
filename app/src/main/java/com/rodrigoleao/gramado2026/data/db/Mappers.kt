@@ -201,3 +201,40 @@ fun BoardingPassEntity.toDomain(): BoardingPass = BoardingPass(
     documentName    = documentName,
     notes           = notes
 )
+
+// ── Notas (F4) ───────────────────────────────────────────────────────────────
+
+fun ChecklistItemEntity.toDomain(): ChecklistItem = ChecklistItem(
+    id = id, text = text, isChecked = isChecked, sortOrder = sortOrder
+)
+
+fun NoteBlockEntity.toDomain(items: List<ChecklistItem>): NoteBlock = when (type) {
+    NoteBlockType.CHECKLIST.name -> NoteBlock.ChecklistBlock(id = id, items = items, sortOrder = sortOrder)
+    NoteBlockType.HEADING.name   -> NoteBlock.HeadingBlock(id = id, content = content, sortOrder = sortOrder)
+    else                         -> NoteBlock.TextBlock(id = id, content = content, sortOrder = sortOrder)
+}
+
+fun NoteEntity.toDomain(blocks: List<NoteBlock>): Note = Note(
+    id = id, tripId = tripId, dayId = dayId, title = title,
+    blocks = blocks, sortOrder = sortOrder, createdAt = createdAt, updatedAt = updatedAt
+)
+
+// domain → entity (usado no import). Blocos/itens são inseridos separadamente.
+fun Note.toEntity(): NoteEntity = NoteEntity(
+    tripId = tripId, dayId = dayId, title = title,
+    sortOrder = sortOrder, createdAt = createdAt, updatedAt = updatedAt
+)
+
+/** Deriva o tipo persistido de um bloco de domínio. */
+fun NoteBlock.typeName(): String = when (this) {
+    is NoteBlock.TextBlock      -> NoteBlockType.TEXT.name
+    is NoteBlock.ChecklistBlock -> NoteBlockType.CHECKLIST.name
+    is NoteBlock.HeadingBlock   -> NoteBlockType.HEADING.name
+}
+
+/** Conteúdo textual de um bloco (vazio para checklist). */
+fun NoteBlock.contentText(): String = when (this) {
+    is NoteBlock.TextBlock      -> content
+    is NoteBlock.HeadingBlock   -> content
+    is NoteBlock.ChecklistBlock -> ""
+}

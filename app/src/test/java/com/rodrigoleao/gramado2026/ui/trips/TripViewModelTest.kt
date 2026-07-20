@@ -46,6 +46,7 @@ class TripViewModelTest {
     private lateinit var voucherRepo: VoucherRepository
     private lateinit var contactRepo: ContactRepository
     private lateinit var activityRepo: ActivityRepository
+    private lateinit var noteRepo: com.rodrigoleao.gramado2026.data.repository.NoteRepository
     private val tripId = 1L
 
     @Before
@@ -54,12 +55,14 @@ class TripViewModelTest {
         voucherRepo  = mockk()
         contactRepo  = mockk()
         activityRepo = mockk()
+        noteRepo     = mockk()
         coEvery { tripRepo.touchLastEditedAt(any()) } just Runs   // F1: chamado por toda mutação
+        coEvery { noteRepo.getNotes(any(), any()) } returns emptyList()   // F4: notas gerais no load
     }
 
     private fun buildVm(initialData: com.rodrigoleao.gramado2026.data.repository.TripData = fakeTripData()): TripViewModel {
         coEvery { tripRepo.getTripData(tripId) } returns initialData
-        return TripViewModel(tripRepo, voucherRepo, contactRepo, activityRepo, SavedStateHandle(mapOf("tripId" to tripId)))
+        return TripViewModel(tripRepo, voucherRepo, contactRepo, activityRepo, noteRepo, SavedStateHandle(mapOf("tripId" to tripId)))
     }
 
     // ── Carregamento inicial ───────────────────────────────────────────────────

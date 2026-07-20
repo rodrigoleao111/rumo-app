@@ -10,6 +10,8 @@ import com.rodrigoleao.gramado2026.data.db.inMemoryDb
 import com.rodrigoleao.gramado2026.data.db.TravelDatabase
 import com.rodrigoleao.gramado2026.data.import_trip.TravelImporter
 import com.rodrigoleao.gramado2026.data.model.DuplicateTripException
+import com.rodrigoleao.gramado2026.data.model.NoteBlock
+import com.rodrigoleao.gramado2026.data.model.NoteBlockType
 import com.rodrigoleao.gramado2026.data.repository.*
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -41,6 +43,7 @@ class ExportImportRoundTripTest {
     private lateinit var contactRepo: ContactRepository
     private lateinit var voucherRepo: VoucherRepository
     private lateinit var boardingPassRepo: BoardingPassRepository
+    private lateinit var noteRepo: NoteRepository
     private lateinit var exporter: TravelExporter
     private lateinit var importer: TravelImporter
 
@@ -53,9 +56,10 @@ class ExportImportRoundTripTest {
         contactRepo      = ContactRepository(db)
         voucherRepo      = VoucherRepository(db)
         boardingPassRepo = BoardingPassRepository(db)
-        exporter         = TravelExporter(context, tripRepo)
+        noteRepo         = NoteRepository(db)
+        exporter         = TravelExporter(context, tripRepo, noteRepo)
         importer         = TravelImporter(
-            context, tripRepo, dayRepo, activityRepo, contactRepo, voucherRepo, boardingPassRepo
+            context, tripRepo, dayRepo, activityRepo, contactRepo, voucherRepo, boardingPassRepo, noteRepo
         )
     }
 
@@ -367,6 +371,57 @@ class ExportImportRoundTripTest {
         }
     }
 
+    // ── F4: notas ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun roundTrip_preservaNotasComBlocosEItens() {
+        runBlocking {
+            val tripId = seedFullTrip("RoundTrip Notas")
+
+            // Nota geral: título + heading + checklist (1 item marcado + 1 desmarcado)
+            val generalId = noteRepo.createNote(tripId, null)
+            noteRepo.updateNoteTitle(generalId, "Packing list")
+            val headingId = noteRepo.addBlock(generalId, NoteBlockType.HEADING)
+            noteRepo.updateBlockContent(headingId, "Documentos")
+            val checkId = noteRepo.addBlock(generalId, NoteBlockType.CHECKLIST)  // nasce com 1 item
+            val firstItem = (noteRepo.getNote(generalId)!!.blocks
+                .first { it is NoteBlock.ChecklistBlock } as NoteBlock.ChecklistBlock).items.first()
+            noteRepo.updateItemText(firstItem.id, "Passaporte")
+            noteRepo.toggleChecklistItem(firstItem.id, true)
+            val item2 = noteRepo.addChecklistItem(checkId)
+            noteRepo.updateItemText(item2, "Carregador")
+
+            // Nota de dia (dayId = 1) com um bloco de texto
+            val dayNoteId = noteRepo.createNote(tripId, 1)
+            val textId = noteRepo.addBlock(dayNoteId, NoteBlockType.TEXT)
+            noteRepo.updateBlockContent(textId, "Chegar cedo à estação")
+
+            val uri = exporter.export(tripId)
+            clearTripFromDb(tripId)   // CASCADE remove as notas da original também
+            val importedId = importer.import(uri)
+
+            // Nota geral restaurada
+            val general = noteRepo.getNotes(importedId, null)
+            assertThat(general).hasSize(1)
+            with(general[0]) {
+                assertThat(title).isEqualTo("Packing list")
+                assertThat(blocks).hasSize(2)
+                assertThat((blocks[0] as NoteBlock.HeadingBlock).content).isEqualTo("Documentos")
+                val checklist = blocks[1] as NoteBlock.ChecklistBlock
+                assertThat(checklist.items.map { it.text }).containsExactly("Passaporte", "Carregador").inOrder()
+                assertThat(checklist.items.first { it.text == "Passaporte" }.isChecked).isTrue()
+                assertThat(checklist.items.first { it.text == "Carregador" }.isChecked).isFalse()
+            }
+
+            // Nota de dia restaurada com o dayId preservado
+            val dayNotes = noteRepo.getNotes(importedId, 1)
+            assertThat(dayNotes).hasSize(1)
+            assertThat((dayNotes[0].blocks[0] as NoteBlock.TextBlock).content).isEqualTo("Chegar cedo à estação")
+            // Nota de dia não vaza para as gerais
+            assertThat(general.none { it.title == dayNotes[0].title && it.dayId == null }).isTrue()
+        }
+    }
+
     // ── F1: detecção de duplicata e sobrescrita ──────────────────────────────────
 
     @Test
@@ -473,7 +528,7 @@ class ExportImportRoundTripTest {
     @Test
     fun import_schemaVersionSuperior_recusaComMensagemDeAtualizacao() {
         runBlocking {
-            val uri = writeFakeTravel("schema-futuro.travel", "trip.json", """{"schemaVersion": 3}""")
+            val uri = writeFakeTravel("schema-futuro.travel", "trip.json", """{"schemaVersion": 4}""")
 
             val result = runCatching { importer.import(uri) }
 
