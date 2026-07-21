@@ -58,7 +58,7 @@ fun ShareTripScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { padding ->
 
         Column(

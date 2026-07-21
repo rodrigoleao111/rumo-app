@@ -79,7 +79,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            HorizontalDivider(color = GreenLight)
+            HorizontalDivider(color = Sand)
 
             Row(
                 modifier = Modifier
@@ -117,7 +117,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            HorizontalDivider(color = GreenLight)
+            HorizontalDivider(color = Sand)
         }
     }
 }

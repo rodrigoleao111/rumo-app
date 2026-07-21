@@ -58,7 +58,7 @@ fun EditTripScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
-                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = GreenMoss)
             }
         },
         topBar = {
@@ -91,7 +91,7 @@ fun EditTripScreen(
                 )
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
 
         if (state.entity == null) {

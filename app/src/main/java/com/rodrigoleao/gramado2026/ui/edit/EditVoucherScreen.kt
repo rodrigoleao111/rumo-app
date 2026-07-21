@@ -107,7 +107,7 @@ fun EditVoucherScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
-                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = GreenMoss)
             }
         },
         topBar = {
@@ -134,7 +134,7 @@ fun EditVoucherScreen(
                 )
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
 
         if (state.isLoading) {

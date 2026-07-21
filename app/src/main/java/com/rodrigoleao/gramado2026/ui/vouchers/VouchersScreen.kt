@@ -88,7 +88,7 @@ private fun voucherPalette(type: VoucherType): VoucherPalette = when (type) {
     )
     VoucherType.FILE -> VoucherPalette(
         accent          = TextSecondary,
-        emojiBackground = GreenLight,
+        emojiBackground = Sand,
         badgeBackground = GreenForest,
         badgeText       = TextSecondary,
         buttonColor     = TextSecondary,

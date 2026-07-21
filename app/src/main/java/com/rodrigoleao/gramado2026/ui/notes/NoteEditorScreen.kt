@@ -82,7 +82,7 @@ fun NoteEditorScreen(
                 canDelete      = focusedBlockId != null
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { padding ->
         LazyColumn(
             state          = lazyListState,

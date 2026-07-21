@@ -80,7 +80,7 @@ fun TripsListScreen(
                 Snackbar(
                     snackbarData     = data,
                     containerColor   = AmberPrimary,
-                    contentColor     = Color.White
+                    contentColor     = GreenMoss
                 )
             }
         }
@@ -316,7 +316,7 @@ private fun SwipeToRevealTrip(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .background(GreenLight)
+                .background(Sand)
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
@@ -478,7 +478,7 @@ private fun StatusBadge(status: TripStatus, startDate: String?, endDate: String?
     val (label, bg, textColor) = when (status) {
         TripStatus.PLANNING -> {
             val countdown = countdownLabel(startDate)
-            Triple(countdown, AmberPrimary, Color.White)
+            Triple(countdown, AmberPrimary, GreenMoss)
         }
         TripStatus.ACTIVE    -> Triple("Em curso", GreenMoss, Color.White)
         TripStatus.COMPLETED -> Triple("Concluída", GreenForest, TextSecondary)

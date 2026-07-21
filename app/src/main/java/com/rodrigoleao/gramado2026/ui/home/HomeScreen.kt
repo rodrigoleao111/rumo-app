@@ -303,7 +303,7 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                         contentPadding  = btnPadding,
                         colors          = ButtonDefaults.buttonColors(
                             containerColor = AmberPrimary,
-                            contentColor   = Color.White
+                            contentColor   = GreenMoss
                         )
                     ) {
                         Icon(Icons.Default.DirectionsCar, contentDescription = "Uber", modifier = Modifier.size(iconSize))

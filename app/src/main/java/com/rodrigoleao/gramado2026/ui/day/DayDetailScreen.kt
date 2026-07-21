@@ -136,19 +136,19 @@ fun DayDetailScreen(
             FloatingActionButton(
                 onClick           = onAddActivity,
                 containerColor    = AmberPrimary,
-                contentColor      = Color.White,
+                contentColor      = GreenMoss,
                 shape             = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar atividade")
             }
         },
-        containerColor = GreenLight,
+        containerColor = Sand,
         snackbarHost   = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
                     snackbarData   = data,
                     containerColor = AmberPrimary,
-                    contentColor   = Color.White
+                    contentColor   = GreenMoss
                 )
             }
         }
@@ -603,7 +603,7 @@ private fun SwipeToRevealActivity(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .background(GreenLight)
+                .background(Sand)
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->

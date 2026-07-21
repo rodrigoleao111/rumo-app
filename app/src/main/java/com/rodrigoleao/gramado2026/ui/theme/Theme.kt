@@ -28,7 +28,7 @@ private val GramadoColorScheme = lightColorScheme(
     tertiaryContainer = GreenWarm,
     onTertiaryContainer = GreenMoss,
 
-    background       = GreenLight,
+    background       = Sand,
     onBackground     = TextPrimary,
 
     surface          = SurfaceWhite,
@@ -46,7 +46,7 @@ fun GramadoTheme(content: @Composable () -> Unit) {
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor  = GreenLight.toArgb()
+            window.statusBarColor  = Sand.toArgb()
             window.navigationBarColor = GreenForest.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }

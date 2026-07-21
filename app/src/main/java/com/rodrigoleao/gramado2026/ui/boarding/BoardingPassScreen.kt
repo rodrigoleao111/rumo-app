@@ -323,7 +323,7 @@ private fun CheckInReminderCard(
                     colors           = ButtonDefaults.buttonColors(containerColor = AmberPrimary),
                     contentPadding   = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     shape            = RoundedCornerShape(10.dp)
-                ) { Text("🔔  Ativar", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                ) { Text("🔔  Ativar", color = GreenMoss, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
             }
         }
     }
@@ -480,7 +480,7 @@ private fun TearLine() {
             modifier = Modifier
                 .size(width = 12.dp, height = 24.dp)
                 .clip(RoundedCornerShape(topStart = 0.dp, topEnd = 100.dp, bottomEnd = 100.dp, bottomStart = 0.dp))
-                .background(GreenLight)
+                .background(Sand)
         )
         repeat(30) {
             Box(modifier = Modifier.weight(1f).height(1.dp).background(DividerColor))
@@ -490,7 +490,7 @@ private fun TearLine() {
             modifier = Modifier
                 .size(width = 12.dp, height = 24.dp)
                 .clip(RoundedCornerShape(topStart = 100.dp, topEnd = 0.dp, bottomEnd = 0.dp, bottomStart = 100.dp))
-                .background(GreenLight)
+                .background(Sand)
         )
     }
 }

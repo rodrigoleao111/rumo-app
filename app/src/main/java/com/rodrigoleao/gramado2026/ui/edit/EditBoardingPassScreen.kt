@@ -127,7 +127,7 @@ fun EditBoardingPassScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
-                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = GreenMoss)
             }
         },
         topBar = {
@@ -157,7 +157,7 @@ fun EditBoardingPassScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
 
         if (state.isLoading) {

@@ -676,7 +676,7 @@ private fun MainPagerScreen(
                 FloatingActionButton(
                     onClick        = action,
                     containerColor = AmberPrimary,
-                    contentColor   = Color.White,
+                    contentColor   = GreenMoss,
                     shape          = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Adicionar")
@@ -688,7 +688,7 @@ private fun MainPagerScreen(
                 Snackbar(
                     snackbarData   = data,
                     containerColor = AmberPrimary,
-                    contentColor   = Color.White
+                    contentColor   = GreenMoss
                 )
             }
         },
@@ -703,14 +703,14 @@ private fun MainPagerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(
-                            elevation    = 20.dp,
+                            elevation    = 16.dp,
                             shape        = RoundedCornerShape(32.dp),
-                            ambientColor = GreenMoss.copy(alpha = 0.25f),
-                            spotColor    = GreenMoss.copy(alpha = 0.35f)
+                            ambientColor = GreenMoss.copy(alpha = 0.12f),
+                            spotColor    = GreenMoss.copy(alpha = 0.20f)
                         )
                         .clip(RoundedCornerShape(32.dp))
-                        .background(GreenMoss)
-                        .padding(vertical = 6.dp),
+                        .background(SurfaceWhite)
+                        .padding(vertical = 8.dp, horizontal = 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
@@ -725,7 +725,7 @@ private fun MainPagerScreen(
                 }
             }
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
         HorizontalPager(
             state                   = pagerState,
@@ -810,22 +810,23 @@ private fun PillNavItem(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .size(width = 46.dp, height = 32.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(AmberPrimary.copy(alpha = 0.20f))
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(width = 52.dp, height = 36.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (selected) GreenMoss else Color.Transparent)
+        ) {
+            Icon(
+                imageVector        = icon,
+                contentDescription = label,
+                tint               = if (selected) Color.White else GreenMoss.copy(alpha = 0.45f),
+                modifier           = Modifier.size(22.dp)
             )
         }
-        Icon(
-            imageVector        = icon,
-            contentDescription = label,
-            tint               = if (selected) AmberPrimary else Color.White.copy(alpha = 0.50f),
-            modifier           = Modifier.size(22.dp)
-        )
     }
 }

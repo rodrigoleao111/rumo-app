@@ -149,7 +149,7 @@ fun CreateTripScreen(
                 }
             }
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
         when (step) {
             0 -> Step1Content(
@@ -454,7 +454,7 @@ private fun Step1Content(
                 disabledContainerColor = AmberPrimary.copy(alpha = 0.35f)
             )
         ) {
-            Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+            Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
         }
     }
 }
@@ -538,7 +538,7 @@ private fun Step2Content(
 
         // ── Rodapé: resumo + botão ────────────────────────────────────────────
         Surface(
-            color  = GreenLight,
+            color  = Sand,
             tonalElevation = 0.dp
         ) {
             Column(
@@ -593,7 +593,7 @@ private fun Step2Content(
                         disabledContainerColor = AmberPrimary.copy(alpha = 0.35f)
                     )
                 ) {
-                    Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
                 }
             }
         }

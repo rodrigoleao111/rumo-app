@@ -87,7 +87,7 @@ fun EditActivityScreen(
     Scaffold(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
-                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = Color.White)
+                Snackbar(snackbarData = data, containerColor = AmberPrimary, contentColor = GreenMoss)
             }
         },
         topBar = {
@@ -117,7 +117,7 @@ fun EditActivityScreen(
                 )
             )
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { innerPadding ->
 
         if (state.isLoading) {
@@ -330,10 +330,10 @@ private fun TimePickerDialog(
                 TimePicker(
                     state  = state,
                     colors = TimePickerDefaults.colors(
-                        clockDialColor         = GreenLight,
+                        clockDialColor         = Sand,
                         selectorColor          = GreenMoss,
                         timeSelectorSelectedContainerColor   = GreenMoss,
-                        timeSelectorUnselectedContainerColor = GreenLight,
+                        timeSelectorUnselectedContainerColor = Sand,
                         timeSelectorSelectedContentColor     = Color.White,
                         timeSelectorUnselectedContentColor   = TextSecondary
                     )

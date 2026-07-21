@@ -59,11 +59,11 @@ fun DayNotesScreen(
             FloatingActionButton(
                 onClick        = { viewModel.createNote(onOpenNote) },
                 containerColor = AmberPrimary,
-                contentColor   = Color.White,
+                contentColor   = GreenMoss,
                 shape          = RoundedCornerShape(16.dp)
             ) { Icon(Icons.Default.Add, contentDescription = "Nova nota") }
         },
-        containerColor = GreenLight
+        containerColor = Sand
     ) { padding ->
         NotesListContent(
             notes          = notes,
