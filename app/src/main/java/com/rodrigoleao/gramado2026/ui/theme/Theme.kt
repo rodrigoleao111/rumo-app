@@ -1,9 +1,11 @@
 package com.rodrigoleao.gramado2026.ui.theme
 
 import android.app.Activity
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -20,6 +22,11 @@ private val GramadoColorScheme = lightColorScheme(
     onSecondary      = Color.White,
     secondaryContainer = AmberLight,
     onSecondaryContainer = AmberPrimary,
+
+    tertiary         = GreenLime,
+    onTertiary       = GreenMoss,
+    tertiaryContainer = GreenWarm,
+    onTertiaryContainer = GreenMoss,
 
     background       = GreenLight,
     onBackground     = TextPrimary,
@@ -46,7 +53,13 @@ fun GramadoTheme(content: @Composable () -> Unit) {
     }
     MaterialTheme(
         colorScheme = GramadoColorScheme,
-        typography  = GramadoTypography,
-        content     = content
-    )
+        typography  = GramadoTypography
+    ) {
+        // Garante que TODO texto herde Plus Jakarta Sans — inclusive Text() com
+        // fontSize/fontWeight inline, que de outro modo cairia na fonte do sistema.
+        CompositionLocalProvider(
+            LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = PlusJakartaSans),
+            content = content
+        )
+    }
 }

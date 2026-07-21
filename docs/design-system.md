@@ -4,9 +4,9 @@
 
 ## Identidade visual
 
-O app usa uma paleta **Forest Dark**: verde floresta profundo como cor primária, âmbar dourado como acento, e um fundo linho-esverdeado muito claro. A combinação remete a natureza e aventura — coerente com o contexto de viagens ao sul do Brasil — sem cair no visual genérico de apps de turismo.
+O app usa a paleta da marca **Rumo** (alinhada ao board de identidade — ver [brief-repaginacao-visual.md](brief-repaginacao-visual.md)): verde musgo profundo como cor primária, âmbar como acento, verde sálvia como secundária, e um fundo **creme quente** muito claro. A combinação remete a natureza, leveza e jornada — coerente com o posicionamento "seu companheiro de viagem" — sem cair no visual genérico de apps de turismo.
 
-O design é deliberadamente **contido**: poucos tokens de cor, formas arredondadas consistentes, tipografia sem serifa padrão do sistema. O resultado é um app de aparência premium sem depender de fontes customizadas ou bibliotecas de componentes de terceiros.
+O design é deliberadamente **contido**: poucos tokens de cor, formas arredondadas consistentes. A tipografia de marca é a **Plus Jakarta Sans** (a repaginação tipográfica é uma etapa própria; ver brief).
 
 ---
 
@@ -14,28 +14,31 @@ O design é deliberadamente **contido**: poucos tokens de cor, formas arredondad
 
 ### Tokens principais
 
-| Token | Hex | Uso |
-|---|---|---|
-| `GreenMoss` | `#1B4332` | Primary — TopAppBar, cabeçalhos de card, badges de data, container de emoji |
-| `GreenSage` | `#40916C` | Secondary — botão compartilhar no swipe, loading indicators, datas |
-| `GreenLight` | `#F2F5F0` | Background geral — linho esverdeado muito claro |
-| `GreenForest` | `#D5E8DC` | Navigation bar, top bars de sistema, cards de fundo suave |
-| `GreenMist` | `#2E4039` | Texto secundário esverdeado (uso pontual) |
-| `GreenWarm` | `#C2D9CB` | Container suave, hover states |
-| `AmberPrimary` | `#D4A017` | Accent — badges de status planning, snackbar, FAB, botões "Próximo", pill nav ativo |
-| `AmberLight` | `#FFF8E1` | Fundo de badge amber |
-| `TextPrimary` | `#0D1F16` | Quase-preto com tonalidade verde — títulos e texto principal |
-| `TextSecondary` | `#3A5045` | Verde-cinza escuro — subtítulos, labels, texto auxiliar |
-| `SurfaceWhite` | `#F8FAF8` | Off-white levemente esverdeado — superfície de cards |
-| `CardBorder` | `#1B4332` 31% alpha | Borda semitransparente em cards |
-| `DividerColor` | `#1B4332` 9% alpha | Divisórias sutis entre seções |
+| Token | Hex | Nome no board | Uso |
+|---|---|---|---|
+| `GreenMoss` | `#1B4332` | Verde Musgo | Primary — TopAppBar, cabeçalhos de card, badges de data, container de emoji |
+| `GreenSage` | `#40916C` | Verde Sálvia | Secondary — botão compartilhar no swipe, loading indicators, datas |
+| `GreenLime` | `#A7C957` | Verde Claro | Tertiary — realces frescos, detalhes, ícones |
+| `GreenLight` | `#FAF7F2` | Creme | Background geral — fundo quente muito claro |
+| `GreenForest` | `#E7EDE8` | Cinza Claro | Navigation bar, top bars de sistema, superfícies suaves, cards de fundo |
+| `GreenMist` | `#2E3D34` | Cinza Escuro | Texto/superfície escura alternativa (uso pontual) |
+| `GreenWarm` | `#C2D9CB` | — | Container suave esverdeado, hover states |
+| `Sand` | `#F4EDE1` | Areia | Fundo quente alternativo (blocos, seções) |
+| `GrayMuted` | `#A8B5A9` | Cinza Médio | Texto auxiliar, ícones inativos |
+| `AmberPrimary` | `#E9B43C` | Âmbar | Accent — badges de status planning, snackbar, FAB, botões "Próximo", pill nav ativo |
+| `AmberLight` | `#FDF3DD` | — | Fundo suave de badge/realce âmbar |
+| `TextPrimary` | `#0D1F16` | — | Quase-preto com tonalidade verde — títulos e texto principal |
+| `TextSecondary` | `#3A5045` | — | Verde-cinza escuro — subtítulos, labels, texto auxiliar |
+| `SurfaceWhite` | `#FFFDF9` | — | Branco quente — superfície de cards (sobe acima do creme) |
+| `CardBorder` | `#1B4332` 31% alpha | — | Borda semitransparente em cards |
+| `DividerColor` | `#1B4332` 9% alpha | — | Divisórias sutis entre seções |
 
 ### Tokens de badge
 
 | Token | Hex | Contexto |
 |---|---|---|
 | `BadgeFreeText / Bg` | `#1B4332` / `#1B4332` 10% | Badge "Grátis" |
-| `BadgePaidText / Bg` | `#7A5000` / `#D4A017` 10% | Badge "Pago" |
+| `BadgePaidText / Bg` | `#7A5000` / `#E9B43C` 10% | Badge "Pago" |
 | `BadgeBookedText / Bg` | `#1A3A8A` / `#2850A0` 10% | Badge "Reservado" |
 | `BadgeUberText / Bg` | `#444444` / `#000000` 6% | Badge "Uber" |
 
@@ -61,8 +64,9 @@ O app usa `MaterialTheme` do Material 3 com `lightColorScheme` mapeando os token
 ```kotlin
 primary          = GreenMoss       // botões primários, TopAppBar
 secondary        = AmberPrimary    // botões secundários, FAB
-background       = GreenLight      // fundo da Activity
-surface          = SurfaceWhite    // Cards, Sheets
+tertiary         = GreenLime       // realce fresco (Verde Claro) — disponível p/ componentes
+background       = GreenLight      // fundo da Activity (creme)
+surface          = SurfaceWhite    // Cards, Sheets (branco quente)
 surfaceVariant   = GreenForest     // fundos alternativos
 outline          = CardBorder      // bordas de TextField, chips
 ```
@@ -75,7 +79,12 @@ O tema nunca usa modo escuro — `lightColorScheme` sem contraparte `darkColorSc
 
 ## Tipografia
 
-Fonte do sistema (padrão Android — Roboto). Sem fontes importadas.
+Fonte da marca **Plus Jakarta Sans** (SIL Open Font License), embarcada em `res/font/` nos 4 pesos — Regular (400), Medium (500), SemiBold (600), Bold (700). A `FontFamily` (`PlusJakartaSans`) é definida em `Type.kt`.
+
+Três camadas garantem que **nenhum** texto caia no Roboto:
+1. **Todos os 15 papéis** de `GramadoTypography` carregam a família — inclusive os que não têm métrica customizada (`displayLarge/Medium/Small`, `headlineSmall`, `titleSmall`, `labelLarge`), que herdam via `Typography().<papel>.copy(fontFamily = …)`. **Cuidado:** definir só alguns papéis deixa os demais em Roboto — foi o defeito inicial (`headlineSmall` e `titleSmall` apareceram na fonte antiga em "Minhas viagens" e nos títulos de atividade).
+2. `GramadoTheme` injeta a família como estilo base via `CompositionLocalProvider(LocalTextStyle provides …copy(fontFamily = PlusJakartaSans))`, cobrindo os `Text()` com `fontSize`/`fontWeight` **inline**.
+3. Campos de texto que passam um `textStyle` **explícito** (ex.: `TextField` no editor de notas) **substituem** o `LocalTextStyle` — por isso esses `TextStyle` construídos à mão precisam declarar `fontFamily = PlusJakartaSans` explicitamente.
 
 | Estilo | Tamanho | Peso | Uso principal |
 |---|---|---|---|

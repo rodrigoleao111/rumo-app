@@ -101,7 +101,7 @@ fun NoteEditorScreen(
                     onValueChange = viewModel::updateTitle,
                     modifier      = Modifier.fillMaxWidth(),
                     placeholder   = { Text("Título da nota", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextSecondary.copy(alpha = 0.5f)) },
-                    textStyle     = androidx.compose.ui.text.TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary),
+                    textStyle     = androidx.compose.ui.text.TextStyle(fontFamily = PlusJakartaSans, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary),
                     colors        = transparentFieldColors(),
                     singleLine    = true
                 )
@@ -244,6 +244,7 @@ private fun BlockTextField(
             .onFocusChanged { if (it.isFocused) onFocused() },
         placeholder   = { Text(placeholder, fontSize = fontSize, color = TextSecondary.copy(alpha = 0.5f)) },
         textStyle     = androidx.compose.ui.text.TextStyle(
+            fontFamily = PlusJakartaSans,
             fontSize = fontSize,
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
             color = TextPrimary
@@ -290,6 +291,7 @@ private fun ChecklistItemRow(
                 .onFocusChanged { if (it.isFocused) onFocused() },
             placeholder   = { Text("Item", color = TextSecondary.copy(alpha = 0.5f)) },
             textStyle     = androidx.compose.ui.text.TextStyle(
+                fontFamily = PlusJakartaSans,
                 fontSize = 15.sp,
                 color = if (checked) TextSecondary else TextPrimary,
                 textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None
