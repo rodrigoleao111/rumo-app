@@ -37,6 +37,9 @@ import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
 import java.time.LocalDate
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 private val PT_MONTHS = listOf("Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez")
 
@@ -141,17 +144,17 @@ fun EditBoardingPassScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
                         }
                     }
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -279,7 +282,7 @@ fun EditBoardingPassScreen(
                             onValueChange = {},
                             readOnly      = true,
                             placeholder   = { Text("09 Jun 2026", color = TextSecondary) },
-                            trailingIcon  = { Icon(Icons.Default.DateRange, contentDescription = null, tint = GreenMoss) },
+                            trailingIcon  = { Icon(ImageVector.vectorResource(R.drawable.ic_calendar), contentDescription = null, tint = GreenMoss) },
                             modifier      = Modifier.fillMaxWidth(),
                             shape         = RoundedCornerShape(12.dp),
                             colors        = OutlinedTextFieldDefaults.colors(
@@ -300,7 +303,7 @@ fun EditBoardingPassScreen(
                             onValueChange = {},
                             readOnly      = true,
                             placeholder   = { Text("06h30", color = TextSecondary) },
-                            trailingIcon  = { Icon(Icons.Default.Schedule, contentDescription = null, tint = GreenMoss) },
+                            trailingIcon  = { Icon(ImageVector.vectorResource(R.drawable.ic_schedule), contentDescription = null, tint = GreenMoss) },
                             modifier      = Modifier.fillMaxWidth(),
                             shape         = RoundedCornerShape(12.dp),
                             colors        = OutlinedTextFieldDefaults.colors(
@@ -496,7 +499,7 @@ private fun PassSourceSelector(
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_link), contentDescription = null, modifier = Modifier.size(16.dp))
                     Text("Link", fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
@@ -512,7 +515,7 @@ private fun PassSourceSelector(
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(16.dp))
                     Text("Arquivo", fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
@@ -537,7 +540,7 @@ private fun PassSourceSelector(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                         Text(
                             text     = fileName,
                             style    = MaterialTheme.typography.bodyMedium,
@@ -547,7 +550,7 @@ private fun PassSourceSelector(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = onClearFile, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -557,7 +560,7 @@ private fun PassSourceSelector(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(if (fileName.isBlank()) "Selecionar arquivo" else "Trocar arquivo")
             }

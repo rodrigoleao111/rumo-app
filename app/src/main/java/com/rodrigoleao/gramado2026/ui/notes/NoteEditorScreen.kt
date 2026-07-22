@@ -36,6 +36,9 @@ import com.rodrigoleao.gramado2026.ui.theme.*
 import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @Composable
 fun NoteEditorScreen(
@@ -67,7 +70,7 @@ fun NoteEditorScreen(
                 title = { Text("Nota", color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -120,7 +123,7 @@ fun NoteEditorScreen(
                                 modifier = Modifier.longPressDraggableHandle().size(40.dp),
                                 onClick  = {}
                             ) {
-                                Icon(Icons.Default.DragHandle, contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f))
+                                Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f))
                             }
                             Box(Modifier.weight(1f).padding(top = 4.dp)) {
                                 BlockEditor(
@@ -273,11 +276,11 @@ private fun ChecklistItemRow(
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = {}, modifier = dragHandleModifier.size(28.dp)) {
-            Icon(Icons.Default.DragHandle, contentDescription = "Reordenar item", tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
+            Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar item", tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
         }
         IconButton(onClick = { onToggle(!checked) }, modifier = Modifier.size(36.dp)) {
             Icon(
-                if (checked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                if (checked) ImageVector.vectorResource(R.drawable.ic_checkbox_checked) else ImageVector.vectorResource(R.drawable.ic_checkbox_blank),
                 contentDescription = if (checked) "Desmarcar" else "Marcar",
                 tint = if (checked) GreenMoss else TextSecondary
             )
@@ -300,7 +303,7 @@ private fun ChecklistItemRow(
             singleLine    = true
         )
         IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-            Icon(Icons.Default.Delete, contentDescription = "Remover item", tint = TextSecondary.copy(alpha = 0.4f))
+            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Remover item", tint = TextSecondary.copy(alpha = 0.4f))
         }
     }
 }
@@ -325,11 +328,11 @@ private fun InsertToolbar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            ToolbarButton(Icons.AutoMirrored.Filled.Notes, "Texto", GreenMoss, onAddText)
-            ToolbarButton(Icons.Default.CheckBox, "Checklist", GreenMoss, onAddChecklist)
-            ToolbarButton(Icons.Default.Title, "Título", GreenMoss, onAddHeading)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_note_text), "Texto", GreenMoss, onAddText)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_checkbox_checked), "Checklist", GreenMoss, onAddChecklist)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_title), "Título", GreenMoss, onAddHeading)
             ToolbarButton(
-                Icons.Default.Delete, "Excluir",
+                ImageVector.vectorResource(R.drawable.ic_delete), "Excluir",
                 if (canDelete) MaterialTheme.colorScheme.error else TextSecondary.copy(alpha = 0.3f),
                 onDeleteBlock, enabled = canDelete
             )

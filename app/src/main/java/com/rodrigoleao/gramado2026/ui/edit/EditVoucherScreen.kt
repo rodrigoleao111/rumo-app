@@ -38,6 +38,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 private val VOUCHER_QUICK_EMOJIS = listOf("🎫", "🏨", "🎡", "🚠", "🌿")
 
@@ -115,17 +118,17 @@ fun EditVoucherScreen(
                 title = { Text(if (isEditing) "Editar voucher" else "Novo voucher", fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
                         }
                     }
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -325,7 +328,7 @@ private fun VoucherSourceSelector(
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_link), contentDescription = null, modifier = Modifier.size(16.dp))
                     Text("Link", fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
@@ -341,7 +344,7 @@ private fun VoucherSourceSelector(
                 )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(16.dp))
                     Text("Arquivo", fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
@@ -366,7 +369,7 @@ private fun VoucherSourceSelector(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                         Text(
                             text     = fileName,
                             style    = MaterialTheme.typography.bodyMedium,
@@ -376,7 +379,7 @@ private fun VoucherSourceSelector(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = onClearFile, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -386,7 +389,7 @@ private fun VoucherSourceSelector(
                 modifier = Modifier.fillMaxWidth(),
                 shape    = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(if (fileName.isBlank()) "Selecionar arquivo" else "Trocar arquivo")
             }
@@ -468,7 +471,7 @@ private fun VoucherGroupSelector(
             onClick = onCreateClick,
             label   = { Text("Nova categoria") },
             leadingIcon = {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(16.dp))
             }
         )
     }
@@ -511,7 +514,7 @@ private fun VoucherEmojiRow(selected: String, onSelect: (String) -> Unit, onMore
             border   = BorderStroke(1.dp, CardBorder)
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Add, contentDescription = "Mais ícones", tint = TextSecondary)
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Mais ícones", tint = TextSecondary)
             }
         }
     }

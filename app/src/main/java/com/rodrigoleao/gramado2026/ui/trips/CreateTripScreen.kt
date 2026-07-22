@@ -50,6 +50,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.vectorResource
+import com.rodrigoleao.gramado2026.R
 
 private val EMOJI_OPTIONS = listOf(
     "⛰️", "🏖️", "🏙️", "🌊", "🌿", "🗺️", "✈️", "🏕️", "🏰", "🎡",
@@ -122,11 +124,11 @@ fun CreateTripScreen(
                     ) {
                         if (step < 3) {
                             IconButton(onClick = { if (step > 0) step-- else onBack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                             }
                         } else if (showBackInStep4) {
                             IconButton(onClick = { viewModel.backToChoosing() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                             }
                         } else {
                             Spacer(Modifier.width(16.dp))
@@ -140,7 +142,7 @@ fun CreateTripScreen(
                         )
                         if (step == 3 && chatPhase == ChatPhase.CHOOSING) {
                             IconButton(onClick = { showHelpSheet = true }) {
-                                Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "Ajuda", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_help), contentDescription = "Ajuda", tint = Color.White)
                             }
                         }
                     }
@@ -252,7 +254,7 @@ private fun ItineraryHelpSheet() {
         // Opção 1: Importar
         HelpOption(
             iconBg      = AmberPrimary.copy(alpha = 0.10f),
-            icon        = Icons.Default.FileUpload,
+            icon        = ImageVector.vectorResource(R.drawable.ic_file_upload),
             iconTint    = AmberPrimary,
             title       = "Importar roteiro",
             description = "Ideal se você já tem um roteiro em mente ou encontrou sugestões em algum lugar — um blog, um vídeo, uma conversa com o ChatGPT.\n\nO app gera um texto de instrução que você copia e cola em qualquer IA. Ela devolve o roteiro no formato certo. Depois é só colar aqui e pronto."
@@ -261,7 +263,7 @@ private fun ItineraryHelpSheet() {
         // Opção 2: Chat com IA
         HelpOption(
             iconBg      = GreenMoss.copy(alpha = 0.10f),
-            icon        = Icons.Default.AutoAwesome,
+            icon        = ImageVector.vectorResource(R.drawable.ic_auto_awesome),
             iconTint    = GreenMoss,
             title       = "Chat com IA",
             description = "Ideal se você ainda não tem um roteiro definido e quer montar do zero conversando com a IA do próprio app.\n\nA IA já conhece seu destino, datas e hospedagem. Você conta o perfil da viagem (família, casal, amigos…) e o que prefere fazer, e ela monta um roteiro personalizado diretamente no app."
@@ -393,7 +395,7 @@ private fun Step1Content(
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), color = GreenSage, strokeWidth = 2.dp)
                     } else {
                         Icon(
-                            Icons.Default.LocationOn, contentDescription = null,
+                            ImageVector.vectorResource(R.drawable.ic_location), contentDescription = null,
                             tint     = if (hasCoords) GreenMoss else TextSecondary.copy(alpha = 0.4f),
                             modifier = Modifier.size(20.dp)
                         )
@@ -562,7 +564,7 @@ private fun Step2Content(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_calendar), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
                             Text(
                                 text  = "$startLabel  →  $endLabel",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -660,7 +662,7 @@ private fun Step3Content(
                     if (isHotelSearching) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), color = GreenSage, strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_location), contentDescription = null, tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
                     }
                 }
             )
@@ -699,7 +701,7 @@ private fun Step3Content(
             shape         = RoundedCornerShape(12.dp),
             colors        = tripFieldColors(),
             leadingIcon   = {
-                Icon(Icons.Default.Phone, contentDescription = null, tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_phone), contentDescription = null, tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(20.dp))
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
         )
@@ -712,7 +714,7 @@ private fun Step3Content(
             shape    = RoundedCornerShape(14.dp),
             colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
         ) {
-            Icon(Icons.Default.Check, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
+            Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
             Text("Criar viagem e montar roteiro →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
         }
@@ -828,7 +830,7 @@ private fun ChoosingScreen(
         ) {
             OptionCard(
                 modifier    = Modifier.weight(1f).fillMaxHeight(),
-                icon        = Icons.Default.FileUpload,
+                icon        = ImageVector.vectorResource(R.drawable.ic_file_upload),
                 iconTint    = AmberPrimary,
                 iconBg      = AmberPrimary.copy(alpha = 0.10f),
                 title       = "Importar roteiro",
@@ -837,7 +839,7 @@ private fun ChoosingScreen(
             )
             OptionCard(
                 modifier    = Modifier.weight(1f).fillMaxHeight(),
-                icon        = Icons.Default.AutoAwesome,
+                icon        = ImageVector.vectorResource(R.drawable.ic_auto_awesome),
                 iconTint    = GreenMoss,
                 iconBg      = GreenMoss.copy(alpha = 0.10f),
                 title       = "Chat com IA",
@@ -988,7 +990,7 @@ private fun ImportScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 Icon(
-                    imageVector        = if (wasCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                    imageVector        = if (wasCopied) ImageVector.vectorResource(R.drawable.ic_check) else ImageVector.vectorResource(R.drawable.ic_copy),
                     contentDescription = null,
                     tint               = AmberPrimary,
                     modifier           = Modifier.size(18.dp)
@@ -1044,7 +1046,7 @@ private fun ImportScreen(
                         shape    = RoundedCornerShape(12.dp),
                         border   = BorderStroke(1.dp, GreenMoss.copy(alpha = 0.4f))
                     ) {
-                        Icon(Icons.Default.Upload, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_upload), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Importar arquivo", color = GreenMoss, fontSize = 13.sp)
                     }
@@ -1058,7 +1060,7 @@ private fun ImportScreen(
                             disabledContainerColor = GreenMoss.copy(alpha = 0.35f)
                         )
                     ) {
-                        Icon(Icons.Default.FileUpload, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(16.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_file_upload), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Importar roteiro", fontWeight = FontWeight.SemiBold, color = AmberPrimary, fontSize = 13.sp)
                     }
@@ -1119,7 +1121,7 @@ private fun ChatScreen(
                         shape    = RoundedCornerShape(12.dp),
                         colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                     ) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Gerar roteiro agora", fontWeight = FontWeight.SemiBold, color = AmberPrimary)
                     }
@@ -1168,7 +1170,7 @@ private fun ChatScreen(
                                 .background(if (input.isNotBlank()) GreenMoss else CardBorder)
                         ) {
                             Icon(
-                                Icons.AutoMirrored.Filled.Send,
+                                ImageVector.vectorResource(R.drawable.ic_send),
                                 contentDescription = "Enviar",
                                 tint     = Color.White,
                                 modifier = Modifier.size(20.dp)
@@ -1263,7 +1265,7 @@ private fun ItineraryPreview(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp))
                 Column {
                     Text("Roteiro gerado!", fontWeight = FontWeight.Bold, color = GreenMoss)
                     Text("Revise e salve no app", fontSize = 12.sp, color = TextSecondary)
@@ -1345,7 +1347,7 @@ private fun ItineraryPreview(
                     shape    = RoundedCornerShape(14.dp),
                     colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Salvar roteiro", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
                 }

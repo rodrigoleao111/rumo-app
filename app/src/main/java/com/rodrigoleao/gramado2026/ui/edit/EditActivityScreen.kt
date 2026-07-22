@@ -36,6 +36,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.BadgeType
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 // 5 ícones exibidos na linha rápida (excluindo o selecionado atual, que ocupa o slot 0)
 private val QUICK_EMOJIS = listOf("🏨", "🍽️", "🎡", "🏔️", "☕")
@@ -95,20 +98,20 @@ fun EditActivityScreen(
                 title = { Text(if (isEditing) "Editar atividade" else "Nova atividade", fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
                         }
                     }
                     IconButton(
                         onClick = { viewModel.save() },
                         enabled = canSave && !state.isSaving
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -175,7 +178,7 @@ fun EditActivityScreen(
                     onClick = { showNewBadgeDialog = true },
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = GreenMoss)
+                    Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(16.dp), tint = GreenMoss)
                     Spacer(Modifier.width(4.dp))
                     Text("Nova", fontSize = 13.sp, color = GreenMoss)
                 }
@@ -284,7 +287,7 @@ private fun TimePickerField(time: String, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
-                imageVector        = Icons.Default.Schedule,
+                imageVector        = ImageVector.vectorResource(R.drawable.ic_schedule),
                 contentDescription = null,
                 tint               = TextSecondary.copy(alpha = 0.5f),
                 modifier           = Modifier.size(20.dp)
@@ -388,7 +391,7 @@ private fun ActivityEmojiRow(selected: String, onSelect: (String) -> Unit, onMor
             border   = BorderStroke(1.dp, CardBorder)
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(Icons.Default.Add, contentDescription = "Mais ícones", tint = TextSecondary)
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Mais ícones", tint = TextSecondary)
             }
         }
     }
@@ -492,7 +495,7 @@ private fun BadgeSelector(
                 ) {
                     Text(cb.name, fontSize = 13.sp, color = base, fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = { onRemoveCustom(cb) }, modifier = Modifier.size(20.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Remover", tint = base, modifier = Modifier.size(14.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover", tint = base, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -543,7 +546,7 @@ fun NewBadgeDialog(onDismiss: () -> Unit, onConfirm: (name: String, colorHex: St
                         ) {
                             if (isSelected) {
                                 Icon(
-                                    Icons.Default.Check,
+                                    ImageVector.vectorResource(R.drawable.ic_check),
                                     contentDescription = null,
                                     tint     = Color.White,
                                     modifier = Modifier.size(16.dp)

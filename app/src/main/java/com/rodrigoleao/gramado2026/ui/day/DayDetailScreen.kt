@@ -63,6 +63,9 @@ import com.rodrigoleao.gramado2026.data.weather.LiveWeatherDay
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
 import com.rodrigoleao.gramado2026.ui.components.BadgeChip
 import com.rodrigoleao.gramado2026.ui.theme.*
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @Composable
 fun DayDetailScreen(
@@ -121,12 +124,12 @@ fun DayDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar")
                     }
                 },
                 actions = {
                     IconButton(onClick = onEditDay) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar dia", tint = GreenMoss)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar dia", tint = GreenMoss)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
@@ -139,7 +142,7 @@ fun DayDetailScreen(
                 contentColor      = GreenMoss,
                 shape             = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar atividade")
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Adicionar atividade")
             }
         },
         containerColor = Sand,
@@ -417,7 +420,7 @@ private fun WeatherCard(liveWeather: LiveWeatherDay?, isLoading: Boolean, onRefr
             }
 
             IconButton(onClick = { if (!isLoading) onRefresh() }, modifier = Modifier.size(36.dp), enabled = !isLoading) {
-                Icon(Icons.Default.Refresh, contentDescription = if (isLoading) "Atualizando…" else "Atualizar clima",
+                Icon(ImageVector.vectorResource(R.drawable.ic_refresh), contentDescription = if (isLoading) "Atualizando…" else "Atualizar clima",
                     tint = if (isLoading) AmberPrimary else GreenSage,
                     modifier = Modifier.size(22.dp).rotate(if (isLoading) spinAngle else 0f))
             }
@@ -506,7 +509,7 @@ private fun ActivityItem(
                     }
 
                     Icon(
-                        imageVector        = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        imageVector        = if (expanded) ImageVector.vectorResource(R.drawable.ic_chevron_up) else ImageVector.vectorResource(R.drawable.ic_chevron_down),
                         contentDescription = if (expanded) "Recolher" else "Ver detalhes",
                         tint               = GreenSage.copy(alpha = 0.65f),
                         modifier           = Modifier.size(24.dp)
@@ -580,7 +583,7 @@ private fun SwipeToRevealActivity(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = GreenMoss, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar", tint = GreenMoss, modifier = Modifier.size(22.dp))
             }
             // Deletar — fundo vermelho, ícone branco
             Box(
@@ -594,7 +597,7 @@ private fun SwipeToRevealActivity(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
             }
         }
 

@@ -23,6 +23,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.ui.theme.*
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @Composable
 fun ImportTripScreen(
@@ -53,7 +56,7 @@ fun ImportTripScreen(
                 title  = { Text("Importar viagem", color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -117,7 +120,7 @@ fun ImportTripScreen(
                 shape    = RoundedCornerShape(12.dp),
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
-                Icon(Icons.Default.Download, contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_download), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("Importar viagem", color = AmberPrimary, fontWeight = FontWeight.SemiBold)
             }

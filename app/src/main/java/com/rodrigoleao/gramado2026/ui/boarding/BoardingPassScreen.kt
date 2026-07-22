@@ -39,6 +39,9 @@ import com.rodrigoleao.gramado2026.data.model.BoardingPass
 import com.rodrigoleao.gramado2026.notifications.NotificationHelper
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 // ── Helpers de tipo de transporte ─────────────────────────────────────────────
 
@@ -290,7 +293,7 @@ private fun CheckInReminderCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Icon(
-                imageVector        = if (isActive) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                imageVector        = if (isActive) ImageVector.vectorResource(R.drawable.ic_notification) else ImageVector.vectorResource(R.drawable.ic_notification_off),
                 contentDescription = null,
                 tint               = if (isActive) GreenMoss else AmberPrimary,
                 modifier           = Modifier.size(28.dp)
@@ -526,7 +529,7 @@ private fun GateBlock(gate: String, onClick: () -> Unit) {
                 textAlign  = TextAlign.Center
             )
             Icon(
-                imageVector        = Icons.Default.Edit,
+                imageVector        = ImageVector.vectorResource(R.drawable.ic_edit),
                 contentDescription = "Editar portão",
                 tint               = if (hasGate) GreenSage else TextSecondary.copy(alpha = 0.35f),
                 modifier           = Modifier.size(11.dp)
@@ -558,7 +561,7 @@ private fun PassengerRow(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(pass.passenger, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                 IconButton(onClick = onEditBoardingPass, modifier = Modifier.size(22.dp)) {
-                    Icon(Icons.Default.Edit, "Editar passagem", tint = GreenSage.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar passagem", tint = GreenSage.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
                 }
             }
         }
@@ -573,7 +576,7 @@ private fun PassengerRow(
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     shape          = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.AttachFile, null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_attach), null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Passagem", color = AmberPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
@@ -589,7 +592,7 @@ private fun PassengerRow(
                         Text("🎫  Abrir", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                     IconButton(onClick = onAddUrlClick, modifier = Modifier.size(36.dp)) {
-                        Icon(Icons.Default.Edit, "Editar link", tint = GreenSage, modifier = Modifier.size(18.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar link", tint = GreenSage, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -600,7 +603,7 @@ private fun PassengerRow(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                     shape          = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Default.Edit, null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_edit), null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Adicionar link", fontSize = 12.sp, color = AmberPrimary)
                 }

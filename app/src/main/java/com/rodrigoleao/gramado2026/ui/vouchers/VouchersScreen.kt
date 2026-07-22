@@ -37,6 +37,9 @@ import com.rodrigoleao.gramado2026.utils.openInternalFile
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 // ── Tipo de voucher e paleta associada ───────────────────────────────────────
 
@@ -250,7 +253,7 @@ fun VouchersScreen(
                                     onClick  = {}
                                 ) {
                                     Icon(
-                                        imageVector        = Icons.Default.DragHandle,
+                                        imageVector        = ImageVector.vectorResource(R.drawable.ic_drag),
                                         contentDescription = "Reordenar",
                                         tint               = TextSecondary.copy(alpha = 0.3f),
                                         modifier           = Modifier.size(20.dp)
@@ -449,8 +452,8 @@ private fun VoucherCard(
                     // Marcar como usado
                     IconButton(onClick = onToggleUsed, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector        = if (voucher.isUsed) Icons.Default.CheckCircle
-                                                 else Icons.Default.RadioButtonUnchecked,
+                            imageVector        = if (voucher.isUsed) ImageVector.vectorResource(R.drawable.ic_check_circle)
+                                                 else ImageVector.vectorResource(R.drawable.ic_radio_unchecked),
                             contentDescription = if (voucher.isUsed) "Marcar como não usado" else "Marcar como usado",
                             tint               = if (voucher.isUsed) GreenMoss else TextSecondary.copy(alpha = 0.4f),
                             modifier           = Modifier.size(18.dp)
@@ -459,7 +462,7 @@ private fun VoucherCard(
                     // Editar
                     IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector        = Icons.Default.Edit,
+                            imageVector        = ImageVector.vectorResource(R.drawable.ic_edit),
                             contentDescription = "Editar",
                             tint               = TextSecondary.copy(alpha = 0.6f),
                             modifier           = Modifier.size(17.dp)
@@ -468,7 +471,7 @@ private fun VoucherCard(
                     // Compartilhar
                     IconButton(onClick = onShare, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector        = Icons.Default.Share,
+                            imageVector        = ImageVector.vectorResource(R.drawable.ic_share),
                             contentDescription = "Compartilhar",
                             tint               = TextSecondary.copy(alpha = 0.6f),
                             modifier           = Modifier.size(17.dp)
@@ -477,7 +480,7 @@ private fun VoucherCard(
                     // Deletar
                     IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                         Icon(
-                            imageVector        = Icons.Default.Delete,
+                            imageVector        = ImageVector.vectorResource(R.drawable.ic_delete),
                             contentDescription = "Remover",
                             tint               = Color(0xFFD32F2F).copy(alpha = 0.7f),
                             modifier           = Modifier.size(17.dp)

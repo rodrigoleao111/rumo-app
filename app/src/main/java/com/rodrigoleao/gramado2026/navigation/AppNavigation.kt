@@ -85,6 +85,8 @@ import com.rodrigoleao.gramado2026.ui.settings.SettingsViewModel
 import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import androidx.compose.ui.res.vectorResource
+import com.rodrigoleao.gramado2026.R
 
 // ── ROTAS ─────────────────────────────────────────────────────────────────────
 
@@ -129,7 +131,7 @@ sealed class Screen(val route: String) {
     object Settings   : Screen("settings")
 }
 
-private val TAB_ICONS  = listOf(Icons.Default.Home, Icons.Default.ConfirmationNumber, Icons.Default.FlightTakeoff, Icons.Default.Call, Icons.AutoMirrored.Filled.EventNote)
+private val TAB_ICON_RES = listOf(R.drawable.ic_home, R.drawable.ic_ticket, R.drawable.ic_boarding, R.drawable.ic_contacts, R.drawable.ic_notes_nav)
 private val TAB_LABELS = listOf("Início", "Vouchers", "Embarque", "Contatos", "Notas")
 private const val ANIM_DURATION = 320
 
@@ -565,7 +567,7 @@ private fun MainPagerScreen(
     actions: TripScreenActions
 ) {
     val trip              = state.tripData?.trip
-    val pagerState        = rememberPagerState(pageCount = { TAB_ICONS.size })
+    val pagerState        = rememberPagerState(pageCount = { TAB_ICON_RES.size })
     val coroutineScope    = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior    = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -606,7 +608,7 @@ private fun MainPagerScreen(
                     if (pagerState.currentPage == 0) {
                         IconButton(onClick = actions.onBack) {
                             Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
+                                ImageVector.vectorResource(R.drawable.ic_arrow_back),
                                 contentDescription = "Minhas viagens",
                                 tint = Color.White
                             )
@@ -619,7 +621,7 @@ private fun MainPagerScreen(
                         Box {
                             IconButton(onClick = { showSortMenu = true }) {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.Sort,
+                                    ImageVector.vectorResource(R.drawable.ic_sort),
                                     contentDescription = "Agrupar vouchers",
                                     tint = if (voucherSortMode != VoucherSortMode.BY_CATEGORY)
                                                AmberPrimary else Color.White
@@ -649,10 +651,10 @@ private fun MainPagerScreen(
                         }
                     }
                     IconButton(onClick = actions.onShareTrip) {
-                        Icon(Icons.Default.Share, contentDescription = "Compartilhar viagem")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = "Compartilhar viagem")
                     }
                     IconButton(onClick = actions.onEditTrip) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar viagem")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar viagem")
                     }
                 },
                 colors        = TopAppBarDefaults.topAppBarColors(
@@ -679,7 +681,7 @@ private fun MainPagerScreen(
                     contentColor   = GreenMoss,
                     shape          = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Adicionar")
+                    Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Adicionar")
                 }
             }
         },
@@ -714,9 +716,9 @@ private fun MainPagerScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    TAB_ICONS.forEachIndexed { index, icon ->
+                    TAB_ICON_RES.forEachIndexed { index, iconRes ->
                         PillNavItem(
-                            icon     = icon,
+                            icon     = ImageVector.vectorResource(iconRes),
                             label    = TAB_LABELS[index],
                             selected = pagerState.currentPage == index,
                             onClick  = { coroutineScope.launch { pagerState.animateScrollToPage(index) } }
@@ -793,7 +795,7 @@ private fun SortMenuItem(label: String, selected: Boolean, onClick: () -> Unit) 
         },
         onClick = onClick,
         trailingIcon = if (selected) {{
-            Icon(Icons.Default.Check, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
+            Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
         }} else null
     )
 }

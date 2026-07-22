@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 private val EMOJI_OPTIONS = listOf(
     "⛰️", "🏖️", "🏙️", "🌊", "🌿", "🗺️", "✈️", "🏕️", "🏰", "🎡",
@@ -68,7 +71,7 @@ fun EditTripScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
@@ -76,13 +79,13 @@ fun EditTripScreen(
                         onClick = { showDeleteDialog = true },
                         enabled = state.entity != null
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White.copy(alpha = 0.85f))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White.copy(alpha = 0.85f))
                     }
                     IconButton(
                         onClick = { viewModel.save() },
                         enabled = canSave && !state.isSaving
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -121,7 +124,7 @@ fun EditTripScreen(
                     shape         = RoundedCornerShape(12.dp),
                     trailingIcon  = {
                         if (state.latitude != null) {
-                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_location), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp))
                         } else if (isSearching) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GreenMoss)
                         }
@@ -155,7 +158,7 @@ fun EditTripScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(18.dp))
+                                Icon(ImageVector.vectorResource(R.drawable.ic_location), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(18.dp))
                                 Text(label, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                             }
                             HorizontalDivider(color = CardBorder)

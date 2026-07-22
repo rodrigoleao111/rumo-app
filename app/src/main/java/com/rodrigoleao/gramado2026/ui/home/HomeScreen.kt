@@ -27,6 +27,9 @@ import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @Composable
 fun HomeScreen(
@@ -282,7 +285,7 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                             contentColor   = Color.White
                         )
                     ) {
-                        Icon(Icons.Default.Map, contentDescription = "Maps", modifier = Modifier.size(iconSize))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_map), contentDescription = "Maps", modifier = Modifier.size(iconSize))
                         if (showText) {
                             Spacer(Modifier.width(6.dp))
                             Text("Maps", fontWeight = FontWeight.SemiBold, maxLines = 1)
@@ -306,7 +309,7 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                             contentColor   = GreenMoss
                         )
                     ) {
-                        Icon(Icons.Default.DirectionsCar, contentDescription = "Uber", modifier = Modifier.size(iconSize))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_car), contentDescription = "Uber", modifier = Modifier.size(iconSize))
                         if (showText) {
                             Spacer(Modifier.width(6.dp))
                             Text("Uber", fontWeight = FontWeight.SemiBold, maxLines = 1)
@@ -328,7 +331,7 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                                 contentColor   = Color.White
                             )
                         ) {
-                            Icon(Icons.Default.Phone, contentDescription = "Ligar", modifier = Modifier.size(iconSize))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_phone), contentDescription = "Ligar", modifier = Modifier.size(iconSize))
                             if (showText) {
                                 Spacer(Modifier.width(6.dp))
                                 Text("Ligar", fontWeight = FontWeight.SemiBold, maxLines = 1)

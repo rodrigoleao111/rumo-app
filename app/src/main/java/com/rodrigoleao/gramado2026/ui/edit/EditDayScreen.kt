@@ -29,6 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.UiEvent
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,12 +89,12 @@ fun EditDayScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(Icons.Default.Check, contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -157,7 +160,7 @@ fun EditDayScreen(
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
                 leadingIcon   = {
-                    Icon(Icons.Default.Link, contentDescription = null, tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_link), contentDescription = null, tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 colors          = OutlinedTextFieldDefaults.colors(
@@ -190,7 +193,7 @@ fun EditDayScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp))
                         Text(
                             text     = state.dayDocumentName.ifBlank { "Documento" },
                             style    = MaterialTheme.typography.bodyMedium,
@@ -200,7 +203,7 @@ fun EditDayScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = { viewModel.clearDocument() }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Remover", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover", tint = TextSecondary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -218,7 +221,7 @@ fun EditDayScreen(
                     colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenMoss),
                     border   = androidx.compose.foundation.BorderStroke(1.dp, GreenMoss.copy(alpha = 0.5f))
                 ) {
-                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Importar documento")
                 }

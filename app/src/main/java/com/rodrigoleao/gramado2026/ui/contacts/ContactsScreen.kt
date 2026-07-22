@@ -34,6 +34,9 @@ import com.rodrigoleao.gramado2026.utils.dialPhone
 import com.rodrigoleao.gramado2026.utils.openWhatsApp
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 // ── List item types ───────────────────────────────────────────────────────────
 
@@ -229,7 +232,7 @@ fun ContactsScreen(
                                     ) {
                                         if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
                                             Icon(
-                                                imageVector        = Icons.Default.Delete,
+                                                imageVector        = ImageVector.vectorResource(R.drawable.ic_delete),
                                                 contentDescription = "Remover",
                                                 tint               = Color.White,
                                                 modifier           = Modifier.size(22.dp)
@@ -249,7 +252,7 @@ fun ContactsScreen(
                                             onClick  = {}
                                         ) {
                                             Icon(
-                                                imageVector        = Icons.Default.DragHandle,
+                                                imageVector        = ImageVector.vectorResource(R.drawable.ic_drag),
                                                 contentDescription = "Reordenar",
                                                 tint               = Color.White.copy(alpha = 0.8f),
                                                 modifier           = Modifier.size(20.dp)
@@ -371,7 +374,7 @@ private fun ContactCard(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
-                        imageVector        = if (contact.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        imageVector        = if (contact.isFavorite) ImageVector.vectorResource(R.drawable.ic_star) else ImageVector.vectorResource(R.drawable.ic_star_border),
                         contentDescription = if (contact.isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
                         tint               = if (contact.isFavorite) AmberPrimary else Color.White.copy(alpha = 0.5f),
                         modifier           = Modifier.size(20.dp)
@@ -438,7 +441,7 @@ private fun ContactCard(
 
                     if (showActions) {
                         IconButton(onClick = onEditClick, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Default.Edit, "Editar contato", tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar contato", tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
                         }
                     }
                 }

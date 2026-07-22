@@ -46,6 +46,9 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 @Composable
 fun TripsListScreen(
@@ -106,7 +109,7 @@ fun TripsListScreen(
                 )
                 IconButton(onClick = onSettingsClick) {
                     Icon(
-                        imageVector        = Icons.Default.Settings,
+                        imageVector        = ImageVector.vectorResource(R.drawable.ic_settings),
                         contentDescription = "Configurações",
                         tint               = Color.White.copy(alpha = 0.6f)
                     )
@@ -193,7 +196,7 @@ fun TripsListScreen(
     pendingDelete?.let { trip ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            icon  = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFD32F2F)) },
+            icon  = { Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = null, tint = Color(0xFFD32F2F)) },
             title = { Text("Excluir viagem?") },
             text  = {
                 Text(
@@ -278,7 +281,7 @@ private fun SwipeToRevealTrip(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Share, contentDescription = "Compartilhar", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = "Compartilhar", tint = Color.White, modifier = Modifier.size(22.dp))
             }
             // Editar — fundo âmbar, ícone verde
             Box(
@@ -292,7 +295,7 @@ private fun SwipeToRevealTrip(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar", tint = Color.White, modifier = Modifier.size(22.dp))
             }
             // Excluir — fundo vermelho, ícone branco, canto direito arredondado
             Box(
@@ -307,7 +310,7 @@ private fun SwipeToRevealTrip(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
             }
         }
 
@@ -395,7 +398,7 @@ private fun TripCard(trip: TripEntity, onClick: () -> Unit) {
 private fun ImportTripCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     ActionCard(
         modifier    = modifier,
-        icon        = Icons.Default.FileOpen,
+        icon        = ImageVector.vectorResource(R.drawable.ic_import),
         iconTint    = AmberPrimary,
         iconBg      = AmberPrimary.copy(alpha = 0.10f),
         title       = "Importar viagem",
@@ -408,7 +411,7 @@ private fun ImportTripCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
 private fun NewTripCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     ActionCard(
         modifier    = modifier,
-        icon        = Icons.Default.Add,
+        icon        = ImageVector.vectorResource(R.drawable.ic_add),
         iconTint    = GreenMoss,
         iconBg      = GreenMoss.copy(alpha = 0.10f),
         title       = "Nova viagem",

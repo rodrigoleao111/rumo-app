@@ -32,6 +32,9 @@ import com.rodrigoleao.gramado2026.data.model.NoteBlock
 import com.rodrigoleao.gramado2026.ui.theme.*
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.rodrigoleao.gramado2026.R
 
 /** Tela de notas de um dia específico (rota própria). A aba geral usa NotesListContent direto. */
 @Composable
@@ -49,7 +52,7 @@ fun DayNotesScreen(
                 title = { Text("Notas — $dayLabel", color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -61,7 +64,7 @@ fun DayNotesScreen(
                 containerColor = AmberPrimary,
                 contentColor   = GreenMoss,
                 shape          = RoundedCornerShape(16.dp)
-            ) { Icon(Icons.Default.Add, contentDescription = "Nova nota") }
+            ) { Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Nova nota") }
         },
         containerColor = Sand
     ) { padding ->
@@ -147,7 +150,7 @@ fun NotesListContent(
                                 contentAlignment = Alignment.CenterEnd
                             ) {
                                 if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Remover", tint = Color.White, modifier = Modifier.size(22.dp))
+                                    Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Remover", tint = Color.White, modifier = Modifier.size(22.dp))
                                 }
                             }
                         }
@@ -157,7 +160,7 @@ fun NotesListContent(
                             onClick    = { onOpenNote(note.id) },
                             dragHandle = {
                                 IconButton(modifier = Modifier.size(36.dp).longPressDraggableHandle(), onClick = {}) {
-                                    Icon(Icons.Default.DragHandle, contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                    Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                                 }
                             }
                         )
