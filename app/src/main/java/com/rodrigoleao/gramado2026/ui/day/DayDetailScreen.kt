@@ -62,6 +62,7 @@ import com.rodrigoleao.gramado2026.data.model.*
 import com.rodrigoleao.gramado2026.data.weather.LiveWeatherDay
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
 import com.rodrigoleao.gramado2026.ui.components.BadgeChip
+import com.rodrigoleao.gramado2026.ui.components.WeatherIcon
 import com.rodrigoleao.gramado2026.ui.theme.*
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -397,7 +398,7 @@ private fun WeatherCard(liveWeather: LiveWeatherDay?, isLoading: Boolean, onRefr
                 isLoading -> Box(modifier = Modifier.size(38.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp, color = AmberPrimary)
                 }
-                hasData -> Text(liveWeather!!.emoji, fontSize = 38.sp)
+                hasData -> WeatherIcon(liveWeather!!.weatherCode, size = 46.dp)
                 // sem dados: sem ícone
             }
 

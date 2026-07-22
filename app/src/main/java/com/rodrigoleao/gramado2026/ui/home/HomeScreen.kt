@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.rodrigoleao.gramado2026.data.model.TravelDay
 import com.rodrigoleao.gramado2026.data.weather.LiveWeatherDay
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
+import com.rodrigoleao.gramado2026.ui.components.WeatherIcon
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -106,7 +107,6 @@ private fun DayCard(
     onClick: () -> Unit
 ) {
     val hasWeather   = liveWeather != null && !(liveWeather.minTemp == 0 && liveWeather.maxTemp == 0)
-    val displayEmoji = if (hasWeather) liveWeather!!.emoji else null
     val displayCond  = if (hasWeather) liveWeather!!.condition else null
 
     Card(
@@ -164,7 +164,7 @@ private fun DayCard(
                     Text(text = day.title, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                 }
 
-                if (displayEmoji != null) Text(text = displayEmoji, fontSize = 34.sp)
+                if (hasWeather) WeatherIcon(liveWeather!!.weatherCode, size = 40.dp)
             }
 
             Spacer(modifier = Modifier.height(12.dp))

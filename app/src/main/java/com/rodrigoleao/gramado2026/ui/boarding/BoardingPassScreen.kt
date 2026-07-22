@@ -40,17 +40,20 @@ import com.rodrigoleao.gramado2026.notifications.NotificationHelper
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.gramado2026.R
 
 // ── Helpers de tipo de transporte ─────────────────────────────────────────────
 
-private fun transportEmoji(type: String) = when (type) {
-    "FLIGHT" -> "✈️"
-    "TRAIN"  -> "🚂"
-    "BUS"    -> "🚌"
-    "SHIP"   -> "🚢"
-    else     -> "🎫"
+private fun transportDrawable(type: String) = when (type) {
+    "FLIGHT" -> R.drawable.transport_flight
+    "TRAIN"  -> R.drawable.transport_train
+    "BUS"    -> R.drawable.transport_bus
+    "SHIP"   -> R.drawable.transport_ship
+    else     -> R.drawable.transport_ticket
 }
 
 private fun identifierLabel(type: String) = when (type) {
@@ -347,7 +350,7 @@ private fun BoardingPassCard(
 ) {
     val first     = passes.first()
     val isFlight  = first.transportType == "FLIGHT"
-    val typeEmoji = transportEmoji(first.transportType)
+    val typeRes   = transportDrawable(first.transportType)
 
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -388,7 +391,14 @@ private fun BoardingPassCard(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier            = Modifier.padding(horizontal = 8.dp)
                     ) {
-                        Text(typeEmoji, fontSize = 22.sp, lineHeight = 26.sp)
+                        Image(
+                            painter            = painterResource(typeRes),
+                            contentDescription = null,
+                            // footprint de 40dp mantém a altura do cabeçalho; escala amplia só o visual (~104dp)
+                            modifier           = Modifier
+                                .size(40.dp)
+                                .graphicsLayer { scaleX = 2.6f; scaleY = 2.6f }
+                        )
                         Text(
                             text          = first.flightNumber,
                             fontSize      = 10.sp,

@@ -38,6 +38,9 @@ import com.rodrigoleao.gramado2026.ui.theme.*
 import java.io.File
 import java.time.LocalDate
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.gramado2026.R
 
@@ -65,15 +68,49 @@ private fun parseTime(s: String): Pair<Int, Int>? {
 
 private fun formatTime(hour: Int, minute: Int) = "%02dh%02d".format(hour, minute)
 
-private data class TransportOption(val type: String, val emoji: String, val label: String)
+private data class TransportOption(val type: String, val res: Int, val label: String)
 
 private val TRANSPORT_OPTIONS = listOf(
-    TransportOption("FLIGHT", "✈️", "Avião"),
-    TransportOption("TRAIN",  "🚂", "Trem"),
-    TransportOption("BUS",    "🚌", "Ônibus"),
-    TransportOption("SHIP",   "🚢", "Navio"),
-    TransportOption("OTHER",  "🎫", "Outro")
+    TransportOption("FLIGHT", R.drawable.transport_flight, "Avião"),
+    TransportOption("TRAIN",  R.drawable.transport_train,  "Trem"),
+    TransportOption("BUS",    R.drawable.transport_bus,    "Ônibus"),
+    TransportOption("SHIP",   R.drawable.transport_ship,   "Navio"),
+    TransportOption("OTHER",  R.drawable.transport_ticket, "Outro")
 )
+
+@Composable
+private fun TransportChip(opt: TransportOption, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape   = RoundedCornerShape(16.dp),
+        color   = if (selected) AmberPrimary.copy(alpha = 0.15f) else SurfaceWhite,
+        border  = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) AmberPrimary else CardBorder
+        )
+    ) {
+        Column(
+            modifier            = Modifier.width(104.dp).padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Image(
+                painter            = painterResource(opt.res),
+                contentDescription = null,
+                // footprint de 64dp mantém o tamanho do chip; escala amplia só o visual (~83dp)
+                modifier           = Modifier
+                    .size(64.dp)
+                    .graphicsLayer { scaleX = 1.3f; scaleY = 1.3f }
+            )
+            Text(
+                text       = opt.label,
+                color      = GreenMoss,
+                fontSize   = 11.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+            )
+        }
+    }
+}
 
 @Composable
 fun EditBoardingPassScreen(
@@ -181,29 +218,23 @@ fun EditBoardingPassScreen(
 
             // ── Tipo de transporte ────────────────────────────────────────────
             EditSectionLabel("Tipo de transporte")
-            FlowRow(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement   = Arrangement.spacedBy(8.dp)
-            ) {
-                TRANSPORT_OPTIONS.forEach { opt ->
-                    val sel = state.transportType == opt.type
-                    FilterChip(
-                        selected = sel,
-                        onClick  = { viewModel.updateTransportType(opt.type) },
-                        label    = { Text("${opt.emoji} ${opt.label}") },
-                        colors   = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor   = AmberPrimary.copy(alpha = 0.15f),
-                            selectedLabelColor       = GreenMoss,
-                            selectedLeadingIconColor = GreenMoss
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled             = true,
-                            selected            = sel,
-                            selectedBorderColor = AmberPrimary,
-                            selectedBorderWidth = 1.5.dp
-                        )
-                    )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val cols  = 3
+                val chipW = 104.dp
+                // espaçamento que faz uma linha cheia (3 chips) preencher de margem a margem
+                val gap   = (maxWidth - chipW * cols) / (cols - 1)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    TRANSPORT_OPTIONS.chunked(cols).forEach { rowOptions ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            rowOptions.forEach { opt ->
+                                TransportChip(
+                                    opt      = opt,
+                                    selected = state.transportType == opt.type,
+                                    onClick  = { viewModel.updateTransportType(opt.type) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
