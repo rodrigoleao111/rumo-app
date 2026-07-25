@@ -8,6 +8,7 @@ import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.usecase.SaveGeneratedItineraryUseCase
 import com.rodrigoleao.gramado2026.data.weather.GeocodingResult
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
+import com.rodrigoleao.gramado2026.ui.components.TripCovers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,7 @@ data class CreateTripForm(
     val name: String         = "",
     val destination: String  = "",
     val coverEmoji: String   = "",
+    val coverImage: String   = "",
     val startDate: String?   = null,
     val endDate: String?     = null,
     val latitude: Double?    = null,
@@ -141,6 +143,12 @@ class CreateTripViewModel @Inject constructor(
     // ── Other form fields ─────────────────────────────────────────────────────
 
     fun updateEmoji(v: String)      { _form.update { it.copy(coverEmoji = v) } }
+
+    /** Seleciona a capa; mantém `coverEmoji` sincronizado com a categoria (fallback na lista). */
+    fun updateCover(id: String) {
+        _form.update { it.copy(coverImage = id, coverEmoji = TripCovers.emojiFor(id)) }
+    }
+
     fun updateName(v: String)       { _form.update { it.copy(name = v) } }
     fun updateHotelName(v: String)  { _form.update { it.copy(hotelName = v) } }
     fun updateHotelPhone(v: String) { _form.update { it.copy(hotelPhone = v) } }
@@ -369,6 +377,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
                 name         = f.name.trim(),
                 destination  = f.destination.trim(),
                 coverEmoji   = f.coverEmoji,
+                coverImage   = f.coverImage,
                 startDate    = f.startDate,
                 endDate      = f.endDate,
                 latitude     = f.latitude,

@@ -52,11 +52,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.res.vectorResource
 import com.rodrigoleao.gramado2026.R
-
-private val EMOJI_OPTIONS = listOf(
-    "⛰️", "🏖️", "🏙️", "🌊", "🌿", "🗺️", "✈️", "🏕️", "🏰", "🎡",
-    "🌎", "🚢", "🎭", "🍽️", "🏔️", "🌅", "🎪", "🚂", "🏝️", "🌄"
-)
+import com.rodrigoleao.gramado2026.ui.components.CoverPicker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -163,7 +159,7 @@ fun CreateTripScreen(
                 onSelectResult  = viewModel::selectResult,
                 onDismissSearch = viewModel::dismissSearch,
                 onUpdateName    = viewModel::updateName,
-                onUpdateEmoji   = viewModel::updateEmoji,
+                onUpdateCover   = viewModel::updateCover,
                 onNext          = { step = 1 }
             )
             1 -> Step2Content(
@@ -362,10 +358,10 @@ private fun Step1Content(
     onSelectResult: (GeocodingResult) -> Unit,
     onDismissSearch: () -> Unit,
     onUpdateName: (String) -> Unit,
-    onUpdateEmoji: (String) -> Unit,
+    onUpdateCover: (String) -> Unit,
     onNext: () -> Unit
 ) {
-    val canProceed   = form.destination.isNotBlank() && form.name.isNotBlank() && form.coverEmoji.isNotEmpty()
+    val canProceed   = form.destination.isNotBlank() && form.name.isNotBlank() && form.coverImage.isNotEmpty()
     val dropdownOpen = searchResults.isNotEmpty()
     val hasCoords    = form.latitude != null
 
@@ -441,8 +437,11 @@ private fun Step1Content(
             colors        = tripFieldColors()
         )
 
-        SectionLabel("Ícone")
-        EmojiPicker(selected = form.coverEmoji, onSelect = onUpdateEmoji)
+        SectionLabel("Capa da viagem")
+        CoverPicker(
+            selectedId = form.coverImage,
+            onSelect   = { onUpdateCover(it.id) }
+        )
 
         Spacer(Modifier.weight(1f))
 
@@ -523,14 +522,14 @@ private fun Step2Content(
                 },
                 colors = DatePickerDefaults.colors(
                     containerColor                    = SurfaceWhite,
-                    selectedDayContainerColor         = GreenMoss,
-                    selectedDayContentColor           = Color.White,
+                    selectedDayContainerColor         = AmberPrimary,
+                    selectedDayContentColor           = GreenMoss,
                     todayContentColor                 = GreenMoss,
                     todayDateBorderColor              = GreenMoss,
-                    dayInSelectionRangeContainerColor = GreenMoss.copy(alpha = 0.13f),
+                    dayInSelectionRangeContainerColor = AmberPrimary.copy(alpha = 0.28f),
                     dayInSelectionRangeContentColor   = GreenMoss,
-                    selectedYearContainerColor        = GreenMoss,
-                    selectedYearContentColor          = Color.White,
+                    selectedYearContainerColor        = AmberPrimary,
+                    selectedYearContentColor          = GreenMoss,
                     currentYearContentColor           = GreenMoss,
                     headlineContentColor              = GreenMoss,
                     subheadContentColor               = TextSecondary
@@ -1377,42 +1376,6 @@ private fun SectionLabel(text: String) {
         letterSpacing = 1.5.sp
     )
 }
-
-@Composable
-private fun EmojiPicker(selected: String, onSelect: (String) -> Unit) {
-    val rows = EMOJI_OPTIONS.chunked(5)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { row ->
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { emoji ->
-                    val isSelected = emoji == selected
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .clickable { onSelect(emoji) },
-                        shape  = RoundedCornerShape(12.dp),
-                        color  = if (isSelected) AmberPrimary.copy(alpha = 0.15f) else SurfaceWhite,
-                        border = BorderStroke(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) AmberPrimary else CardBorder
-                        )
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Text(emoji, fontSize = 24.sp)
-                        }
-                    }
-                }
-                // Pad incomplete last row so cells stay equal-width
-                repeat(5 - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -79,6 +79,7 @@ class ExportImportRoundTripTest {
     private suspend fun seedFullTrip(name: String): Long {
         val tripId = tripRepo.createTrip(
             name = name, destination = "Gramado, RS", coverEmoji = "⛰️",
+            coverImage = "cover_montanha_serra",
             startDate = "2026-06-09", endDate = "2026-06-11",         // 3 dias
             latitude = -29.37, longitude = -50.87,
             hotelName = "Hotel San Lucas", hotelAddress = "Rua João Carniel, 73",
@@ -171,6 +172,7 @@ class ExportImportRoundTripTest {
                 assertThat(name).isEqualTo(orig.trip.name)
                 assertThat(destination).isEqualTo("Gramado, RS")
                 assertThat(coverEmoji).isEqualTo("⛰️")
+                assertThat(coverImage).isEqualTo("cover_montanha_serra")
                 assertThat(startDate).isEqualTo("2026-06-09")
                 assertThat(endDate).isEqualTo("2026-06-11")
                 assertThat(latitude).isEqualTo(-29.37)

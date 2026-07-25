@@ -3,6 +3,8 @@ package com.rodrigoleao.gramado2026.ui.home
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,14 +18,26 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rodrigoleao.gramado2026.data.model.TravelDay
 import com.rodrigoleao.gramado2026.data.weather.LiveWeatherDay
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
+import com.rodrigoleao.gramado2026.ui.components.TripCovers
 import com.rodrigoleao.gramado2026.ui.components.WeatherIcon
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.time.format.DateTimeFormatter
@@ -31,6 +45,9 @@ import java.util.Locale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.gramado2026.R
+
+private val COVER_HEADER_MAX = 220.dp           // altura no topo da página
+private val COVER_HEADER_MIN_CONTENT = 58.dp    // faixa dos botões (abaixo do status bar) quando colapsado
 
 @Composable
 fun HomeScreen(
@@ -42,6 +59,12 @@ fun HomeScreen(
     tripLon: Double? = null,
     tripStartDate: String? = null,
     tripEndDate: String? = null,
+    coverImage: String = "",
+    coverEmoji: String = "",
+    tripName: String = "",
+    onBack: () -> Unit = {},
+    onShareTrip: () -> Unit = {},
+    onEditTrip: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     onDayClick: (Int) -> Unit
 ) {
@@ -71,28 +94,207 @@ fun HomeScreen(
         }
     }
 
-    LazyColumn(
-        state          = listState,
-        modifier       = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top    = contentPadding.calculateTopPadding()    + 12.dp,
-            bottom = contentPadding.calculateBottomPadding() + 12.dp,
-            start  = 16.dp,
-            end    = 16.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    // ── Cabeçalho colapsável ──────────────────────────────────────────────────
+    val density  = LocalDensity.current
+    val maxPx    = with(density) { COVER_HEADER_MAX.toPx() }
+    val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
+    val minPx    = statusPx + with(density) { COVER_HEADER_MIN_CONTENT.toPx() }
+    var headerPx by remember { mutableStateOf(maxPx) }
+
+    val headerNestedScroll = remember(minPx, maxPx) {
+        object : NestedScrollConnection {
+            // Rolar para baixo: encolhe o cabeçalho ANTES de a lista rolar.
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta >= 0f) return Offset.Zero
+                val newPx    = (headerPx + delta).coerceIn(minPx, maxPx)
+                val consumed = newPx - headerPx
+                headerPx = newPx
+                return Offset(0f, consumed)
+            }
+            // Rolar para cima: a lista volta ao topo primeiro; o excedente volta a crescer o cabeçalho.
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta <= 0f) return Offset.Zero
+                val newPx = (headerPx + delta).coerceIn(minPx, maxPx)
+                val used  = newPx - headerPx
+                headerPx = newPx
+                return Offset(0f, used)
+            }
+        }
+    }
+
+    val headerDp         = with(density) { headerPx.toDp() }
+    val collapseFraction = ((headerPx - minPx) / (maxPx - minPx)).coerceIn(0f, 1f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(headerNestedScroll)
     ) {
-        items(days) { day ->
-            DayCard(
-                day         = day,
-                liveWeather = liveWeather?.get(day.date.toString()),
-                isLoading   = weatherLoading,
-                onClick     = { onDayClick(day.id) }
-            )
+        LazyColumn(
+            state          = listState,
+            modifier       = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top    = headerDp + 12.dp,
+                bottom = contentPadding.calculateBottomPadding() + 12.dp,
+                start  = 16.dp,
+                end    = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(days) { day ->
+                DayCard(
+                    day         = day,
+                    liveWeather = liveWeather?.get(day.date.toString()),
+                    isLoading   = weatherLoading,
+                    onClick     = { onDayClick(day.id) }
+                )
+            }
+
+            if (hotelName.isNotBlank()) {
+                item { HotelCard(hotelName = hotelName, hotelAddress = hotelAddress, hotelPhone = hotelPhone) }
+            }
         }
 
-        if (hotelName.isNotBlank()) {
-            item { HotelCard(hotelName = hotelName, hotelAddress = hotelAddress, hotelPhone = hotelPhone) }
+        // Cabeçalho de capa de altura variável (colapsa ao rolar; título esmaece)
+        TripCoverHeader(
+            coverImage = coverImage,
+            coverEmoji = coverEmoji,
+            title      = tripName,
+            titleAlpha = collapseFraction,
+            onBack     = onBack,
+            onShare    = onShareTrip,
+            onEdit     = onEditTrip,
+            modifier   = Modifier
+                .fillMaxWidth()
+                .height(headerDp)
+                .align(Alignment.TopCenter)
+        )
+    }
+}
+
+// ── CABEÇALHO DE CAPA ─────────────────────────────────────────────────────────
+
+@Composable
+private fun TripCoverHeader(
+    coverImage: String,
+    coverEmoji: String,
+    title: String,
+    titleAlpha: Float,
+    onBack: () -> Unit,
+    onShare: () -> Unit,
+    onEdit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val coverRes = TripCovers.resFor(coverImage)
+
+    Box(modifier = modifier) {
+        // Imagem de capa
+        if (coverRes != null) {
+            Image(
+                painter            = painterResource(coverRes),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                alignment          = Alignment.TopCenter,   // mantém o topo da imagem sempre visível
+                modifier           = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier         = Modifier
+                    .fillMaxSize()
+                    .background(GreenMoss),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(coverEmoji, fontSize = 48.sp)
+            }
+        }
+
+        // Scrim (escurece topo e base para legibilidade dos botões e do título)
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        0.0f  to Color.Black.copy(alpha = 0.28f),
+                        0.30f to Color.Transparent,
+                        0.70f to Color.Transparent,
+                        1.0f  to Color.Black.copy(alpha = 0.55f)
+                    )
+                )
+        )
+
+        // Botões: voltar (esq.) + compartilhar/editar (dir.)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            HeaderIconButton(
+                icon               = ImageVector.vectorResource(R.drawable.ic_arrow_back),
+                contentDescription = "Minhas viagens",
+                onClick            = onBack
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HeaderIconButton(
+                    icon               = ImageVector.vectorResource(R.drawable.ic_share),
+                    contentDescription = "Compartilhar viagem",
+                    onClick            = onShare
+                )
+                HeaderIconButton(
+                    icon               = ImageVector.vectorResource(R.drawable.ic_edit),
+                    contentDescription = "Editar viagem",
+                    onClick            = onEdit
+                )
+            }
+        }
+
+        // Título sobre a capa
+        Text(
+            text  = title,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontSize = 24.sp,
+                shadow   = Shadow(
+                    color      = Color.Black.copy(alpha = 0.65f),
+                    offset     = Offset(0f, 2f),
+                    blurRadius = 8f
+                )
+            ),
+            fontWeight = FontWeight.Bold,
+            color      = Color.White,
+            maxLines   = 2,
+            overflow   = TextOverflow.Ellipsis,
+            modifier   = Modifier
+                .align(Alignment.BottomStart)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .alpha(titleAlpha)
+        )
+    }
+}
+
+@Composable
+private fun HeaderIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick         = onClick,
+        shape           = RoundedCornerShape(12.dp),
+        color           = SurfaceWhite,
+        shadowElevation = 3.dp,
+        modifier        = Modifier.size(42.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector        = icon,
+                contentDescription = contentDescription,
+                tint               = GreenMoss,
+                modifier           = Modifier.size(22.dp)
+            )
         }
     }
 }

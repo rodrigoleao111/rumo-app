@@ -351,4 +351,34 @@ class MigrationTest {
             assertThat(c.getString(0)).isEqualTo("Packing list")
         }
     }
+
+    /**
+     * A migração 18→19 adiciona a coluna coverImage em trips. `runMigrationsAndValidate`
+     * valida o schema resultante contra o 19.json e confirma que o DEFAULT ('') é
+     * aplicado à linha existente, sem perda de dados.
+     */
+    @Test
+    fun migracao18Para19_adicionaCoverImageComDefault() {
+        val migrationDb = "migration-18-19.db"
+        migrationHelper.createDatabase(migrationDb, 18).apply {
+            execSQL(
+                """INSERT INTO trips (id, name, destination, coverEmoji, hotelName, hotelAddress,
+                   hotelPhone, startDate, endDate, createdAt, latitude, longitude, voucherSortMode,
+                   tripUuid, lastEditedAt)
+                   VALUES (1, 'Gramado', 'Gramado, RS', '⛰️', '', '', '', '2026-06-09', '2026-06-09',
+                   1700000000000, NULL, NULL, 'BY_CATEGORY', 'uuid-1', 1700000000000)"""
+            )
+            close()
+        }
+
+        val db = migrationHelper.runMigrationsAndValidate(
+            migrationDb, 19, true, *TravelDatabase.ALL_MIGRATIONS
+        )
+
+        db.query("SELECT name, coverImage FROM trips WHERE id = 1").use { c ->
+            assertThat(c.moveToFirst()).isTrue()
+            assertThat(c.getString(0)).isEqualTo("Gramado")  // dado preservado
+            assertThat(c.getString(1)).isEqualTo("")          // default coverImage
+        }
+    }
 }

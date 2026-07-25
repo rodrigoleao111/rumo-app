@@ -584,8 +584,15 @@ private fun MainPagerScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // A barra verde (com colapso via scrollBehavior) só existe fora da Home;
+        // conectar o nestedScroll na Home faria a app bar fantasma "engolir" a rolagem.
+        modifier = if (pagerState.currentPage != 0)
+            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        else
+            Modifier,
         topBar = {
+            // Página 0 (home) tem cabeçalho de capa próprio — sem a barra verde.
+            if (pagerState.currentPage != 0) {
             TopAppBar(
                 title = {
                     val titleText = when (pagerState.currentPage) {
@@ -665,6 +672,7 @@ private fun MainPagerScreen(
                 ),
                 scrollBehavior = scrollBehavior
             )
+            }
         },
         floatingActionButton = {
             val fabAction: (() -> Unit)? = when (pagerState.currentPage) {
@@ -744,6 +752,12 @@ private fun MainPagerScreen(
                     tripLon       = trip?.longitude,
                     tripStartDate = trip?.startDate,
                     tripEndDate   = trip?.endDate,
+                    coverImage    = trip?.coverImage ?: "",
+                    coverEmoji    = trip?.coverEmoji ?: "",
+                    tripName      = trip?.name ?: "",
+                    onBack        = actions.onBack,
+                    onShareTrip   = actions.onShareTrip,
+                    onEditTrip    = actions.onEditTrip,
                     contentPadding = innerPadding,
                     onDayClick    = actions.onDayClick
                 )

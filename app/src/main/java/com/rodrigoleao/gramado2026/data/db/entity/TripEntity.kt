@@ -9,6 +9,7 @@ data class TripEntity(
     val name: String,
     val destination: String,
     val coverEmoji: String,
+    val coverImage: String = "",   // id da ilustração de capa (ex.: "cover_praia_tropical")
     val hotelName: String,
     val hotelAddress: String,
     val hotelPhone: String = "",

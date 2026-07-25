@@ -11,6 +11,7 @@ fun TripEntity.toDomain(): Trip = Trip(
     name            = name,
     destination     = destination,
     coverEmoji      = coverEmoji,
+    coverImage      = coverImage,
     hotelName       = hotelName,
     hotelAddress    = hotelAddress,
     hotelPhone      = hotelPhone,

@@ -23,15 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.model.UiEvent
+import com.rodrigoleao.gramado2026.ui.components.CoverPicker
 import com.rodrigoleao.gramado2026.ui.theme.*
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.gramado2026.R
-
-private val EMOJI_OPTIONS = listOf(
-    "⛰️", "🏖️", "🏙️", "🌊", "🌿", "🗺️", "✈️", "🏕️", "🏰", "🎡",
-    "🌎", "🚢", "🎭", "🍽️", "🏔️", "🌅", "🎪", "🚂", "🏝️", "🌄"
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,8 +173,11 @@ fun EditTripScreen(
             EditSectionLabel("Nome da viagem")
             EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = "Ex: Férias de inverno 2026")
 
-            EditSectionLabel("Ícone")
-            EmojiGrid(selected = state.coverEmoji, onSelect = viewModel::updateEmoji)
+            EditSectionLabel("Capa da viagem")
+            CoverPicker(
+                selectedId = state.coverImage,
+                onSelect   = { viewModel.updateCover(it.id) }
+            )
 
             HorizontalDivider(color = CardBorder)
 
@@ -261,34 +260,4 @@ internal fun EditTextField(
             cursorColor             = GreenMoss
         )
     )
-}
-
-@Composable
-internal fun EmojiGrid(selected: String, onSelect: (String) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        EMOJI_OPTIONS.chunked(5).forEach { row ->
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { emoji ->
-                    val isSelected = emoji == selected
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .clickable { onSelect(emoji) },
-                        shape  = RoundedCornerShape(12.dp),
-                        color  = if (isSelected) AmberPrimary.copy(alpha = 0.15f) else SurfaceWhite,
-                        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) AmberPrimary else CardBorder)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Text(emoji, fontSize = 24.sp)
-                        }
-                    }
-                }
-                repeat(5 - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
 }

@@ -19,6 +19,7 @@ object DatabaseSeeder {
                 name         = "Gramado & Canela",
                 destination  = "Gramado, RS",
                 coverEmoji   = "⛰️",
+                coverImage   = "cover_montanha_serra",
                 hotelName    = "Hotel San Lucas",
                 hotelAddress = "Rua João Carniel, 73, Gramado, RS",
                 startDate    = startDate,

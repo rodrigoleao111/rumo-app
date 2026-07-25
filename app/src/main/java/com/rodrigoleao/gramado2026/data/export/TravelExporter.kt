@@ -121,6 +121,7 @@ class TravelExporter @Inject constructor(
             put("name",             trip.name)
             put("destination",      trip.destination)
             put("coverEmoji",       trip.coverEmoji)
+            put("coverImage",       trip.coverImage)
             put("startDate",        trip.startDate)
             put("endDate",          trip.endDate)
             put("latitude",         trip.latitude ?: JSONObject.NULL)

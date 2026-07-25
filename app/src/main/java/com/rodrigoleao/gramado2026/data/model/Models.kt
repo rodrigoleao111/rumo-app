@@ -8,6 +8,7 @@ data class Trip(
     val name: String,
     val destination: String,
     val coverEmoji: String,
+    val coverImage: String = "",
     val hotelName: String,
     val hotelAddress: String,
     val hotelPhone: String,

@@ -8,6 +8,7 @@ import com.rodrigoleao.gramado2026.data.repository.TripRepository
 import com.rodrigoleao.gramado2026.data.weather.GeocodingResult
 import com.rodrigoleao.gramado2026.data.weather.WeatherRepository
 import com.rodrigoleao.gramado2026.data.model.UiEvent
+import com.rodrigoleao.gramado2026.ui.components.TripCovers
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -27,6 +28,7 @@ data class EditTripState(
     val name: String = "",
     val destination: String = "",
     val coverEmoji: String = "",
+    val coverImage: String = "",
     val hotelName: String = "",
     val hotelAddress: String = "",
     val hotelPhone: String = "",
@@ -60,7 +62,7 @@ class EditTripViewModel @Inject constructor(
 
     val isDirty: StateFlow<Boolean> = _state.map { s ->
         val e = s.entity ?: return@map false
-        s.name != e.name || s.destination != e.destination || s.coverEmoji != e.coverEmoji ||
+        s.name != e.name || s.destination != e.destination || s.coverImage != e.coverImage || s.coverEmoji != e.coverEmoji ||
         s.hotelName != e.hotelName || s.hotelAddress != e.hotelAddress || s.hotelPhone != e.hotelPhone ||
         s.latitude != e.latitude || s.longitude != e.longitude
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -73,6 +75,7 @@ class EditTripViewModel @Inject constructor(
                 name         = e.name,
                 destination  = e.destination,
                 coverEmoji   = e.coverEmoji,
+                coverImage   = e.coverImage,
                 hotelName    = e.hotelName,
                 hotelAddress = e.hotelAddress,
                 hotelPhone   = e.hotelPhone,
@@ -84,6 +87,11 @@ class EditTripViewModel @Inject constructor(
 
     fun updateName(v: String)         { _state.value = _state.value.copy(name = v) }
     fun updateEmoji(v: String)        { _state.value = _state.value.copy(coverEmoji = v) }
+
+    /** Seleciona a capa; mantém `coverEmoji` sincronizado com a categoria (fallback na lista). */
+    fun updateCover(id: String) {
+        _state.value = _state.value.copy(coverImage = id, coverEmoji = TripCovers.emojiFor(id))
+    }
     fun updateHotelName(v: String)    { _state.value = _state.value.copy(hotelName = v) }
     fun updateHotelAddress(v: String) { _state.value = _state.value.copy(hotelAddress = v) }
     fun updateHotelPhone(v: String)   { _state.value = _state.value.copy(hotelPhone = v) }
@@ -133,6 +141,7 @@ class EditTripViewModel @Inject constructor(
                     name         = s.name.trim(),
                     destination  = s.destination.trim(),
                     coverEmoji   = s.coverEmoji,
+                    coverImage   = s.coverImage,
                     hotelName    = s.hotelName.trim(),
                     hotelAddress = s.hotelAddress.trim(),
                     hotelPhone   = s.hotelPhone.trim(),

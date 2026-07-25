@@ -5,6 +5,7 @@ package com.rodrigoleao.gramado2026.ui.trips
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -30,8 +31,13 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -40,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.gramado2026.data.db.entity.TripEntity
 import com.rodrigoleao.gramado2026.data.model.UiEvent
+import com.rodrigoleao.gramado2026.ui.components.TripCovers
 import com.rodrigoleao.gramado2026.ui.theme.*
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -347,46 +354,100 @@ private fun SwipeToRevealTrip(
 
 @Composable
 private fun TripCard(trip: TripEntity, onClick: () -> Unit) {
-    val status = tripStatus(trip.startDate, trip.endDate)
+    val status   = tripStatus(trip.startDate, trip.endDate)
+    val coverRes = TripCovers.resFor(trip.coverImage)
 
     Card(
         onClick   = onClick,
         modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(16.dp),
+        shape     = RoundedCornerShape(18.dp),
         colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
         border    = BorderStroke(
             width = if (status == TripStatus.ACTIVE) 2.dp else 1.dp,
             color = if (status == TripStatus.ACTIVE) GreenMoss else CardBorder
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier              = Modifier.padding(14.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        // ── Parte superior (≈3/4): imagem de capa + título sobreposto ─────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
         ) {
-            Surface(shape = RoundedCornerShape(12.dp), color = GreenMoss) {
-                Text(text = trip.coverEmoji, fontSize = 28.sp, modifier = Modifier.padding(10.dp))
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text       = trip.name,
-                    style      = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = TextPrimary
+            if (coverRes != null) {
+                Image(
+                    painter            = painterResource(coverRes),
+                    contentDescription = null,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize()
                 )
-                Text(text = trip.destination, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                if (trip.startDate != null && trip.endDate != null) {
-                    Text(
-                        text     = formatDateRange(trip.startDate, trip.endDate),
-                        style    = MaterialTheme.typography.labelSmall,
-                        color    = GreenSage,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+            } else {
+                // Viagens antigas sem capa: fundo da marca com o emoji
+                Box(
+                    modifier         = Modifier
+                        .fillMaxSize()
+                        .background(GreenMoss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(trip.coverEmoji, fontSize = 44.sp)
                 }
             }
 
+            // Scrim para legibilidade do título
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.45f to Color.Transparent,
+                            1f    to Color.Black.copy(alpha = 0.60f)
+                        )
+                    )
+            )
+
+            Text(
+                text       = trip.name,
+                style      = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 26.sp,
+                    shadow   = Shadow(
+                        color      = Color.Black.copy(alpha = 0.65f),
+                        offset     = Offset(0f, 2f),
+                        blurRadius = 8f
+                    )
+                ),
+                fontWeight = FontWeight.Bold,
+                color      = Color.White,
+                maxLines   = 2,
+                overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier   = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+            )
+        }
+
+        // ── Parte inferior (≈1/4): local, data e status ───────────────────────────
+        Row(
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text     = trip.destination,
+                    style    = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color    = TextPrimary
+                )
+                if (trip.startDate != null && trip.endDate != null) {
+                    Text(
+                        text  = formatDateRange(trip.startDate, trip.endDate),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GreenSage
+                    )
+                }
+            }
             StatusBadge(status, trip.startDate, trip.endDate)
         }
     }
