@@ -3,14 +3,10 @@
 package com.rodrigoleao.gramado2026.ui.trips
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,27 +16,31 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,10 +52,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
-import kotlin.math.roundToInt
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.launch
 import com.rodrigoleao.gramado2026.R
+
+private val TRIPS_HEADER_MAX = 128.dp          // altura do cabeçalho no topo da página
+private val TRIPS_HEADER_MIN_CONTENT = 58.dp   // faixa do botão de menu (abaixo do status bar) quando colapsado
 
 @Composable
 fun TripsListScreen(
@@ -72,8 +75,43 @@ fun TripsListScreen(
     var pendingDelete by remember { mutableStateOf<TripEntity?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
     val activity = LocalContext.current as? Activity
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope       = rememberCoroutineScope()
 
-    BackHandler { showExitDialog = true }
+    // ── Cabeçalho de altura variável (colapsa ao rolar; título esmaece) ────────
+    val density  = LocalDensity.current
+    val maxPx    = with(density) { TRIPS_HEADER_MAX.toPx() }
+    val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
+    val minPx    = statusPx + with(density) { TRIPS_HEADER_MIN_CONTENT.toPx() }
+    var headerPx by remember { mutableStateOf(maxPx) }
+
+    val headerNestedScroll = remember(minPx, maxPx) {
+        object : NestedScrollConnection {
+            // Rolar para baixo: encolhe o cabeçalho ANTES de a lista rolar.
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta >= 0f) return Offset.Zero
+                val newPx    = (headerPx + delta).coerceIn(minPx, maxPx)
+                val consumed = newPx - headerPx
+                headerPx = newPx
+                return Offset(0f, consumed)
+            }
+            // Rolar para cima: a lista volta ao topo primeiro; o excedente cresce o cabeçalho.
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta <= 0f) return Offset.Zero
+                val newPx = (headerPx + delta).coerceIn(minPx, maxPx)
+                val used  = newPx - headerPx
+                headerPx = newPx
+                return Offset(0f, used)
+            }
+        }
+    }
+    val headerDp         = with(density) { headerPx.toDp() }
+    val collapseFraction = ((headerPx - minPx) / (maxPx - minPx)).coerceIn(0f, 1f)
+
+    BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
+    BackHandler(enabled = drawerState.isClosed) { showExitDialog = true }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -83,6 +121,17 @@ fun TripsListScreen(
             }
         }
     }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            TripsDrawerContent(
+                onNewTrip    = { scope.launch { drawerState.close() }; onNewTripClick() },
+                onImportTrip = { scope.launch { drawerState.close() }; onImportTrip() },
+                onSettings   = { scope.launch { drawerState.close() }; onSettingsClick() }
+            )
+        }
+    ) {
 
     Scaffold(
         snackbarHost = {
@@ -96,38 +145,21 @@ fun TripsListScreen(
         }
     ) { innerPadding ->
 
-    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-
-        // ── Header ───────────────────────────────────────────────────────────
-        Surface(color = GreenMoss) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(start = 20.dp, end = 4.dp, top = 16.dp, bottom = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text       = "✈️  Minhas viagens",
-                    style      = MaterialTheme.typography.headlineSmall,
-                    color      = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector        = ImageVector.vectorResource(R.drawable.ic_settings),
-                        contentDescription = "Configurações",
-                        tint               = Color.White.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(headerNestedScroll)
+    ) {
 
         // ── Lista ─────────────────────────────────────────────────────────────
         LazyColumn(
             modifier            = Modifier.fillMaxSize(),
-            contentPadding      = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
+            contentPadding      = PaddingValues(
+                start  = 16.dp,
+                end    = 16.dp,
+                top    = headerDp + 8.dp,
+                bottom = innerPadding.calculateBottomPadding() + 32.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when {
@@ -168,14 +200,13 @@ fun TripsListScreen(
 
                 // Lista de viagens
                 else -> items(trips!!, key = { it.id }) { trip ->
-                    SwipeToRevealTrip(
+                    TripCard(
                         trip     = trip,
+                        onClick  = { onTripClick(trip.id) },
                         onShare  = { onTripShare(trip.id) },
                         onEdit   = { onTripEdit(trip.id) },
                         onDelete = { pendingDelete = trip }
-                    ) {
-                        TripCard(trip = trip, onClick = { onTripClick(trip.id) })
-                    }
+                    )
                 }
             }
 
@@ -195,9 +226,22 @@ fun TripsListScreen(
                 }
             }
         }
+
+        // ── Cabeçalho verde de altura variável (colapsa ao rolar) ──────────────
+        TripsCollapsingHeader(
+            title      = "Minhas viagens",
+            titleAlpha = collapseFraction,
+            onMenu     = { scope.launch { drawerState.open() } },
+            modifier   = Modifier
+                .fillMaxWidth()
+                .height(headerDp)
+                .align(Alignment.TopCenter)
+        )
     } // end Scaffold content
 
     } // end Scaffold
+
+    } // end ModalNavigationDrawer
 
     // ── Dialog de confirmação ─────────────────────────────────────────────────
     pendingDelete?.let { trip ->
@@ -246,120 +290,25 @@ fun TripsListScreen(
     }
 }
 
-// ── SWIPE TO REVEAL ───────────────────────────────────────────────────────────
-
-@Composable
-private fun SwipeToRevealTrip(
-    trip: TripEntity,
-    onShare: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val density       = LocalDensity.current
-    val actionWidth   = 162.dp
-    val actionWidthPx = with(density) { actionWidth.toPx() }
-    val offsetX       = remember(trip.id) { Animatable(0f) }
-    val scope         = rememberCoroutineScope()
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp)
-            .height(IntrinsicSize.Min)
-    ) {
-        // Botões revelados ao deslizar
-        Row(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .width(actionWidth)
-                .fillMaxHeight()
-        ) {
-            // Compartilhar — fundo azul, ícone branco, canto esquerdo arredondado
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
-                    .background(GreenSage)
-                    .clickable {
-                        scope.launch { offsetX.animateTo(0f) }
-                        onShare()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = "Compartilhar", tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-            // Editar — fundo âmbar, ícone verde
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(AmberPrimary)
-                    .clickable {
-                        scope.launch { offsetX.animateTo(0f) }
-                        onEdit()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar", tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-            // Excluir — fundo vermelho, ícone branco, canto direito arredondado
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
-                    .background(Color(0xFFD32F2F))
-                    .clickable {
-                        scope.launch { offsetX.animateTo(0f) }
-                        onDelete()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-        }
-
-        // Conteúdo deslizável
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .background(Sand)
-                .draggable(
-                    orientation = Orientation.Horizontal,
-                    state = rememberDraggableState { delta ->
-                        scope.launch {
-                            offsetX.snapTo((offsetX.value + delta).coerceIn(-actionWidthPx, 0f))
-                        }
-                    },
-                    onDragStopped = { velocity ->
-                        scope.launch {
-                            if (offsetX.value < -actionWidthPx / 2f || velocity < -600f) {
-                                offsetX.animateTo(-actionWidthPx)
-                            } else {
-                                offsetX.animateTo(0f)
-                            }
-                        }
-                    }
-                )
-        ) {
-            content()
-        }
-    }
-}
-
 // ── TRIP CARD ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun TripCard(trip: TripEntity, onClick: () -> Unit) {
+private fun TripCard(
+    trip: TripEntity,
+    onClick: () -> Unit,
+    onShare: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     val status   = tripStatus(trip.startDate, trip.endDate)
     val coverRes = TripCovers.resFor(trip.coverImage)
+    var menuOpen by remember { mutableStateOf(false) }
 
     Card(
         onClick   = onClick,
-        modifier  = Modifier.fillMaxWidth(),
+        modifier  = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
         shape     = RoundedCornerShape(18.dp),
         colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
         border    = BorderStroke(
@@ -423,6 +372,50 @@ private fun TripCard(trip: TripEntity, onClick: () -> Unit) {
                     .align(Alignment.BottomStart)
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             )
+
+            // Menu de ações (⋮) no canto superior direito da imagem
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+            ) {
+                Box(
+                    modifier         = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { menuOpen = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector        = Icons.Filled.MoreVert,
+                        contentDescription = "Mais opções",
+                        tint               = GreenMoss,
+                        modifier           = Modifier.size(22.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded         = menuOpen,
+                    onDismissRequest = { menuOpen = false },
+                    containerColor   = SurfaceWhite
+                ) {
+                    DropdownMenuItem(
+                        text        = { Text("Compartilhar", color = TextPrimary) },
+                        leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = null, tint = GreenSage, modifier = Modifier.size(20.dp)) },
+                        onClick     = { menuOpen = false; onShare() }
+                    )
+                    DropdownMenuItem(
+                        text        = { Text("Editar", color = TextPrimary) },
+                        leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp)) },
+                        onClick     = { menuOpen = false; onEdit() }
+                    )
+                    DropdownMenuItem(
+                        text        = { Text("Excluir", color = Color(0xFFD32F2F)) },
+                        leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(20.dp)) },
+                        onClick     = { menuOpen = false; onDelete() }
+                    )
+                }
+            }
         }
 
         // ── Parte inferior (≈1/4): local, data e status ───────────────────────────
@@ -460,8 +453,9 @@ private fun ImportTripCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     ActionCard(
         modifier    = modifier,
         icon        = ImageVector.vectorResource(R.drawable.ic_import),
-        iconTint    = AmberPrimary,
-        iconBg      = AmberPrimary.copy(alpha = 0.10f),
+        iconTint    = GreenMoss,
+        iconBg      = GreenWarm,
+        cardBg      = GreenForest,
         title       = "Importar viagem",
         description = "Abrir arquivo .travel",
         onClick     = onClick
@@ -473,8 +467,9 @@ private fun NewTripCard(modifier: Modifier = Modifier, onClick: () -> Unit) {
     ActionCard(
         modifier    = modifier,
         icon        = ImageVector.vectorResource(R.drawable.ic_add),
-        iconTint    = GreenMoss,
-        iconBg      = GreenMoss.copy(alpha = 0.10f),
+        iconTint    = AmberPrimary,
+        iconBg      = AmberPrimary.copy(alpha = 0.22f),
+        cardBg      = AmberLight,
         title       = "Nova viagem",
         description = "Criar do zero",
         onClick     = onClick
@@ -487,6 +482,7 @@ private fun ActionCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: androidx.compose.ui.graphics.Color,
     iconBg: androidx.compose.ui.graphics.Color,
+    cardBg: androidx.compose.ui.graphics.Color,
     title: String,
     description: String,
     onClick: () -> Unit
@@ -495,9 +491,8 @@ private fun ActionCard(
         modifier  = modifier,
         onClick   = onClick,
         shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border    = BorderStroke(0.5.dp, CardBorder)
+        colors    = CardDefaults.cardColors(containerColor = cardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier          = Modifier
@@ -573,6 +568,136 @@ private fun countdownLabel(startDate: String?): String {
             val years = days / 365
             if (years == 1L) "em 1 ano" else "em $years anos"
         }
+    }
+}
+
+// ── HEADER / DRAWER ─────────────────────────────────────────────────────────
+
+@Composable
+private fun TripsCollapsingHeader(
+    title: String,
+    titleAlpha: Float,
+    onMenu: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
+    Box(
+        modifier = modifier
+            .shadow(elevation = 6.dp, shape = shape)
+            .clip(shape)
+            .background(GreenMoss)
+    ) {
+        // Botão de menu (sempre visível) + título ao lado (esmaece ao colapsar)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(start = 16.dp, end = 20.dp, top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            HeaderIconButton(
+                icon               = Icons.Filled.Menu,
+                contentDescription = "Menu",
+                onClick            = onMenu
+            )
+            Text(
+                text       = title,
+                style      = MaterialTheme.typography.headlineSmall,
+                color      = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                maxLines   = 1,
+                overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier   = Modifier.alpha(titleAlpha)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick         = onClick,
+        shape           = RoundedCornerShape(12.dp),
+        color           = SurfaceWhite,
+        shadowElevation = 3.dp,
+        modifier        = Modifier.size(42.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector        = icon,
+                contentDescription = contentDescription,
+                tint               = GreenMoss,
+                modifier           = Modifier.size(22.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TripsDrawerContent(
+    onNewTrip: () -> Unit,
+    onImportTrip: () -> Unit,
+    onSettings: () -> Unit
+) {
+    ModalDrawerSheet(
+        drawerContainerColor = SurfaceWhite,
+        modifier             = Modifier.width(300.dp)
+    ) {
+        // Cabeçalho do drawer
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(GreenMoss)
+                .statusBarsPadding()
+                .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 24.dp)
+        ) {
+            Text(
+                text       = "Rumo",
+                style      = MaterialTheme.typography.headlineSmall,
+                color      = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text  = "Suas viagens em um só lugar",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.75f)
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        NavigationDrawerItem(
+            label    = { Text("Nova viagem") },
+            icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
+            selected = false,
+            onClick  = onNewTrip,
+            colors   = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, unselectedTextColor = TextPrimary),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+        NavigationDrawerItem(
+            label    = { Text("Importar viagem") },
+            icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_import), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
+            selected = false,
+            onClick  = onImportTrip,
+            colors   = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, unselectedTextColor = TextPrimary),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp), color = DividerColor)
+
+        NavigationDrawerItem(
+            label    = { Text("Configurações") },
+            icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_settings), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
+            selected = false,
+            onClick  = onSettings,
+            colors   = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, unselectedTextColor = TextPrimary),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
     }
 }
 
