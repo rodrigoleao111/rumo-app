@@ -89,7 +89,9 @@ fun NoteEditorScreen(
     ) { padding ->
         LazyColumn(
             state          = lazyListState,
-            modifier       = Modifier.fillMaxSize(),
+            modifier       = Modifier
+                .fillMaxSize()
+                .imePadding(),
             contentPadding = PaddingValues(
                 top    = padding.calculateTopPadding() + 8.dp,
                 bottom = padding.calculateBottomPadding() + 24.dp,

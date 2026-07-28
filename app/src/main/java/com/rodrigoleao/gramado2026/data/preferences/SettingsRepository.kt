@@ -19,6 +19,12 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     val showEmergencyContacts: Flow<Boolean> = dataStore.data
         .map { it[KEY_EMERGENCY_CONTACTS] ?: true }
 
+    val sortTripsByProximity: Flow<Boolean> = dataStore.data
+        .map { it[KEY_SORT_BY_PROXIMITY] ?: false }
+
+    val hideCompletedTrips: Flow<Boolean> = dataStore.data
+        .map { it[KEY_HIDE_COMPLETED] ?: false }
+
     suspend fun setAutoOpenActiveTrip(enabled: Boolean) {
         dataStore.edit { it[KEY_AUTO_OPEN] = enabled }
     }
@@ -27,8 +33,18 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[KEY_EMERGENCY_CONTACTS] = enabled }
     }
 
+    suspend fun setSortTripsByProximity(enabled: Boolean) {
+        dataStore.edit { it[KEY_SORT_BY_PROXIMITY] = enabled }
+    }
+
+    suspend fun setHideCompletedTrips(enabled: Boolean) {
+        dataStore.edit { it[KEY_HIDE_COMPLETED] = enabled }
+    }
+
     companion object {
         private val KEY_AUTO_OPEN          = booleanPreferencesKey("auto_open_active_trip")
         private val KEY_EMERGENCY_CONTACTS = booleanPreferencesKey("show_emergency_contacts")
+        private val KEY_SORT_BY_PROXIMITY  = booleanPreferencesKey("sort_trips_by_proximity")
+        private val KEY_HIDE_COMPLETED     = booleanPreferencesKey("hide_completed_trips")
     }
 }

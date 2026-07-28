@@ -21,12 +21,26 @@ class SettingsViewModel @Inject constructor(
     val showEmergencyContacts: StateFlow<Boolean> = settings.showEmergencyContacts
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val sortTripsByProximity: StateFlow<Boolean> = settings.sortTripsByProximity
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val hideCompletedTrips: StateFlow<Boolean> = settings.hideCompletedTrips
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     fun setAutoOpenActiveTrip(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoOpenActiveTrip(enabled) }
     }
 
     fun setShowEmergencyContacts(enabled: Boolean) {
         viewModelScope.launch { settings.setShowEmergencyContacts(enabled) }
+    }
+
+    fun setSortTripsByProximity(enabled: Boolean) {
+        viewModelScope.launch { settings.setSortTripsByProximity(enabled) }
+    }
+
+    fun setHideCompletedTrips(enabled: Boolean) {
+        viewModelScope.launch { settings.setHideCompletedTrips(enabled) }
     }
 
 }

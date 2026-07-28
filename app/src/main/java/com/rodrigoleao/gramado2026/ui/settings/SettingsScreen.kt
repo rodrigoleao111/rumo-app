@@ -26,6 +26,8 @@ fun SettingsScreen(
 ) {
     val autoOpen          by viewModel.autoOpenActiveTrip.collectAsStateWithLifecycle()
     val showEmergency     by viewModel.showEmergencyContacts.collectAsStateWithLifecycle()
+    val sortByProximity   by viewModel.sortTripsByProximity.collectAsStateWithLifecycle()
+    val hideCompleted     by viewModel.hideCompletedTrips.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -109,6 +111,82 @@ fun SettingsScreen(
                     Switch(
                         checked         = showEmergency,
                         onCheckedChange = { viewModel.setShowEmergencyContacts(it) },
+                        colors          = SwitchDefaults.colors(
+                            checkedThumbColor         = GreenMoss,
+                            checkedTrackColor         = AmberPrimary,
+                            checkedBorderColor        = AmberPrimary,
+                            uncheckedThumbColor       = GreenMoss,
+                            uncheckedTrackColor       = Color(0xFF9E9E9E),
+                            uncheckedBorderColor      = Color(0xFF9E9E9E)
+                        )
+                    )
+                }
+            }
+            HorizontalDivider(color = Sand)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text       = "Ordenar viagens por proximidade",
+                        style      = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color      = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text  = "Mostra primeiro a viagem em curso e as mais próximas; viagens concluídas ficam por último",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+                Box(modifier = Modifier.scale(0.80f)) {
+                    Switch(
+                        checked         = sortByProximity,
+                        onCheckedChange = { viewModel.setSortTripsByProximity(it) },
+                        colors          = SwitchDefaults.colors(
+                            checkedThumbColor         = GreenMoss,
+                            checkedTrackColor         = AmberPrimary,
+                            checkedBorderColor        = AmberPrimary,
+                            uncheckedThumbColor       = GreenMoss,
+                            uncheckedTrackColor       = Color(0xFF9E9E9E),
+                            uncheckedBorderColor      = Color(0xFF9E9E9E)
+                        )
+                    )
+                }
+            }
+            HorizontalDivider(color = Sand)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                    Text(
+                        text       = "Ocultar viagens concluídas",
+                        style      = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color      = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text  = "Esconde da lista as viagens já encerradas (não são apagadas — reaparecem ao desativar)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+                Box(modifier = Modifier.scale(0.80f)) {
+                    Switch(
+                        checked         = hideCompleted,
+                        onCheckedChange = { viewModel.setHideCompletedTrips(it) },
                         colors          = SwitchDefaults.colors(
                             checkedThumbColor         = GreenMoss,
                             checkedTrackColor         = AmberPrimary,

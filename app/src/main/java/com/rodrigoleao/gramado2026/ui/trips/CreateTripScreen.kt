@@ -368,6 +368,7 @@ private fun Step1Content(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
             .padding(horizontal = 20.dp, vertical = 24.dp),
@@ -622,6 +623,7 @@ private fun Step3Content(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
             .padding(horizontal = 20.dp, vertical = 24.dp),
@@ -804,6 +806,7 @@ private fun ChoosingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(contentPadding)
             .padding(horizontal = 20.dp, vertical = 28.dp),

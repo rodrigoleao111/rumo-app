@@ -26,18 +26,12 @@ import androidx.compose.ui.Alignment
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,9 +51,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.launch
 import com.rodrigoleao.gramado2026.R
 
-private val TRIPS_HEADER_MAX = 128.dp          // altura do cabeçalho no topo da página
-private val TRIPS_HEADER_MIN_CONTENT = 58.dp   // faixa do botão de menu (abaixo do status bar) quando colapsado
-
 @Composable
 fun TripsListScreen(
     viewModel: TripsListViewModel,
@@ -78,37 +69,8 @@ fun TripsListScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope       = rememberCoroutineScope()
 
-    // ── Cabeçalho de altura variável (colapsa ao rolar; título esmaece) ────────
-    val density  = LocalDensity.current
-    val maxPx    = with(density) { TRIPS_HEADER_MAX.toPx() }
-    val statusPx = WindowInsets.statusBars.getTop(density).toFloat()
-    val minPx    = statusPx + with(density) { TRIPS_HEADER_MIN_CONTENT.toPx() }
-    var headerPx by remember { mutableStateOf(maxPx) }
-
-    val headerNestedScroll = remember(minPx, maxPx) {
-        object : NestedScrollConnection {
-            // Rolar para baixo: encolhe o cabeçalho ANTES de a lista rolar.
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val delta = available.y
-                if (delta >= 0f) return Offset.Zero
-                val newPx    = (headerPx + delta).coerceIn(minPx, maxPx)
-                val consumed = newPx - headerPx
-                headerPx = newPx
-                return Offset(0f, consumed)
-            }
-            // Rolar para cima: a lista volta ao topo primeiro; o excedente cresce o cabeçalho.
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                val delta = available.y
-                if (delta <= 0f) return Offset.Zero
-                val newPx = (headerPx + delta).coerceIn(minPx, maxPx)
-                val used  = newPx - headerPx
-                headerPx = newPx
-                return Offset(0f, used)
-            }
-        }
-    }
-    val headerDp         = with(density) { headerPx.toDp() }
-    val collapseFraction = ((headerPx - minPx) / (maxPx - minPx)).coerceIn(0f, 1f)
+    // Cabeçalho removido — reservamos apenas o espaço do status bar + botão de menu flutuante.
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
     BackHandler(enabled = drawerState.isClosed) { showExitDialog = true }
@@ -146,9 +108,7 @@ fun TripsListScreen(
     ) { innerPadding ->
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(headerNestedScroll)
+        modifier = Modifier.fillMaxSize()
     ) {
 
         // ── Lista ─────────────────────────────────────────────────────────────
@@ -157,7 +117,7 @@ fun TripsListScreen(
             contentPadding      = PaddingValues(
                 start  = 16.dp,
                 end    = 16.dp,
-                top    = headerDp + 8.dp,
+                top    = statusBarTop + 66.dp,   // status bar + faixa do botão de menu
                 bottom = innerPadding.calculateBottomPadding() + 32.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -199,14 +159,23 @@ fun TripsListScreen(
                 }
 
                 // Lista de viagens
-                else -> items(trips!!, key = { it.id }) { trip ->
-                    TripCard(
-                        trip     = trip,
-                        onClick  = { onTripClick(trip.id) },
-                        onShare  = { onTripShare(trip.id) },
-                        onEdit   = { onTripEdit(trip.id) },
-                        onDelete = { pendingDelete = trip }
-                    )
+                else -> {
+                    // Capa encolhe conforme a lista cresce: >9 → 2/3 da altura, >18 → 1/2
+                    val coverScale = when {
+                        trips!!.size > 18 -> 0.5f
+                        trips!!.size > 9  -> 2f / 3f
+                        else              -> 1f
+                    }
+                    items(trips!!, key = { it.id }) { trip ->
+                        TripCard(
+                            trip       = trip,
+                            coverScale = coverScale,
+                            onClick    = { onTripClick(trip.id) },
+                            onShare    = { onTripShare(trip.id) },
+                            onEdit     = { onTripEdit(trip.id) },
+                            onDelete   = { pendingDelete = trip }
+                        )
+                    }
                 }
             }
 
@@ -227,16 +196,19 @@ fun TripsListScreen(
             }
         }
 
-        // ── Cabeçalho verde de altura variável (colapsa ao rolar) ──────────────
-        TripsCollapsingHeader(
-            title      = "Minhas viagens",
-            titleAlpha = collapseFraction,
-            onMenu     = { scope.launch { drawerState.open() } },
-            modifier   = Modifier
-                .fillMaxWidth()
-                .height(headerDp)
-                .align(Alignment.TopCenter)
-        )
+        // ── Botão de menu (gaveta) flutuante — cabeçalho removido ──────────────
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 12.dp)
+        ) {
+            HeaderIconButton(
+                icon               = Icons.Filled.Menu,
+                contentDescription = "Menu",
+                onClick            = { scope.launch { drawerState.open() } }
+            )
+        }
     } // end Scaffold content
 
     } // end Scaffold
@@ -295,6 +267,7 @@ fun TripsListScreen(
 @Composable
 private fun TripCard(
     trip: TripEntity,
+    coverScale: Float = 1f,
     onClick: () -> Unit,
     onShare: () -> Unit,
     onEdit: () -> Unit,
@@ -318,10 +291,12 @@ private fun TripCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         // ── Parte superior (≈3/4): imagem de capa + título sobreposto ─────────────
+        // A altura da capa escala por coverScale (ratio = largura/altura, então
+        // dividir por coverScale reduz apenas a altura, mantendo a largura cheia).
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f)
+                .aspectRatio((16f / 9f) / coverScale)
         ) {
             if (coverRes != null) {
                 Image(
@@ -357,7 +332,7 @@ private fun TripCard(
             Text(
                 text       = trip.name,
                 style      = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 26.sp,
+                    fontSize = (26f * coverScale).sp,   // fonte escala junto com a capa
                     shadow   = Shadow(
                         color      = Color.Black.copy(alpha = 0.65f),
                         offset     = Offset(0f, 2f),
@@ -572,47 +547,6 @@ private fun countdownLabel(startDate: String?): String {
 }
 
 // ── HEADER / DRAWER ─────────────────────────────────────────────────────────
-
-@Composable
-private fun TripsCollapsingHeader(
-    title: String,
-    titleAlpha: Float,
-    onMenu: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-    Box(
-        modifier = modifier
-            .shadow(elevation = 6.dp, shape = shape)
-            .clip(shape)
-            .background(GreenMoss)
-    ) {
-        // Botão de menu (sempre visível) + título ao lado (esmaece ao colapsar)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(start = 16.dp, end = 20.dp, top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            HeaderIconButton(
-                icon               = Icons.Filled.Menu,
-                contentDescription = "Menu",
-                onClick            = onMenu
-            )
-            Text(
-                text       = title,
-                style      = MaterialTheme.typography.headlineSmall,
-                color      = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                maxLines   = 1,
-                overflow   = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier   = Modifier.alpha(titleAlpha)
-            )
-        }
-    }
-}
 
 @Composable
 private fun HeaderIconButton(
