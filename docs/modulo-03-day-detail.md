@@ -57,9 +57,10 @@ TripViewModel.tripData: StateFlow<TripData?>
 3. VoucherChecklist    ← se day.vouchers.isNotEmpty()
 4. DayLinkCard         ← se day.dayLinkUrl != null/blank
 5. DayDocumentCard     ← se day.dayDocumentPath != null/blank
-6. HorizontalDivider   ← separador da timeline
-7. Empty state         ← se day.activities.isEmpty()
-8. ActivityItem × N    ← um por atividade + HorizontalDivider entre cada
+6. DayNotesButton      ← sempre presente ("Notas do dia", F4)
+7. HorizontalDivider   ← separador da timeline
+8. Empty state         ← se day.activities.isEmpty()
+9. ActivityItem × N    ← um por atividade + HorizontalDivider entre cada
 ```
 
 ---
@@ -114,7 +115,7 @@ val spinAngle by infiniteTransition.animateFloat(
 |---|---|---|
 | Carregando | `isLoading == true` | `CircularProgressIndicator` (28dp) + spinner no ícone Refresh |
 | Indisponível | `!hasData` | "Temperatura indisponível no momento" (`TextSecondary`) |
-| Disponível | `hasData` | Emoji do clima (38sp) + `"X°C ~ Y°C"` (AmberPrimary) + condição + "● ao vivo" |
+| Disponível | `hasData` | Ilustração do clima (`WeatherIcon(liveWeather.weatherCode, size = 46.dp)`, ilustração da marca) + `"X°C ~ Y°C"` (AmberPrimary) + condição + "● ao vivo" |
 
 `hasData = liveWeather != null && !(liveWeather.minTemp == 0 && liveWeather.maxTemp == 0)` — mesma lógica de `HomeScreen`, temperatura 0/0 é tratada como ausente.
 
@@ -196,7 +197,7 @@ O MIME type é inferido da extensão do arquivo via `MimeTypeMap`. O `Intent.cre
 - `TravelDay.dayDocumentName: String` — nome original do arquivo
 - `TravelDay.dayDocumentTitle: String` — nome de exibição editável pelo usuário
 
-> **Regra de padrão:** O arquivo físico fica em `context.filesDir/Arquivos/`. O `FileProvider` está configurado em `res/xml/file_paths.xml` com `<files-path name="arquivos" path="Arquivos/" />`. Authority: `com.rodrigoleao.gramado2026.fileprovider`.
+> **Regra de padrão:** O arquivo físico fica em `context.filesDir/Arquivos/`. O `FileProvider` está configurado em `res/xml/file_paths.xml` com `<files-path name="arquivos" path="Arquivos/" />`. Authority: `com.rodrigoleao.pipa.fileprovider`.
 
 ---
 
@@ -218,7 +219,7 @@ val expandedActivities = remember { mutableStateMapOf<Long, Boolean>() }
 | Horário | `activity.time` | 11sp, `AmberPrimary`, `Medium` |
 | Emoji + Nome | `activity.emoji` + `activity.name` | `titleSmall`, `SemiBold`, `TextPrimary` |
 | Badges | `activity.badges` | `FlowRow` de `BadgeChip` (visible apenas se não vazio) |
-| Ícone expand/collapse | `ExpandMore` / `ExpandLess` | `GreenSage` 65% alpha, 24dp |
+| Ícone expand/collapse | `ic_chevron_down` (colapsado) / `ic_chevron_up` (expandido) | vetor da marca, `GreenSage` 65% alpha, 24dp |
 
 **Animação de expansão:** `Modifier.animateContentSize(animationSpec = tween(260ms, FastOutSlowInEasing))` — aplicado ao `Row` raiz do item. A expansão é suave sem lógica manual de altura.
 
@@ -275,7 +276,7 @@ Renderizado dentro do `ActivityItem` expandido quando `activity.walkStops.isNotE
 
 ### 8. Swipe para revelar Editar e Deletar (`SwipeToRevealActivity`)
 
-**Implementação:** customizada com `Animatable<Float>` + `Modifier.draggable` — mesmo padrão de `SwipeToRevealTrip` na lista de viagens. Não usa `SwipeToDismissBox`.
+**Implementação:** customizada com `Animatable<Float>` + `Modifier.draggable`. Não usa `SwipeToDismissBox`. (Obs.: a lista de viagens já não usa swipe — migrou para um menu ⋮; este swipe de atividades permanece.)
 
 **Parâmetros:**
 - `actionWidth = 128.dp` — largura total dos dois botões (2 × 64dp)
@@ -318,10 +319,10 @@ O `AlertDialog` informa que "Esta atividade será removida permanentemente do di
 FloatingActionButton(
     onClick        = onAddActivity,
     containerColor = AmberPrimary,
-    contentColor   = Color.White,
+    contentColor   = GreenMoss,
     shape          = RoundedCornerShape(16.dp)
 ) {
-    Icon(Icons.Default.Add, contentDescription = "Adicionar atividade")
+    Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Adicionar atividade")
 }
 ```
 
@@ -359,9 +360,13 @@ fun DayDetailScreen(
     onEditActivity: (Long) -> Unit = {},
     onDeleteActivity: (Long) -> Unit = {},
     onAddActivity: () -> Unit = {},
-    onMoveActivity: (from: Int, to: Int) -> Unit = { _, _ -> }
+    onMoveActivity: (from: Int, to: Int) -> Unit = { _, _ -> },
+    onOpenDayNotes: () -> Unit = {},
+    dayNotesCount: Int = 0
 )
 ```
+
+`onOpenDayNotes` é disparado pelo `DayNotesButton` (abre as notas do dia, F4) e `dayNotesCount` alimenta o subtexto do botão (`"N notas"` ou "Ver e adicionar anotações" quando zero). Ambos são wired em `AppNavigation`.
 
 ---
 
@@ -374,6 +379,7 @@ fun DayDetailScreen(
 | `VoucherChecklist` | `vouchers: List<DayVoucher>` | Pills "LEVAR HOJE" em FlowRow |
 | `DayLinkCard` | `label`, `url`, `context` | Card clicável que abre URL no browser |
 | `DayDocumentCard` | `name`, `path`, `context` | Card clicável que abre arquivo via FileProvider |
+| `DayNotesButton` | `count`, `onClick` | Card "Notas do dia" (F4) com contagem de notas |
 | `ActivityItem` | `activity`, `expanded`, `onToggle`, `onEdit`, `onDelete`, `onMapClick`, `onUberClick` | Item colapsável da timeline |
 | `SwipeToRevealActivity` | `onEdit`, `onDelete`, `content` | Container de swipe com botões Editar e Excluir |
 | `WalkRouteSection` | `stops: List<WalkStop>` | Stepper visual de paradas de caminhada |

@@ -1,4 +1,4 @@
-﻿# Roadmap de Novas Funcionalidades
+# Roadmap de Novas Funcionalidades
 
 **Status:** Especificação — aguardando implementação
 
@@ -1639,7 +1639,7 @@ A diferença em relação ao chat de criação de roteiro (já existente em `Cre
 A cada nova sessão de chat, o app monta um system prompt com as seguintes informações:
 
 ```
-Você é um assistente de viagem pessoal do app Rumo. O usuário está em viagem e pode
+Você é um assistente de viagem pessoal do app Pipa. O usuário está em viagem e pode
 fazer perguntas sobre o que fazer, onde comer, como se locomover, curiosidades da
 região e o que mais precisar.
 
@@ -1750,7 +1750,7 @@ TopAppBar: "Assistente de viagem" + subtítulo "{trip.destination}" + botão Vol
 
 LazyColumn (mensagens, scroll automático para o fim):
   ├─ Bubble USUÁRIO (alinhado à direita, fundo GreenMoss, texto branco)
-  └─ Bubble IA      (alinhado à esquerda, fundo SurfaceWhite, borda GreenLight)
+  └─ Bubble IA      (alinhado à esquerda, fundo SurfaceWhite, borda CardBorder)
        ├─ [isLoading] três pontos animados pulsando
        └─ [streaming] texto parcial aparecendo progressivamente
 
@@ -2634,23 +2634,23 @@ WorkManager
   └─ TripStartWorker              ← notificação na manhã do primeiro dia
 
 Firebase Cloud Messaging
-  └─ RumoFirebaseMessagingService ← recebe tokens + processa mensagens remotas
+  └─ PipaFirebaseMessagingService ← recebe tokens + processa mensagens remotas
 
 NotificationHelper.kt            ← cria canais, constrói e dispara notificações
 ```
 
 **Canais de notificação (obrigatório API 26+):**
 ```kotlin
-NotificationChannel("rumo_reminders",  "Lembretes de atividade", IMPORTANCE_DEFAULT)
-NotificationChannel("rumo_social",     "Notificações sociais",   IMPORTANCE_LOW)
-NotificationChannel("rumo_trip_start", "Início de viagem",       IMPORTANCE_HIGH)
+NotificationChannel("pipa_reminders",  "Lembretes de atividade", IMPORTANCE_DEFAULT)
+NotificationChannel("pipa_social",     "Notificações sociais",   IMPORTANCE_LOW)
+NotificationChannel("pipa_trip_start", "Início de viagem",       IMPORTANCE_HIGH)
 ```
 
 ### Configuração do usuário
 
 Toggle em `SettingsScreen` (DataStore):
 - "Lembretes de atividade" — habilita/desabilita `ItineraryReminderWorker`
-- "Notificações de amigos" — habilita/desabilita canal `rumo_social`
+- "Notificações de amigos" — habilita/desabilita canal `pipa_social`
 - "Antecedência do lembrete" — seletor: 15 min / 30 min / 1h (salvo em DataStore como `Int`)
 
 ### Permissões
@@ -2671,7 +2671,7 @@ Solicitação em runtime (Android 13+): `Manifest.permission.POST_NOTIFICATIONS`
 | Criar | `data/notification/NotificationHelper.kt` |
 | Criar | `data/notification/ItineraryReminderWorker.kt` |
 | Criar | `data/notification/TripStartWorker.kt` |
-| Criar | `data/notification/RumoFirebaseMessagingService.kt` (para notificações remotas) |
+| Criar | `data/notification/PipaFirebaseMessagingService.kt` (para notificações remotas) |
 | Modificar | `ui/settings/SettingsScreen.kt` — seção de notificações |
 | Modificar | `data/preferences/SettingsRepository.kt` — novos campos DataStore |
 | Modificar | `AndroidManifest.xml` — permissões + registro do Service FCM |
@@ -2731,8 +2731,8 @@ Widget Android (4×2 células) que exibe a próxima atividade da viagem em curso
 ### Arquitetura
 
 ```
-GlanceAppWidget (RumoWidget.kt)
-  └─ GlanceAppWidgetReceiver (RumoWidgetReceiver.kt)
+GlanceAppWidget (PipaWidget.kt)
+  └─ GlanceAppWidgetReceiver (PipaWidgetReceiver.kt)
   └─ WorkManager (WidgetUpdateWorker) — atualização periódica a cada 30min
 ```
 
@@ -2742,10 +2742,10 @@ O widget acessa o banco Room diretamente via repositório injetado (Hilt não é
 
 | Ação | Arquivo |
 |---|---|
-| Criar | `ui/widget/RumoWidget.kt` — layout Glance |
-| Criar | `ui/widget/RumoWidgetReceiver.kt` — receptor AppWidget |
+| Criar | `ui/widget/PipaWidget.kt` — layout Glance |
+| Criar | `ui/widget/PipaWidgetReceiver.kt` — receptor AppWidget |
 | Criar | `ui/widget/WidgetUpdateWorker.kt` — WorkManager |
-| Criar | `res/xml/rumo_widget_info.xml` — metadados do widget (dimensões, período de update) |
+| Criar | `res/xml/pipa_widget_info.xml` — metadados do widget (dimensões, período de update) |
 | Criar | `res/drawable/widget_preview.png` — preview na galeria de widgets |
 | Modificar | `AndroidManifest.xml` — receiver + intent-filter `APPWIDGET_UPDATE` |
 | Criar | `docs/modulo-24-widget.md` |
@@ -2766,7 +2766,7 @@ O widget acessa o banco Room diretamente via repositório injetado (Hilt não é
 
 - **`EntryPointAccessors`**: injeção de dependência em widgets Glance exige `@InstallIn(SingletonComponent::class)` + `@EntryPoint` — padrão diferente dos `@HiltViewModel` do resto do app; documentar claramente
 - **`EditActivityViewModel`**: ao salvar uma atividade, disparar `AppWidgetManager.updateAppWidget()` para forçar refresh imediato do widget (além do refresh periódico de 30 min do WorkManager)
-- **`AndroidManifest.xml`**: declarar o receiver com `<intent-filter>` para `APPWIDGET_UPDATE` e referência ao `rumo_widget_info.xml`
+- **`AndroidManifest.xml`**: declarar o receiver com `<intent-filter>` para `APPWIDGET_UPDATE` e referência ao `pipa_widget_info.xml`
 
 ### Dependências a adicionar
 
@@ -2860,13 +2860,13 @@ Firebase Storage já listado em F2. WorkManager já listado em F13.
 
 ### Descrição
 
-Biblioteca de roteiros prontos curados pelo time Rumo, pela comunidade (F10) e por agências (F11). O usuário pode navegar por templates filtrados por destino, duração e tipo de viagem (família, aventura, romântico, etc.), visualizar o roteiro completo e importar como base para uma nova viagem com um toque.
+Biblioteca de roteiros prontos curados pelo time Pipa, pela comunidade (F10) e por agências (F11). O usuário pode navegar por templates filtrados por destino, duração e tipo de viagem (família, aventura, romântico, etc.), visualizar o roteiro completo e importar como base para uma nova viagem com um toque.
 
 ### Fontes de templates
 
 | Fonte | Como é criado | Exibido em |
 |---|---|---|
-| Curado (equipe Rumo) | Documento Firestore criado manualmente com flag `isOfficial: true` | Seção "Em destaque" |
+| Curado (equipe Pipa) | Documento Firestore criado manualmente com flag `isOfficial: true` | Seção "Em destaque" |
 | Comunidade | Post em F10 com flag `isTemplate: true` (autor marca ao publicar) | Seção "Da comunidade" |
 | Agência | Viagem criada em F11 com flag `isTemplate: true` (somente assinantes) | Seção "De agências" |
 
@@ -3280,7 +3280,7 @@ M9 — Programa de parceria     (após F11 estável e primeiros clientes agênci
 
 ### Descrição
 
-Publicar o app **Rumo** na Google Play Store como app de acesso público (ou closed testing inicialmente), permitindo que qualquer pessoa com Android instale, atualize e avalie o app. Não é uma funcionalidade de produto, mas um marco de infraestrutura que exige preparação técnica, editorial e de processo.
+Publicar o app **Pipa** na Google Play Store como app de acesso público (ou closed testing inicialmente), permitindo que qualquer pessoa com Android instale, atualize e avalie o app. Não é uma funcionalidade de produto, mas um marco de infraestrutura que exige preparação técnica, editorial e de processo.
 
 ### Pré-requisitos de conta e configuração
 
@@ -3295,9 +3295,9 @@ Publicar o app **Rumo** na Google Play Store como app de acesso público (ou clo
 
 #### 1. Application ID e nome definitivos
 
-O package atual é `com.rodrigoleao.gramado2026`. Para um app genérico de viagens chamado **Rumo**, o ideal é mudar para algo como `com.rodrigoleao.rumo` antes da primeira publicação — **impossível mudar depois sem perder todos os usuários e histórico de avaliações**.
+✅ **Concluído.** O package foi renomeado de `com.rodrigoleao.gramado2026` (histórico) para `com.rodrigoleao.pipa`, e o nome de exibição do app é **Pipa** — definido antes da primeira publicação, pois é **impossível mudar depois sem perder todos os usuários e histórico de avaliações**.
 
-Passos:
+Passos (já executados):
 - Alterar `applicationId` em `build.gradle.kts`
 - Renomear o pacote base em todos os arquivos Kotlin (`refactor → rename` no Android Studio)
 - Atualizar `AndroidManifest.xml`, `file_paths.xml` (authority do FileProvider) e qualquer string hardcoded com o package name
@@ -3308,16 +3308,16 @@ A Play Store exige APKs/AABs assinados com uma chave de release (diferente da de
 
 ```bash
 # Gerar keystore (fazer uma vez; guardar em local seguro — NÃO versionar)
-keytool -genkey -v -keystore rumo-release.jks \
-        -alias rumo -keyalg RSA -keysize 2048 -validity 10000
+keytool -genkey -v -keystore pipa-release.jks \
+        -alias pipa -keyalg RSA -keysize 2048 -validity 10000
 
 # build.gradle.kts — configurar signing config
 android {
     signingConfigs {
         create("release") {
-            storeFile     = file("rumo-release.jks")
+            storeFile     = file("pipa-release.jks")
             storePassword = providers.gradleProperty("STORE_PASSWORD").get()
-            keyAlias      = "rumo"
+            keyAlias      = "pipa"
             keyPassword   = providers.gradleProperty("KEY_PASSWORD").get()
         }
     }
@@ -3400,7 +3400,7 @@ Para CI/CD (se configurado futuramente): injetar segredos via variáveis de ambi
 
 | Campo | Obrigatório | Recomendação |
 |---|---|---|
-| Nome do app | Sim | "Rumo — Roteiros de Viagem" (máx. 30 chars) |
+| Nome do app | Sim | "Pipa — Roteiros de Viagem" (máx. 30 chars) |
 | Descrição curta | Sim | Até 80 chars; aparece nos resultados de busca |
 | Descrição longa | Sim | Até 4.000 chars; incluir funcionalidades principais e palavras-chave |
 | Ícone | Sim | 512×512 px, PNG, sem transparência |
@@ -3516,7 +3516,7 @@ Considerar configurar **CI/CD** (GitHub Actions) para automatizar o build e uplo
 
 ### Lista de verificação antes da publicação
 
-- [ ] `applicationId` definitivo (`com.rodrigoleao.rumo` ou similar)
+- [x] `applicationId` definitivo — `com.rodrigoleao.pipa`
 - [ ] `versionCode = 1`, `versionName = "1.0.0"`
 - [ ] Keystore de release gerado e guardado em local seguro (fora do repositório)
 - [ ] Google Play App Signing configurado na Play Console
@@ -3591,7 +3591,7 @@ Arquivo `google-services.json` deve ser adicionado em `app/` após configurar o 
 | Q30 | F14 — Widget atualiza automaticamente ao editar uma atividade? | WorkManager pode ser disparado imediatamente após salvar a edição. Alternativa: `AppWidgetManager.updateAppWidget()` chamado no `EditActivityViewModel`. |
 | Q31 | F15 — Backup inclui arquivos anexados (PDFs de vouchers, documentos de dias)? | TravelExporter já inclui — o backup herda esse comportamento. Limite de tamanho por arquivo no Firebase Storage gratuito: 1 GB total. |
 | Q32 | F15 — O que acontece se o usuário tiver 2 aparelhos e editar a mesma viagem nos dois? | Último backup gravado vence (Storage sobrescreve por `tripUuid`). Sem resolução de conflito na V1 — informar o usuário. |
-| Q33 | F16 — Quem aprova templates da comunidade antes de entrar na seção "Em destaque"? | Moderação manual pela equipe Rumo ou automática por número de importações (ex.: >50 importações → promovido para "Em destaque"). Definir política. |
+| Q33 | F16 — Quem aprova templates da comunidade antes de entrar na seção "Em destaque"? | Moderação manual pela equipe Pipa ou automática por número de importações (ex.: >50 importações → promovido para "Em destaque"). Definir política. |
 | Q34 | F16 — Template pode ser atualizado pelo autor após publicação? | Sim, mas importações anteriores não são afetadas (cada importação gera uma cópia local). |
 | Q35 | F17 — Avaliação de 👍/👎 ou escala 1–5? | Escala 1–5 dá mais granularidade mas exige mais esforço do usuário. Considerar 👍/👎 para V1 e expandir para estrelas depois. |
 | Q36 | F17 — Avaliações influenciam o ranking de templates em F16? | Sim, intencionalmente — templates com mais atividades bem avaliadas sobem no ranking. Definir fórmula de scoring. |
@@ -3665,7 +3665,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { java-version: "17", distribution: "temurin" }
       - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/rumo-release.jks
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/pipa-release.jks
       - run: ./gradlew bundleRelease
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -3674,7 +3674,7 @@ jobs:
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_JSON }}
-          packageName: com.rodrigoleao.rumo
+          packageName: com.rodrigoleao.pipa
           releaseFiles: app/build/outputs/bundle/release/*.aab
           track: internal
 ```
@@ -3760,7 +3760,7 @@ id("com.google.firebase.firebase-perf")
 
 ### Descrição
 
-Garantir que o app Rumo seja utilizável por pessoas com deficiência visual, motora ou cognitiva. Foco nos requisitos mínimos: suporte a TalkBack (leitor de tela), escala de fonte do sistema, e contraste de cores conforme WCAG AA.
+Garantir que o app Pipa seja utilizável por pessoas com deficiência visual, motora ou cognitiva. Foco nos requisitos mínimos: suporte a TalkBack (leitor de tela), escala de fonte do sistema, e contraste de cores conforme WCAG AA.
 
 ### Checklist de implementação
 
@@ -3839,7 +3839,7 @@ Usar `pluralStringResource(R.plurals.days_count, count, count)` no Compose.
 
 ### Descrição
 
-Implementar modelo de receita sustentável para o app Rumo, equilibrando acesso gratuito (crescimento da base de usuários) com funcionalidades premium (receita). Usar Google Play Billing para compras in-app e assinaturas.
+Implementar modelo de receita sustentável para o app Pipa, equilibrando acesso gratuito (crescimento da base de usuários) com funcionalidades premium (receita). Usar Google Play Billing para compras in-app e assinaturas.
 
 ### Modelo freemium proposto
 
@@ -3888,7 +3888,7 @@ implementation("com.android.billingclient:billing-ktx:7.x.x")
 
 ### Descrição
 
-Criar uma página de apresentação do app Rumo com CTA para download na Play Store, voltada tanto para usuários individuais quanto para agências de viagem. O site serve como ponto de entrada para SEO, divulgação em redes sociais e parceria com agências (M9).
+Criar uma página de apresentação do app Pipa com CTA para download na Play Store, voltada tanto para usuários individuais quanto para agências de viagem. O site serve como ponto de entrada para SEO, divulgação em redes sociais e parceria com agências (M9).
 
 ### Conteúdo da landing page
 
@@ -3905,13 +3905,13 @@ Criar uma página de apresentação do app Rumo com CTA para download na Play St
 
 - **Hospedagem:** GitHub Pages (gratuito) ou Vercel (gratuito no plano hobby)
 - **Tecnologia:** HTML/CSS estático ou Next.js (Vercel) para SEO melhor
-- **Domínio:** `rumoapp.com.br` ou similar (registrar no registro.br)
+- **Domínio:** `pipaapp.com.br` ou similar (registrar no registro.br)
 - **Política de Privacidade:** obrigatória pela Play Store — deve listar quais dados são coletados (Firebase Analytics, Auth) e como são usados
 - **Termos de Uso:** recomendado, especialmente para o plano Agência
 
 ### Arquivos/repos
 
-Manter o site em repositório separado (`rumo-site`) para não poluir o repo do app.
+Manter o site em repositório separado (`pipa-site`) para não poluir o repo do app.
 
 ---
 
@@ -3919,17 +3919,17 @@ Manter o site em repositório separado (`rumo-site`) para não poluir o repo do 
 
 ### Descrição
 
-Processo formal de onboarding para agências de viagem que desejam usar o plano Agência do Rumo para distribuir roteiros a seus clientes. Inclui formulário de cadastro, contrato de uso, suporte dedicado e co-marketing (logo da agência parceira no site M8).
+Processo formal de onboarding para agências de viagem que desejam usar o plano Agência do Pipa para distribuir roteiros a seus clientes. Inclui formulário de cadastro, contrato de uso, suporte dedicado e co-marketing (logo da agência parceira no site M8).
 
 ### Fluxo de onboarding
 
 ```
 1. Agência preenche formulário no site (M8) → "Quero ser parceiro"
 2. E-mail automático de boas-vindas com instruções de ativação
-3. Equipe Rumo valida a agência (verificar CNPJ, redes sociais)
+3. Equipe Pipa valida a agência (verificar CNPJ, redes sociais)
 4. Agência recebe código de cupom para 30 dias grátis do plano Agência
 5. Agência cria conta no app → insere cupom → acessa módulo F11
-6. Call de onboarding (30min) com a equipe Rumo
+6. Call de onboarding (30min) com a equipe Pipa
 7. Agência listada como "Parceira Oficial" no site (M8) com logo
 ```
 

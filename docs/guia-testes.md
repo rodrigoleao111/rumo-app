@@ -90,7 +90,7 @@ O maior risco silencioso do app: uma migration esquecida ou errada corrompe o ba
 
 1. Cria um arquivo SQLite real com o **schema da v3 escrito à mão** — derivado do `16.json` revertendo cada migration (todas são aditivas: `ADD COLUMN` / `CREATE TABLE`);
 2. Semeia uma linha em cada tabela e grava `user_version = 3`;
-3. Abre o banco com `Room.databaseBuilder(...).addMigrations(*TravelDatabase.ALL_MIGRATIONS)` — o Room executa as 13 migrations e **valida o schema resultante contra as entities anotadas**, lançando `IllegalStateException("Migration didn't properly handle…")` em qualquer divergência (o mesmo erro de produção);
+3. Abre o banco com `Room.databaseBuilder(...).addMigrations(*TravelDatabase.ALL_MIGRATIONS)` — o Room executa as 16 migrations (v3→v19) e **valida o schema resultante contra as entities anotadas**, lançando `IllegalStateException("Migration didn't properly handle…")` em qualquer divergência (o mesmo erro de produção);
 4. Verifica que os dados semeados sobreviveram e que os DEFAULTs de cada migration foram aplicados (`hotelPhone = ''`, `voucherSortMode = 'BY_CATEGORY'`, `is_used = 0`, `transportType = 'FLIGHT'`, etc.), e que a tabela `voucher_groups` (criada pela 8→9) aceita insert com FK.
 
 > **Migrations a partir da 16→N: `MigrationTestHelper`** (já em uso na F1). Com `exportSchema = true`, o `16.json` (e seguintes) ficam em `app/schemas/` — versionados no git e expostos como asset do androidTest. A migração 16→17 (`migracao16Para17_...`) é o primeiro exemplo real:

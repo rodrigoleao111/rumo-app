@@ -63,8 +63,8 @@ val vm: TripViewModel = hiltViewModel()
 
 - Plugin `com.google.dagger.hilt.android:2.51.1` adicionado ao Gradle (projeto e app)
 - Dependências: `hilt-android`, `hilt-compiler` (KSP), `hilt-navigation-compose`
-- `RumoApplication` criada com `@HiltAndroidApp`
-- `AndroidManifest.xml` atualizado com `android:name=".RumoApplication"`
+- `PipaApplication` criada com `@HiltAndroidApp`
+- `AndroidManifest.xml` atualizado com `android:name=".PipaApplication"`
 - `MainActivity` anotada com `@AndroidEntryPoint`
 - `data/di/AppModule.kt` criado com `@Singleton @Provides` para `TravelDatabase`, `TripRepository`, `SettingsRepository`, `ContactCategoryRepository`
 - 12 ViewModels migrados para `@HiltViewModel @Inject constructor` — `companion object Factory` removidos de todos
@@ -511,7 +511,7 @@ fun deleteVoucher(voucherId: Long) {
 
 ```kotlin
 // Singleton via extension property no Context
-val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "rumo_settings")
+val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "pipa_settings")
 
 class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     val autoOpenActiveTrip: Flow<Boolean> = dataStore.data.map { it[KEY_AUTO_OPEN] ?: true }

@@ -4,13 +4,13 @@
 **Arquivo:** `ui/settings/SettingsScreen.kt`  
 **ViewModel:** `ui/settings/SettingsViewModel.kt`  
 **Repositório:** `data/preferences/SettingsRepository.kt`  
-**Entry point de navegação:** ícone de engrenagem no cabeçalho de `TripsListScreen`
+**Entry point de navegação:** item "Configurações" da gaveta (`ModalNavigationDrawer`, aberta pelo botão ☰) de `TripsListScreen`
 
 ---
 
 ## Visão geral
 
-Tela de configurações globais do app com dois toggles. As preferências afetam o comportamento de toda a aplicação — não de uma viagem específica — e são persistidas em **DataStore** (`androidx.datastore.preferences`). A tela não tem scroll: todos os itens cabem em uma coluna simples.
+Tela de configurações globais do app com quatro toggles. As preferências afetam o comportamento de toda a aplicação — não de uma viagem específica — e são persistidas em **DataStore** (`androidx.datastore.preferences`). A tela não tem scroll: todos os itens cabem em uma coluna simples.
 
 ---
 
@@ -20,7 +20,7 @@ Segue **MVVM** com `SettingsRepository` expondo `Flow<Boolean>` via DataStore.
 
 | Camada | Arquivo | Responsabilidade |
 |---|---|---|
-| **View** | `SettingsScreen.kt` | Stateless — coleta dois `StateFlow<Boolean>` e emite eventos de toggle |
+| **View** | `SettingsScreen.kt` | Stateless — coleta quatro `StateFlow<Boolean>` e emite eventos de toggle |
 | **ViewModel** | `SettingsViewModel.kt` | Converte `Flow<Boolean>` do repo em `StateFlow` via `stateIn(Eagerly)` |
 | **Repositório** | `SettingsRepository.kt` | Lê e grava em `DataStore<Preferences>` — expõe `Flow<Boolean>` e `suspend fun set*()` |
 
@@ -31,11 +31,9 @@ Segue **MVVM** com `SettingsRepository` expondo `Flow<Boolean>` via DataStore.
 ## `SettingsRepository`
 
 ```kotlin
-val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "rumo_settings")
+val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "pipa_settings")
 
 class SettingsRepository(private val dataStore: DataStore<Preferences>) {
-    private val KEY_AUTO_OPEN          = booleanPreferencesKey("auto_open_active_trip")
-    private val KEY_EMERGENCY_CONTACTS = booleanPreferencesKey("show_emergency_contacts")
 
     val autoOpenActiveTrip: Flow<Boolean> =
         dataStore.data.map { it[KEY_AUTO_OPEN] ?: true }
@@ -43,19 +41,31 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     val showEmergencyContacts: Flow<Boolean> =
         dataStore.data.map { it[KEY_EMERGENCY_CONTACTS] ?: true }
 
-    suspend fun setAutoOpenActiveTrip(enabled: Boolean) {
-        dataStore.edit { it[KEY_AUTO_OPEN] = enabled }
-    }
+    val sortTripsByProximity: Flow<Boolean> =
+        dataStore.data.map { it[KEY_SORT_BY_PROXIMITY] ?: false }
 
-    suspend fun setShowEmergencyContacts(enabled: Boolean) {
-        dataStore.edit { it[KEY_EMERGENCY_CONTACTS] = enabled }
+    val hideCompletedTrips: Flow<Boolean> =
+        dataStore.data.map { it[KEY_HIDE_COMPLETED] ?: false }
+
+    suspend fun setAutoOpenActiveTrip(enabled: Boolean)   { dataStore.edit { it[KEY_AUTO_OPEN] = enabled } }
+    suspend fun setShowEmergencyContacts(enabled: Boolean) { dataStore.edit { it[KEY_EMERGENCY_CONTACTS] = enabled } }
+    suspend fun setSortTripsByProximity(enabled: Boolean)  { dataStore.edit { it[KEY_SORT_BY_PROXIMITY] = enabled } }
+    suspend fun setHideCompletedTrips(enabled: Boolean)    { dataStore.edit { it[KEY_HIDE_COMPLETED] = enabled } }
+
+    companion object {
+        private val KEY_AUTO_OPEN          = booleanPreferencesKey("auto_open_active_trip")
+        private val KEY_EMERGENCY_CONTACTS = booleanPreferencesKey("show_emergency_contacts")
+        private val KEY_SORT_BY_PROXIMITY  = booleanPreferencesKey("sort_trips_by_proximity")
+        private val KEY_HIDE_COMPLETED     = booleanPreferencesKey("hide_completed_trips")
     }
 }
 ```
 
-**DataStore:** `preferencesDataStore(name = "rumo_settings")` — extensão de propriedade no `Context`. Instância única por processo via delegado Kotlin.
+**DataStore:** `preferencesDataStore(name = "pipa_settings")` — extensão de propriedade no `Context`. Instância única por processo via delegado Kotlin.
 
-**Defaults:** ambas as configurações iniciam como `true` (ativadas) na primeira execução — o `?: true` no `.map { }` aplica o default quando a chave ainda não existe.
+**Chaves:** as quatro `booleanPreferencesKey` ficam no `companion object` da classe.
+
+**Defaults:** `autoOpenActiveTrip` e `showEmergencyContacts` iniciam como `true`; `sortTripsByProximity` e `hideCompletedTrips` iniciam como `false`. O `?: <default>` no `.map { }` aplica o default quando a chave ainda não existe.
 
 **Reatividade:** qualquer gravação via `dataStore.edit { }` propaga automaticamente pelo `Flow` para todos os coletores — sem recomposição manual, sem `DisposableEffect`.
 
@@ -75,17 +85,20 @@ class SettingsViewModel @Inject constructor(
     val showEmergencyContacts: StateFlow<Boolean> = settings.showEmergencyContacts
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun setAutoOpenActiveTrip(enabled: Boolean) {
-        viewModelScope.launch { settings.setAutoOpenActiveTrip(enabled) }
-    }
+    val sortTripsByProximity: StateFlow<Boolean> = settings.sortTripsByProximity
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    fun setShowEmergencyContacts(enabled: Boolean) {
-        viewModelScope.launch { settings.setShowEmergencyContacts(enabled) }
-    }
+    val hideCompletedTrips: StateFlow<Boolean> = settings.hideCompletedTrips
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setAutoOpenActiveTrip(enabled: Boolean)   { viewModelScope.launch { settings.setAutoOpenActiveTrip(enabled) } }
+    fun setShowEmergencyContacts(enabled: Boolean) { viewModelScope.launch { settings.setShowEmergencyContacts(enabled) } }
+    fun setSortTripsByProximity(enabled: Boolean)  { viewModelScope.launch { settings.setSortTripsByProximity(enabled) } }
+    fun setHideCompletedTrips(enabled: Boolean)    { viewModelScope.launch { settings.setHideCompletedTrips(enabled) } }
 }
 ```
 
-**`stateIn(Eagerly)`:** o `Flow<Boolean>` do repositório é convertido em `StateFlow` com início imediato (`Eagerly`) — o valor já está disponível na primeira composição, sem valor inicial nulo.
+**`stateIn(Eagerly)`:** cada `Flow<Boolean>` do repositório é convertido em `StateFlow` com início imediato (`Eagerly`) — o valor já está disponível na primeira composição, sem valor inicial nulo. O valor inicial do `stateIn` casa com o default de cada preferência (`true` para as duas primeiras, `false` para as duas novas).
 
 **Propagação reativa:** a gravação via `dataStore.edit` propaga automaticamente de volta pelo `Flow` para o `StateFlow` — não há atualização manual do estado após `set*()`. O ViewModel não é mais a fonte de verdade: o DataStore é.
 
@@ -93,15 +106,19 @@ class SettingsViewModel @Inject constructor(
 
 ## `SettingsScreen`
 
-A tela coleta os dois estados e renderiza um `Row` por configuração:
+A tela coleta os quatro estados e renderiza um `Row` por configuração:
 
 ```
 Scaffold (TopAppBar GreenMoss + botão Voltar)
  └─ Column (padding 16dp horizontal, 8dp vertical)
       ├─ Row [toggle 1] — "Abrir viagem em curso automaticamente"
-      ├─ HorizontalDivider (GreenLight)
+      ├─ HorizontalDivider (Sand)
       ├─ Row [toggle 2] — "Adicionar números de emergência..."
-      └─ HorizontalDivider (GreenLight)
+      ├─ HorizontalDivider (Sand)
+      ├─ Row [toggle 3] — "Ordenar viagens por proximidade"
+      ├─ HorizontalDivider (Sand)
+      ├─ Row [toggle 4] — "Ocultar viagens concluídas"
+      └─ HorizontalDivider (Sand)
 ```
 
 **Estrutura de cada `Row`:**
@@ -153,15 +170,33 @@ A condição `== exatamente 1` é importante: se houver zero ou mais de uma viag
 
 **Quem consume:** `AppNavigation` passa o valor para `MainPagerScreen` → `ContactsScreen`.
 
+### Toggle 3 — "Ordenar viagens por proximidade"
+
+**Default:** `false`.
+
+**Lido em:** `TripsListViewModel` — o `Flow` `sortTripsByProximity` entra no `combine` que produz a lista exibida.
+
+**Lógica:** quando `true`, a lista é reordenada por proximidade (viagem em curso primeiro, depois as futuras mais próximas de começar e, por último, as concluídas mais recentes). Quando `false`, mantém a ordem do repositório (`createdAt ASC`). A reordenação é feita pelas funções `sortByProximity`/`proximityKey` — nada é gravado no banco.
+
+### Toggle 4 — "Ocultar viagens concluídas"
+
+**Default:** `false`.
+
+**Lido em:** `TripsListViewModel` — o `Flow` `hideCompletedTrips` entra no mesmo `combine`.
+
+**Lógica:** quando `true`, as viagens já encerradas (`isCompleted`: têm datas válidas e hoje já passou da data final) são filtradas da lista. É apenas exibição — as viagens não são apagadas e reaparecem ao desativar o toggle.
+
+> **Vínculo com a lista:** os toggles 3 e 4 não têm efeito na `SettingsScreen` em si; são consumidos pelo `TripsListViewModel` via `combine(repo.allTrips, sortTripsByProximity, hideCompletedTrips)` (ver `docs/modulo-01-lista-viagens.md`).
+
 ---
 
 ## Composables e símbolos (resumo)
 
 | Símbolo | Tipo | Responsabilidade |
 |---|---|---|
-| `SettingsRepository` | classe | Persistência em `DataStore("rumo_settings")` — expõe `Flow<Boolean>` e `suspend fun set*()` |
-| `SettingsViewModel` | `@HiltViewModel` | `Flow<Boolean>` → `StateFlow` via `stateIn(Eagerly)`; `set*()` via `viewModelScope.launch` |
-| `SettingsScreen` | composable | Dois `Row` com `Switch`; stateless — coleta e emite via ViewModel |
+| `SettingsRepository` | classe | Persistência em `DataStore("pipa_settings")` — expõe quatro `Flow<Boolean>` e quatro `suspend fun set*()` |
+| `SettingsViewModel` | `@HiltViewModel` | Quatro `Flow<Boolean>` → `StateFlow` via `stateIn(Eagerly)`; `set*()` via `viewModelScope.launch` |
+| `SettingsScreen` | composable | Quatro `Row` com `Switch` + `HorizontalDivider(Sand)`; stateless — coleta e emite via ViewModel |
 
 ---
 

@@ -4,13 +4,13 @@
 - `data/seeder/DatabaseSeeder.kt` — insere a viagem de exemplo se o banco estiver vazio
 - `data/repository/RoteiroRepository.kt` — fonte estática dos dados da viagem "Gramado & Canela"
 
-**Entry point:** `MainActivity.onCreate` → `DatabaseSeeder.seedIfEmpty(db)` em background.
+**Entry point:** `MainActivity.onCreate` → `DatabaseSeeder.seedIfEmpty(db)` em background — **apenas em builds DEBUG** (`if (BuildConfig.DEBUG)`). Em release o app nasce limpo.
 
 ---
 
 ## Visão geral
 
-Na primeira execução (banco vazio), o app popula uma **viagem de demonstração completa** — "Gramado & Canela" — a partir de dados estáticos declarados em `RoteiroRepository`. Isso dá ao usuário um roteiro navegável de imediato, em vez de uma tela vazia. O seed é **idempotente**: só roda se não houver nenhuma viagem.
+Em **builds de debug**, na primeira execução (banco vazio), o app popula uma **viagem de demonstração completa** — "Gramado & Canela" — a partir de dados estáticos declarados em `RoteiroRepository`. Isso dá ao desenvolvedor um roteiro navegável de imediato, em vez de uma tela vazia. O seed é **idempotente**: só roda se não houver nenhuma viagem. Em **release** o seed não é chamado (ver *Invocação*), então o app nasce limpo.
 
 `RoteiroRepository` é a herança direta do app de viagem única original — hoje serve exclusivamente como **fixture de seed**, não como repositório de runtime (não acessa o banco; é um `object` com listas literais).
 
@@ -54,13 +54,16 @@ suspend fun seedIfEmpty(db: TravelDatabase) {
 ### Invocação (`MainActivity`)
 
 ```kotlin
-val db = TravelDatabase.getInstance(this)
-lifecycleScope.launch(Dispatchers.IO) {
-    DatabaseSeeder.seedIfEmpty(db)
+// Só roda em builds de debug — em release o app nasce limpo.
+if (BuildConfig.DEBUG) {
+    val db = TravelDatabase.getInstance(this)
+    lifecycleScope.launch(Dispatchers.IO) {
+        DatabaseSeeder.seedIfEmpty(db)
+    }
 }
 ```
 
-Roda em `Dispatchers.IO`, fora da thread principal. A UI (`AppNavigation`) observa `TripsListViewModel` reativamente via `Flow`, então a viagem aparece assim que as inserções terminam — sem necessidade de sincronização manual.
+O seed é envolvido por `if (BuildConfig.DEBUG)`: só a variante de debug semeia a viagem de exemplo; em release nem sequer chama `seedIfEmpty`. Quando roda, executa em `Dispatchers.IO`, fora da thread principal. A UI (`AppNavigation`) observa `TripsListViewModel` reativamente via `Flow`, então a viagem aparece assim que as inserções terminam — sem necessidade de sincronização manual.
 
 ---
 
@@ -85,14 +88,14 @@ Roda em `Dispatchers.IO`, fora da thread principal. A UI (`AppNavigation`) obser
 
 1. **1ª execução:** banco vazio → seed insere a viagem completa.
 2. **Execuções seguintes:** `count() > 0` → seed não faz nada; os dados agora são de propriedade do usuário (editáveis, deletáveis).
-3. **Usuário deleta todas as viagens:** na próxima abertura o banco volta a estar vazio → **o seed roda de novo** e a viagem de demonstração reaparece. (Comportamento atual — se não for desejado, seria preciso uma flag "already_seeded" persistida.)
+3. **Usuário deleta todas as viagens (build DEBUG):** na próxima abertura o banco volta a estar vazio → **o seed roda de novo** e a viagem de demonstração reaparece. Isso vale **somente em debug**; em **release** o seed nunca é chamado, então não há reseed — o app permanece vazio. (Se o reseed em debug não for desejado, seria preciso uma flag "already_seeded" persistida.)
 
 ---
 
 ## Checklist para futuras modificações
 
 - **Trocar/atualizar a viagem de exemplo:** editar as listas em `RoteiroRepository`. Como usa modelos de domínio, não requer migration.
-- **Não semear em produção (app "limpo"):** condicionar `seedIfEmpty` a `BuildConfig.DEBUG`, ou substituir a viagem de demonstração por um estado vazio com onboarding.
+- **Não semear em produção (app "limpo"): ✅ CONCLUÍDO** — a chamada de `seedIfEmpty` já está condicionada a `BuildConfig.DEBUG` em `MainActivity.onCreate`, então release nasce limpo. (Melhoria futura opcional: substituir a viagem de demonstração de debug por um estado vazio com onboarding.)
 - **Evitar reseed após o usuário apagar tudo:** persistir uma flag `already_seeded` em DataStore e checá-la além do `count()`.
 - **Tornar o seed atômico:** envolver as inserções em `db.withTransaction { }` para garantir tudo-ou-nada.
 - **Novo tipo de dado semeado:** adicionar a lista em `RoteiroRepository` + o laço de inserção correspondente em `DatabaseSeeder`, usando o mapper `toEntity` do novo tipo.

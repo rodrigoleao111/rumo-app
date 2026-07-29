@@ -76,7 +76,7 @@ Quatro barras horizontais (4dp de altura) no cabeçalho `GreenMoss`:
 |---|---|---|
 | Destino | `OutlinedTextField` + `ExposedDropdownMenu` | `isNotBlank()` |
 | Nome da viagem | `OutlinedTextField` | `isNotBlank()` |
-| Ícone (emoji) | `EmojiPicker` | seleção obrigatória |
+| Capa da viagem | `CoverPicker` (`ui.components.CoverPicker`) | seleção obrigatória |
 
 **Autocomplete de destino:**
 
@@ -91,9 +91,9 @@ updateDestination(v) → cancela job anterior → delay(350ms) → WeatherReposi
 - Ícone de pin fica `GreenMoss` quando `latitude != null` (localização confirmada); `TextSecondary` 40% alpha caso contrário
 - `supportingText` "📍 Localização confirmada" visível após seleção
 
-**EmojiPicker:** grade 4×5 de emojis. Célula selecionada tem fundo `AmberPrimary` 15% alpha e borda `AmberPrimary` 2dp. Células não selecionadas têm fundo `SurfaceWhite` e borda `CardBorder` 1dp. Linhas incompletas são preenchidas com `Spacer(weight(1f))` para manter o alinhamento.
+**CoverPicker (`ui.components.CoverPicker`):** seletor de ilustrações da marca agrupadas por categoria (Praia & Mar, Natureza & Campo, Cidade & Cultura, Inverno & Neve). Cada categoria é um cabeçalho retrátil `[nome] [linha verde musgo] [chevron]` seguido de uma faixa horizontal rolável de cards ilustrados (`CoverCard`). O card selecionado recebe borda `AmberPrimary` 2dp e um selo de check (`ic_check`); a lupa (`Icons.Outlined.ZoomIn`) abre a ilustração em tela cheia com zoom. A seleção grava `form.coverImage` (id estável, ex.: `"cover_praia_tropical"`) e mantém `coverEmoji` sincronizado com o emoji da categoria via `TripCovers.emojiFor(id)`.
 
-**`canProceed`:** `destination.isNotBlank() && name.isNotBlank() && coverEmoji.isNotEmpty()` — botão "Próximo →" desabilitado (`AmberPrimary` 35% alpha) se falso.
+**`canProceed`:** `destination.isNotBlank() && name.isNotBlank() && coverImage.isNotEmpty()` — botão "Próximo →" desabilitado (`AmberPrimary` 35% alpha) se falso.
 
 ---
 
@@ -127,7 +127,7 @@ val dayCount = generateSequence(startDate) { it.plusDays(1) }.takeWhile { !it.is
 ```
 Inclui os dias de início e fim (contagem inclusiva).
 
-**Cores do `DateRangePicker`:** totalmente customizado — `selectedDayContainerColor = GreenMoss`, range em `GreenMoss` 13% alpha, dia de hoje com borda `GreenMoss`.
+**Cores do `DateRangePicker`:** totalmente customizado — `selectedDayContainerColor = AmberPrimary` (com `selectedDayContentColor = GreenMoss`), range (`dayInSelectionRangeContainerColor`) em `AmberPrimary` ~28% alpha, dia de hoje com borda `GreenMoss`.
 
 ---
 
@@ -147,7 +147,7 @@ Dados opcionais. O botão "Criar viagem e montar roteiro →" não tem validaç�
 
 **Geocoding automático:** se o destino foi digitado mas não confirmado via dropdown (sem `latitude`), é lançado um job paralelo: `launch { repo.geocodeAndSaveCoordinates(id, destination) }`. Isso garante que a viagem terá coordenadas mesmo que o usuário não tenha selecionado um resultado do autocomplete.
 
-**Estilo do botão de criar:** `containerColor = GreenMoss`, ícone `Check` e texto em `AmberPrimary` — padrão de ação principal do app.
+**Estilo do botão de criar:** `containerColor = GreenMoss`, ícone `ic_check` (vetor da marca) e texto em `AmberPrimary` — padrão de ação principal do app.
 
 ---
 
@@ -167,12 +167,12 @@ Dois `OptionCard` lado a lado (`IntrinsicSize.Max` para altura igual):
 
 | Card | Ícone | Ação |
 |---|---|---|
-| Importar roteiro | `FileUpload` (`AmberPrimary`) | `startImport()` → `IMPORTING` |
-| Chat com IA | `AutoAwesome` (`GreenMoss`) | `startChat()` → `CHATTING` + mensagem de boas-vindas da IA |
+| Importar roteiro | `ic_file_upload` (`AmberPrimary`) | `startImport()` → `IMPORTING` |
+| Chat com IA | `ic_auto_awesome` (`GreenMoss`) | `startChat()` → `CHATTING` + mensagem de boas-vindas da IA |
 
 Botão "Pular e acessar a viagem" (`TextButton`, `TextSecondary`) — chama `skipItinerary()` → `readyToNavigate = true`.
 
-Ícone `?` (`HelpOutline`) na TopAppBar abre `ModalBottomSheet` com `ItineraryHelpSheet` — explica os dois modos em linguagem simples.
+Ícone `?` (`ic_help`, vetor da marca) na TopAppBar abre `ModalBottomSheet` com `ItineraryHelpSheet` — explica os dois modos em linguagem simples.
 
 **Botão back no Passo 4:** visível nas fases `IMPORTING`, `CHATTING` e `PREVIEW`. Chama `viewModel.backToChoosing()` → volta para `CHOOSING`.
 
@@ -180,9 +180,11 @@ Botão "Pular e acessar a viagem" (`TextButton`, `TextSecondary`) — chama `ski
 
 **Fluxo:**
 1. Usuário vê instruções passo a passo em um card verde claro
-2. Botão "Copiar texto de instrução" → `LocalClipboardManager.setText(AnnotatedString(importPrompt))` → ícone troca para `Check`, texto vira "Texto copiado!"
-3. Usuário cola o JSON no `OutlinedTextField` grande ou usa "Importar arquivo" (file picker para `.json` / `.txt` / `text/*`)
-4. Botão "Importar roteiro" → `onImport(importJsonText)` → `ItineraryGenerator.parseJson(json)` → `PREVIEW`
+2. Botão "Copiar texto de instrução" (`ic_copy`) → `LocalClipboardManager.setText(AnnotatedString(importPrompt))` → ícone troca para `ic_check`, texto vira "Texto copiado!"
+3. Usuário cola o JSON no `OutlinedTextField` grande ou usa "Importar arquivo" (`ic_upload`, file picker para `.json` / `.txt` / `text/*`)
+4. Botão "Importar roteiro" (`ic_file_upload`) → `onImport(importJsonText)` → `ItineraryGenerator.parseJson(json)` → `PREVIEW`
+
+> Todos os ícones do Passo 4 são vetores da marca (`ic_file_upload`, `ic_auto_awesome`, `ic_help`, `ic_check`, `ic_send`, `ic_copy`, `ic_upload`), carregados via `ImageVector.vectorResource(R.drawable.*)` — não Material Icons.
 
 **`buildImportPrompt()`:** constrói um prompt completo com contexto da viagem (destino, período, dias, hotel) e as regras de formato JSON. O prompt cobre três cenários: gerar do zero, converter roteiro em texto livre, reformatar de outra IA. Ver `docs/ai-itinerary-schema.md` para o conteúdo completo.
 
@@ -240,7 +242,8 @@ Tela simples com `CircularProgressIndicator` + "Salvando seu roteiro...". Não t
 data class CreateTripForm(
     val name: String         = "",
     val destination: String  = "",
-    val coverEmoji: String   = "",
+    val coverEmoji: String   = "",    // emoji da categoria (fallback do cabeçalho)
+    val coverImage: String   = "",    // id da ilustração de capa — usado pelo wizard (CoverPicker)
     val startDate: String?   = null,   // ISO "yyyy-MM-dd"
     val endDate: String?     = null,   // ISO "yyyy-MM-dd"
     val latitude: Double?    = null,   // null = não confirmado
@@ -270,7 +273,7 @@ data class CreateTripForm(
 | `ItineraryPreview` | `PREVIEW` | Lista de dias gerados + salvar/voltar |
 | `ChatBubble` | `CHATTING` | Bolha individual de mensagem |
 | `OptionCard` | `CHOOSING` | Card clicável de seleção de modo |
-| `EmojiPicker` | Passo 1 | Grade de seleção de ícone |
+| `CoverPicker` | Passo 1 | Seletor de capa: ilustrações da marca por categoria + zoom |
 | `SectionLabel` | várias | Rótulo de seção em maiúsculas (10sp, `GreenMoss`) |
 | `ItineraryHelpSheet` | `CHOOSING` | Conteúdo do `ModalBottomSheet` de ajuda |
 | `tripFieldColors()` | várias | Cores padronizadas para `OutlinedTextField` |

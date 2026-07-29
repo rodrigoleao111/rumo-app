@@ -1,4 +1,4 @@
-# Módulo 08 — Compartilhamento e Importação de Viagens
+# Módulo 09 — Compartilhamento e Importação de Viagens
 
 **Telas:** `ShareTripScreen` · `ImportTripScreen`  
 **Arquivos:** `ui/share_trip/ShareTripScreen.kt` · `ui/import_trip/ImportTripScreen.kt`  
@@ -218,6 +218,8 @@ O intent é disparado dentro de `LaunchedEffect(phase)` — não dentro de um ca
 
 **Conteúdo informativo da tela:** lista com ícones do que o arquivo contém (🗓️ dias/atividades, 🏨 hospedagem, 👥 contatos, 📄 documentos, 🎟️ vouchers, ✈️ cartões de embarque) + aviso sobre dados pessoais antes do botão.
 
+**Layout:** `Column` externa dividida em duas — conteúdo rolável (`Modifier.weight(1f).verticalScroll(...)`) + rodapé fixo em coluna própria (aviso + botão "Compartilhar", sempre visível). `ImportTripScreen` segue o mesmo padrão (corpo rolável + botão "Selecionar arquivo" no rodapé fixo).
+
 ---
 
 ## `ImportTripScreen` — comportamento da UI
@@ -278,7 +280,7 @@ Dois botões: **"Manter local"** (`dismissDuplicate()` → `Idle`) e **"Importar
 
 ```
 <nome_viagem>.travel  (ZIP renomeado)
-├── trip.json              ← roteiro completo (schema v1)
+├── trip.json              ← roteiro completo (schema v3)
 ├── documents/
 │   └── <nome_arquivo>     ← dayDocumentPath de cada dia (se existir)
 ├── boarding/
@@ -314,11 +316,11 @@ Se nenhuma funcionar, o voucher é omitido do ZIP silenciosamente (sem lançar e
 
 | Campo raiz | Tipo | Origem |
 |---|---|---|
-| `schemaVersion` | `Int` (1) | fixo |
+| `schemaVersion` | `Int` (3) | fixo — `put("schemaVersion", 3)`; F1 (tripUuid/lastEditedAt) + F4 (notes[]) |
 | `exportedAt` | `String` ISO datetime | `LocalDateTime.now()` |
 | `trip` | `Object` | ver abaixo |
 
-**Objeto `trip`:** `name`, `destination`, `coverEmoji`, `startDate`, `endDate`, `latitude` (null → `JSONObject.NULL`), `longitude`, `voucherSortMode`, `hotel { name, address, phone }`, `days[]`, `contacts[]`, `vouchers[]`, `boardingPasses[]`.
+**Objeto `trip`:** `tripUuid`, `lastEditedAt`, `name`, `destination`, `coverEmoji`, `coverImage`, `startDate`, `endDate`, `latitude` (null → `JSONObject.NULL`), `longitude`, `voucherSortMode`, `hotel { name, address, phone }`, `days[]`, `contacts[]`, `vouchers[]`, `boardingPasses[]`, `notes[]` (F4 — ver `docs/modulo-15-notas.md`).
 
 **Objeto `day`:** `dayNumber`, `date`, `dayOfWeek`, `title`, `dayAlert` (null → `JSONObject.NULL`), `linkUrl`, `linkLabel`, `documentName` (nome do arquivo sem caminho, null se ausente), `documentTitle`, `activities[]`.
 
@@ -455,7 +457,7 @@ O `AndroidManifest` registra filtros de intent para `ACTION_VIEW` com três MIME
 
 Arquivo exportado (`cacheDir/exports/`) está coberto pelo FileProvider (`file_paths.xml`) via `<cache-path name="exports" path="exports/" />`. Documentos internos importados (`filesDir/Arquivos/`, `filesDir/Vouchers/`, `filesDir/Passagens/`) têm caminhos registrados separadamente.
 
-Authority: `com.rodrigoleao.gramado2026.fileprovider`
+Authority: `com.rodrigoleao.pipa.fileprovider`
 
 ---
 
@@ -483,5 +485,5 @@ Authority: `com.rodrigoleao.gramado2026.fileprovider`
 - **Incrementar `schemaVersion`:** ao fazer mudanças incompatíveis com versões anteriores, incrementar a constante `SUPPORTED_SCHEMA_VERSION` em `TravelImporter` e o valor literal em `TravelExporter.buildJson()`. Versões mais antigas do app lançarão erro ao tentar importar o arquivo novo.
 - **Novo MIME type para `.travel`:** adicionar `<data android:mimeType="..."/>` no intent filter do `AndroidManifest`. Garantir que `ShareTripScreen` usa `type = "application/octet-stream"` no `ACTION_SEND` (compatível com a maioria dos apps de compartilhamento).
 - **Erro silencioso de voucher:** `tryReadVoucherFile` retorna `null` sem lançar exceção quando o arquivo não é encontrado. Para reportar ao usuário quais vouchers falharam, acumule os nomes em uma lista e exiba um aviso pós-exportação.
-- **Migrar `schemaVersion` para suporte a múltiplas versões:** atualmente qualquer arquivo com `schemaVersion > 1` é rejeitado. Para suportar migração progressiva, implemente branches no `parseTripJson()` por versão (ex: `when (schemaVer) { 1 -> parseV1(); 2 -> parseV2() }`).
+- **Migrar `schemaVersion` para suporte a múltiplas versões:** atualmente qualquer arquivo com `schemaVersion > 3` (`SUPPORTED_SCHEMA_VERSION`) é rejeitado. Para suportar migração progressiva, implemente branches no `parseTripJson()` por versão (ex: `when (schemaVer) { 1 -> parseV1(); 3 -> parseV3() }`).
 - **Portão e URL da passagem não são exportados:** esses dados ficam em `SharedPreferences` no dispositivo e não fazem parte do `trip.json`. Para incluí-los no export, seria necessário ler o `SharedPreferences` em `TravelExporter` e adicioná-los ao JSON de cada boarding pass — e ajustar `TravelImporter` para gravá-los (em SharedPreferences ou migrar para o banco).

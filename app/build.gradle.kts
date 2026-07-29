@@ -13,11 +13,11 @@ val localPropsFile = rootProject.file("local.properties")
 if (localPropsFile.exists()) localPropsFile.inputStream().use { localProps.load(it) }
 
 android {
-    namespace = "com.rodrigoleao.gramado2026"
+    namespace = "com.rodrigoleao.pipa"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.rodrigoleao.gramado2026"
+        applicationId = "com.rodrigoleao.pipa"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

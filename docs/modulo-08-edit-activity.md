@@ -21,9 +21,9 @@ Segue **MVVM** com `EditActivityState` como único ponto de verdade do formulár
 
 | Camada | Arquivo | Responsabilidade |
 |---|---|---|
-| **View** | `EditActivityScreen.kt` | Renderiza o formulário; dialogs gerenciados por flags `Boolean` locais |
-| **ViewModel** | `EditActivityViewModel.kt` | Carrega atividade do banco, mantém `EditActivityState`, persiste via `repo` |
-| **Repository** | `TripRepository` | `getDayEntity()`, `getActivity()`, `getBadgesForActivity()`, `upsertActivity()`, `deleteActivity()` |
+| **View** | `EditActivityScreen.kt` | Renderiza o formulário; dialogs gerenciados por flags `Boolean` locais; coleta `uiEvent` para navegar / mostrar snackbar |
+| **ViewModel** | `EditActivityViewModel.kt` | Carrega atividade do banco, mantém `EditActivityState`, persiste e sinaliza a UI via `Channel<UiEvent>` |
+| **Repository** | `ActivityRepository` · `DayRepository` · `TripRepository` | `activityRepo`: `getActivity()`, `getBadgesForActivity()`, `upsertActivity()`, `deleteActivity()` · `dayRepo`: `getDayEntity()` · `tripRepo`: `touchLastEditedAt()` (F1) |
 
 > **Flags de dialog na View:** `showTimePicker`, `showEmojiDialog`, `showNewBadgeDialog`, `showDeleteDialog` são `Boolean` locais com `remember` — não estão no ViewModel porque não têm valor de negócio, são puramente estado de visibilidade de UI.
 
@@ -59,14 +59,19 @@ data class CustomBadge(val name: String, val colorHex: String)
 
 ```
 AppNavigation → EditActivityScreen(viewModel, onBack)
-                    └─ EditActivityViewModel(repo, tripId, dayNumber, activityId)
-                         ├─ init { repo.getDayEntity(tripId, dayNumber) → dayEntityId }
-                         ├─ init { repo.getActivity(activityId) → preenche state }
-                         ├─ init { repo.getBadgesForActivity(activityId) → separa padrão/custom }
-                         └─ state: StateFlow<EditActivityState>
+                    └─ EditActivityViewModel(activityRepo, dayRepo, tripRepo, tripId, dayNumber, activityId)
+                         ├─ init { dayRepo.getDayEntity(tripId, dayNumber) → dayEntityId }
+                         ├─ init { activityRepo.getActivity(activityId) → preenche state }
+                         ├─ init { activityRepo.getBadgesForActivity(activityId) → separa padrão/custom }
+                         ├─ state:   StateFlow<EditActivityState>
+                         └─ uiEvent: Flow<UiEvent> (via Channel) → coletado na tela
 
-save()  → repo.upsertActivity(dayEntityId, TravelActivityEntity, badges) → onBack()
-delete() → repo.deleteActivity(activityId) → onBack()
+save()           → activityRepo.upsertActivity(dayEntityId, TravelActivityEntity, badges)
+                     → tripRepo.touchLastEditedAt(tripId) → _uiEvent.send(UiEvent.NavigateBack)
+                     (falha → _uiEvent.send(UiEvent.ShowSnackbar(...)))
+deleteActivity() → activityRepo.deleteActivity(activityId)
+                     → tripRepo.touchLastEditedAt(tripId) → _uiEvent.send(UiEvent.NavigateBack)
+                     (falha → _uiEvent.send(UiEvent.ShowSnackbar(...)))
 ```
 
 ---
@@ -76,15 +81,15 @@ delete() → repo.deleteActivity(activityId) → onBack()
 O `init` do ViewModel resolve `dayEntityId` a partir de `(tripId, dayNumber)` — a navegação passa o número do dia (1–N), mas o banco usa o ID interno da entidade:
 
 ```kotlin
-val dayEntity = repo.getDayEntity(tripId, dayNumber)
+val dayEntity = dayRepo.getDayEntity(tripId, dayNumber)
 val dayDbId   = dayEntity?.id ?: 0L
 ```
 
 Para **nova atividade** (`activityId == 0L`): inicializa o state com defaults e `isLoading = false`.
 
 Para **edição** (`activityId != 0L`):
-1. `repo.getActivity(activityId)` → `TravelActivityEntity`
-2. `repo.getBadgesForActivity(activityId)` → `List<ActivityBadgeEntity>`
+1. `activityRepo.getActivity(activityId)` → `TravelActivityEntity`
+2. `activityRepo.getBadgesForActivity(activityId)` → `List<ActivityBadgeEntity>`
 3. Separa os badges pelo campo `badgeType`:
    - `badgeType != "CUSTOM"` → `BadgeType.valueOf(it.badgeType)` → `selectedBadges: Set<BadgeType>`
    - `badgeType == "CUSTOM"` → `CustomBadge(label, color ?: "#607D8B")` → `customBadges: List<CustomBadge>`
@@ -145,7 +150,7 @@ Suporta o formato `"HHhMM"` (ex: `"09h30"`). Em caso de falha de parsing, retorn
 
 **Gravação após confirmação:** `viewModel.updateTime("%02dh%02d".format(h, m))`
 
-**Cores do `TimePicker`:** `clockDialColor = GreenLight`, `selectorColor = GreenMoss`, selecionado `GreenMoss` + texto branco.
+**Cores do `TimePicker`:** `clockDialColor = Sand`, `selectorColor = GreenMoss`, selecionado `GreenMoss` + texto branco.
 
 ---
 
@@ -241,29 +246,35 @@ Renderizado como `FlowRow` de círculos 32dp (`CircleShape`). A cor selecionada 
 ## Persistência — `save()`
 
 ```kotlin
-fun save(onDone: () -> Unit) {
-    val entity = TravelActivityEntity(
-        id              = s.activityId,   // 0L = INSERT; != 0L = UPDATE
-        dayId           = s.dayEntityId,
-        position        = 0,
-        time            = s.time.trim(),
-        emoji           = s.emoji,
-        name            = s.name.trim(),
-        detail          = s.detail.trim(),
-        mapQuery        = s.address.trim().ifEmpty { null },
-        uberDestination = s.address.trim().ifEmpty { null }
-    )
-    val badges = s.selectedBadges.map { type ->
-        ActivityBadgeEntity(badgeType = type.name, label = badgeLabel(type))
-    } + s.customBadges.map { cb ->
-        ActivityBadgeEntity(badgeType = BadgeType.CUSTOM.name, label = cb.name, color = cb.colorHex)
+fun save() {
+    val s = _state.value
+    if (s.name.isBlank()) return
+    _state.value = s.copy(isSaving = true)
+    viewModelScope.launch {
+        val entity = TravelActivityEntity(
+            id              = s.activityId,   // 0L = INSERT; != 0L = UPDATE
+            dayId           = s.dayEntityId,
+            position        = 0,
+            time            = s.time.trim(),
+            emoji           = s.emoji,
+            name            = s.name.trim(),
+            detail          = s.detail.trim(),
+            mapQuery        = s.address.trim().ifEmpty { null },
+            uberDestination = s.address.trim().ifEmpty { null }
+        )
+        val badges = s.selectedBadges.map { type ->
+            ActivityBadgeEntity(activityId = 0L, badgeType = type.name, label = badgeLabel(type))
+        } + s.customBadges.map { cb ->
+            ActivityBadgeEntity(activityId = 0L, badgeType = BadgeType.CUSTOM.name, label = cb.name, color = cb.colorHex)
+        }
+        runCatching { activityRepo.upsertActivity(s.dayEntityId, entity, badges) }
+            .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+            .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar atividade")) }
     }
-    repo.upsertActivity(s.dayEntityId, entity, badges)
-    onDone()
 }
 ```
 
-`repo.upsertActivity()` apaga os badges existentes da atividade e insere os novos a cada save — não faz diff, substitui a lista completa. `position = 0` é ignorado pelo Room no upsert (o campo é mantido da versão anterior para edições).
+`save()` não recebe callback: em sucesso emite `UiEvent.NavigateBack` pelo `Channel<UiEvent>` (coletado na tela → `onBack()`); em falha reverte `isSaving` e emite `UiEvent.ShowSnackbar`. `activityRepo.upsertActivity()` apaga os badges existentes da atividade e insere os novos a cada save — não faz diff, substitui a lista completa. Após o upsert, `tripRepo.touchLastEditedAt(tripId)` atualiza o timestamp da viagem (F1). `position = 0` é ignorado pelo Room no upsert (o campo é mantido da versão anterior para edições).
 
 **Labels dos badges padrão** são derivados pelo método estático `badgeLabel(type: BadgeType): String` — garante consistência entre criação e edição.
 
@@ -272,15 +283,19 @@ fun save(onDone: () -> Unit) {
 ## Exclusão — `deleteActivity()`
 
 ```kotlin
-fun deleteActivity(onDone: () -> Unit) {
+fun deleteActivity() {
+    val id = _state.value.activityId
     if (id == 0L) return    // guard: não deleta se for nova atividade sem ID
     _state.value = _state.value.copy(isSaving = true)
     viewModelScope.launch {
-        repo.deleteActivity(id)
-        onDone()
+        runCatching { activityRepo.deleteActivity(id) }
+            .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+            .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir atividade")) }
     }
 }
 ```
+
+Como `save()`, `deleteActivity()` é sem parâmetro: emite `UiEvent.NavigateBack` em sucesso (após `tripRepo.touchLastEditedAt`) e `UiEvent.ShowSnackbar` em falha.
 
 Acionado pelo `AlertDialog` de confirmação na tela:
 ```
@@ -320,5 +335,5 @@ Acionado pelo `AlertDialog` de confirmação na tela:
 - **Novo badge pré-definido:** adicionar valor em `BadgeType` (enum em `Models.kt`) → adicionar entrada em `ALL_BADGES` → adicionar case em `badgeLabel()` → adicionar cor em `BadgeChip.kt` (componente de exibição). A ordem em `ALL_BADGES` determina a ordem dos chips na tela.
 - **Nova cor no color picker:** adicionar hex em `BADGE_PALETTE`. O `FlowRow` acomoda automaticamente.
 - **Interceptar back com confirmação de descarte:** adicionar `BackHandler(enabled = isDirty.collectAsStateWithLifecycle().value) { showDiscardDialog = true }` na tela (mesmo padrão de `EditBoardingPassScreen`). O `isDirty` já existe no ViewModel.
-- **Campo `position` na nova atividade:** atualmente `position = 0` para novas atividades. Para inserir no final do dia, leia `repo.getActivitiesForDay(dayEntityId).size` antes de salvar e use esse valor como `position`.
+- **Campo `position` na nova atividade:** atualmente `position = 0` para novas atividades. Para inserir no final do dia, leia `tripRepo.getActivitiesForDay(dayEntityId).size` antes de salvar e use esse valor como `position`.
 - **Endereço diferente para Maps e Uber:** atualmente `mapQuery == uberDestination`. Para suportar endereços distintos, adicionar campo separado no state e `OutlinedTextField` adicional na tela — e remover a duplicação no `save()`.

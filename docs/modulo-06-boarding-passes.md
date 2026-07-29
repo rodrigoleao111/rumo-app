@@ -53,13 +53,15 @@ fun gateKey(pass: BoardingPass) =
 
 Cinco tipos suportados — todos usam o mesmo modelo `BoardingPass`, mas com labels adaptativas:
 
-| `transportType` | Emoji | Label número | Label horário | Portão |
+| `transportType` | Ilustração (`transportDrawable`) | Label número | Label horário | Portão |
 |---|---|---|---|---|
-| `FLIGHT` | ✈️ | `VOO` | `EMBARQUE` | exibido e editável |
-| `TRAIN` | 🚂 | `TREM` | `PARTIDA` | não exibido |
-| `BUS` | 🚌 | `LINHA` | `PARTIDA` | não exibido |
-| `SHIP` | 🚢 | `SERVIÇO` | `PARTIDA` | não exibido |
-| `OTHER` | 🎫 | `REF.` | `PARTIDA` | não exibido |
+| `FLIGHT` | `R.drawable.transport_flight` | `VOO` | `EMBARQUE` | exibido e editável |
+| `TRAIN` | `R.drawable.transport_train` | `TREM` | `PARTIDA` | não exibido |
+| `BUS` | `R.drawable.transport_bus` | `LINHA` | `PARTIDA` | não exibido |
+| `SHIP` | `R.drawable.transport_ship` | `SERVIÇO` | `PARTIDA` | não exibido |
+| `OTHER` | `R.drawable.transport_ticket` | `REF.` | `PARTIDA` | não exibido |
+
+As ilustrações não são emojis: `transportDrawable(type)` retorna o recurso vetorial da marca, renderizado com `Image(painterResource(...))` no cabeçalho do `BoardingPassCard`.
 
 **Cabeçalho adaptativo por tipo:**
 - `FLIGHT`: origem e destino em **32sp bold** com cidade abaixo (11sp, branco 75% alpha)
@@ -72,7 +74,7 @@ Cinco tipos suportados — todos usam o mesmo modelo `BoardingPass`, mas com lab
 ```
 Card (SurfaceWhite, border CardBorder, elevation 2dp)
  ├─ Box (GreenMoss) — cabeçalho
- │    └─ Row: Origem | Emoji + número | Destino
+ │    └─ Row: Origem | Ilustração (`Image`) + número | Destino
  ├─ TearLine — divisória tracejada estilo boarding pass
  ├─ Row — InfoBlocks: DATA · EMBARQUE/PARTIDA · VOO/LINHA/... · PORTÃO (só voos)
  ├─ [HorizontalDivider + Text] — Observações (se notes.isNotBlank())
@@ -95,7 +97,7 @@ Row {
 }
 ```
 
-As meias-luas têm a cor `GreenLight` (fundo da tela), criando a ilusão de recorte.
+As meias-luas usam `.background(Sand)` (o fundo do app), criando a ilusão de recorte.
 
 ### `InfoBlock`
 
@@ -256,7 +258,7 @@ Usa array `PT_MONTHS` com meses abreviados em português.
 
 | Símbolo | Tipo | Responsabilidade |
 |---|---|---|
-| `transportEmoji(type)` | função pura | Emoji por tipo de transporte |
+| `transportDrawable(type)` | função pura | Drawable (ilustração da marca) por tipo de transporte |
 | `identifierLabel(type)` | função pura | Label do número (VOO / TREM / LINHA / SERVIÇO / REF.) |
 | `departureLabel(type)` | função pura | Label do horário (EMBARQUE / PARTIDA) |
 | `passKey(pass)` | função pura | Chave única por passageiro + trecho (para URL em SharedPreferences) |
@@ -274,7 +276,7 @@ Usa array `PT_MONTHS` com meses abreviados em português.
 
 ## Checklist para futuras modificações
 
-- **Novo tipo de transporte:** adicionar `TransportOption` em `TRANSPORT_OPTIONS` (`EditBoardingPassScreen`) → adicionar branch em `transportEmoji()`, `identifierLabel()`, `departureLabel()` → considerar se precisa de campos de rota específicos (como `FLIGHT` tem siglas IATA).
+- **Novo tipo de transporte:** adicionar `TransportOption` em `TRANSPORT_OPTIONS` (`EditBoardingPassScreen`) → adicionar branch em `transportDrawable()`, `identifierLabel()`, `departureLabel()` → considerar se precisa de campos de rota específicos (como `FLIGHT` tem siglas IATA).
 - **Migrar portão/URL para o banco:** atualmente em `SharedPreferences`. Para migrar: adicionar campos `gate` e `savedWalletUrl` em `BoardingPassEntity` + migration → remover `savedUrls`/`savedGates` como `SnapshotStateMap` e ler do banco.
 - **Novo campo no card:** adicionar em `BoardingPass` + `BoardingPassEntity` + migration + mapper → exibir em `BoardingPassCard` (ex: como novo `InfoBlock` ou na seção de observações).
 - **Novo campo no formulário:** adicionar campo em `EditBoardingPassState` e `EditBoardingPassViewModel` → adicionar `OutlinedTextField` em `EditBoardingPassScreen` → persistir via `save()` no ViewModel.

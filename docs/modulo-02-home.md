@@ -9,7 +9,7 @@
 
 ## Visão geral
 
-Tela principal de uma viagem. Exibe a lista de dias em cards verticais com clima ao vivo, e um card de hotel fixo no rodapé. É o ponto de entrada para o detalhe de cada dia do roteiro.
+Tela principal de uma viagem, com um cabeçalho de capa colapsável no topo. Exibe a lista de dias em cards verticais com clima ao vivo e, ao final da lista, um card de hotel. É o ponto de entrada para o detalhe de cada dia do roteiro.
 
 ---
 
@@ -65,7 +65,7 @@ Cada `TravelDay` é renderizado como um `Card` clicável com:
 | Dia da semana | `day.dayOfWeek` | Em maiúsculas, espaçamento de letra 2sp, cor `GreenMoss` |
 | Badge "HOJE" | `day.isToday` | Composable `HojeBadge` (pill `GreenMoss`) |
 | Título | `day.title` | `titleMedium`, `TextPrimary` |
-| Emoji do clima | `liveWeather.emoji` | 34sp, visível apenas se `hasWeather` |
+| Ilustração do clima | `WeatherIcon(liveWeather.weatherCode, size = 40.dp)` | Ilustração da marca (não emoji), visível apenas se `hasWeather` |
 | Temperatura | `liveWeather.minTemp` / `maxTemp` | Cor `AmberPrimary`, formato `"X°  ~  Y°C"` |
 | Condição | `liveWeather.condition` | `bodySmall`, `TextSecondary` |
 | Indicador "● ao vivo" | — | 9sp, `GreenMoss`, `SemiBold`, letterSpacing 0.5sp |
@@ -151,6 +151,8 @@ LaunchedEffect(todayIdx) {
 
 Renderizado apenas se `hotelName.isNotBlank()`. Se o campo estiver vazio, nenhum card é inserido na `LazyColumn`.
 
+É o último `item {}` da `LazyColumn` — rola junto com os cards de dia (não é fixo no rodapé).
+
 **Aparência:** `Card` com `containerColor = GreenMoss` (fundo verde escuro), texto em branco.
 
 **Conteúdo:**
@@ -214,6 +216,20 @@ HomeScreen(
 
 ---
 
+### 7. Cabeçalho de capa colapsável (`TripCoverHeader`)
+
+Sobreposto ao topo da tela (dentro do `Box` raiz, `Modifier.align(Alignment.TopCenter)`), acima da `LazyColumn`. Exibe a ilustração de capa da viagem e colapsa conforme o usuário rola a lista.
+
+**Conteúdo:**
+- **Imagem de capa:** `TripCovers.resFor(coverImage)` renderizada com `ContentScale.Crop`. Se o id não resolver uma ilustração, cai no fallback: fundo `GreenMoss` com o `coverEmoji` grande (48sp) centralizado.
+- **Scrim:** `Brush.verticalGradient` que escurece o topo (~28% alpha) e a base (~55% alpha) para dar legibilidade aos botões e ao título.
+- **Botões (`HeaderIconButton`):** voltar (`ic_arrow_back`, à esquerda) + compartilhar (`ic_share`) e editar (`ic_edit`, à direita) — `Surface` branco arredondado com o ícone em `GreenMoss`, disparando `onBack` / `onShareTrip` / `onEditTrip`.
+- **Título:** `tripName` sobre a capa (`BottomStart`), com sombra para contraste; esmaece conforme o cabeçalho colapsa (`alpha = collapseFraction`).
+
+**Colapso (nested scroll):** a altura varia entre `COVER_HEADER_MAX` (220dp) e um mínimo (`statusBar + COVER_HEADER_MIN_CONTENT` de 58dp). Um `NestedScrollConnection` encolhe o cabeçalho no `onPreScroll` ao rolar para baixo (antes de a lista rolar) e volta a expandi-lo no `onPostScroll` quando a lista já está no topo. O `contentPadding` superior da `LazyColumn` acompanha a altura atual (`headerDp + 12.dp`).
+
+---
+
 ## Assinatura completa do composable
 
 ```kotlin
@@ -227,6 +243,12 @@ fun HomeScreen(
     tripLon: Double? = null,
     tripStartDate: String? = null,
     tripEndDate: String? = null,
+    coverImage: String = "",
+    coverEmoji: String = "",
+    tripName: String = "",
+    onBack: () -> Unit = {},
+    onShareTrip: () -> Unit = {},
+    onEditTrip: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(),
     onDayClick: (Int) -> Unit
 )
@@ -234,14 +256,18 @@ fun HomeScreen(
 
 `contentPadding` vem do scaffold da `MainPagerScreen` (absorve a altura da `BottomNavigationBar`).
 
+**Parâmetros do cabeçalho de capa:** `coverImage` (id da ilustração de capa), `coverEmoji` (fallback quando não há ilustração) e `tripName` alimentam o `TripCoverHeader`. Os callbacks `onBack`, `onShareTrip` e `onEditTrip` são disparados pelos botões do cabeçalho e wired em `AppNavigation` (voltar para "Minhas viagens", compartilhar e editar a viagem). Todos têm default para manter a tela testável isoladamente.
+
 ---
 
 ## Composables privados (resumo)
 
 | Composable | Parâmetros relevantes | Responsabilidade |
 |---|---|---|
+| `TripCoverHeader` | `coverImage`, `coverEmoji`, `title`, `titleAlpha`, `onBack`, `onShare`, `onEdit` | Cabeçalho de capa colapsável com scrim, botões e título |
+| `HeaderIconButton` | `icon`, `contentDescription`, `onClick` | Botão de ícone (branco, ícone `GreenMoss`) do cabeçalho de capa |
 | `DayCard` | `day`, `liveWeather`, `isLoading`, `onClick` | Card clicável com data, título, clima e CTA |
-| `HotelCard` | `hotelName`, `hotelAddress`, `hotelPhone` | Card fixo no rodapé com nome, endereço e botões de ação |
+| `HotelCard` | `hotelName`, `hotelAddress`, `hotelPhone` | Card ao final da lista com nome, endereço e botões de ação |
 | `HojeBadge` | — | Pill "HOJE" para marcar o dia atual |
 
 ---

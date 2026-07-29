@@ -11,6 +11,8 @@
 
 Tela inicial do app após o splash. Exibe todas as viagens cadastradas em uma `LazyColumn` com cards interativos. É o ponto de entrada para criação, edição, importação e exclusão de viagens. Também é responsável pela auto-navegação para a viagem ativa.
 
+A tela **não tem cabeçalho**: um botão ☰ flutuante (canto superior esquerdo) abre um `ModalNavigationDrawer` (Nova viagem / Importar viagem / Configurações) e um FAB `+` expansível (canto inferior direito) revela as ações "Nova viagem" e "Importar viagem".
+
 ---
 
 ## Padrão de arquitetura
@@ -20,8 +22,9 @@ Este módulo segue **MVVM (Model-View-ViewModel)** com as seguintes responsabili
 | Camada | Arquivo | Responsabilidade |
 |---|---|---|
 | **View** | `TripsListScreen.kt` | Renderiza a UI, captura gestos, dispara eventos via callbacks |
-| **ViewModel** | `TripsListViewModel.kt` | Expõe `StateFlow` da lista de viagens, executa `deleteTrip` |
+| **ViewModel** | `TripsListViewModel.kt` | Combina `allTrips` com as preferências (ordenar por proximidade / ocultar concluídas) e expõe o `StateFlow` resultante; executa `deleteTrip` (com snackbar de erro) |
 | **Repository** | `TripRepository.kt` | Fornece `allTrips: Flow<List<TripEntity>>` do banco Room |
+| **Preferências** | `SettingsRepository.kt` | Fornece `sortTripsByProximity` e `hideCompletedTrips` como `Flow<Boolean>` do DataStore |
 | **Entity** | `TripEntity` | Modelo de dados persistido (sem conversão para domain model nesta tela) |
 
 > **Regra de padrão:** A `TripsListScreen` não acessa o repositório diretamente. Todo dado vem do `ViewModel` via `StateFlow`. Toda ação destrutiva (delete) é delegada ao `ViewModel`.
@@ -33,16 +36,24 @@ A lógica de **auto-navegação** e **wiring de callbacks** vive em `AppNavigati
 ## Fluxo de dados
 
 ```
-Room DB
-  └─ TripDao.getAllTrips()          ← Flow<List<TripEntity>> (reativo)
-       └─ TripRepository.allTrips
-            └─ TripsListViewModel.trips: StateFlow<List<TripEntity>?>
-                 └─ TripsListScreen (collectAsStateWithLifecycle)
+Room DB                              DataStore (SettingsRepository)
+  └─ TripDao.getAllTrips()             ├─ sortTripsByProximity: Flow<Boolean>
+       └─ TripRepository.allTrips      └─ hideCompletedTrips:  Flow<Boolean>
+            │                                    │
+            └──────────────── combine(...) ──────┘
+                 └─ ocultar concluídas + ordenar por proximidade
+                      └─ stateIn(WhileSubscribed(5_000), initialValue = null)
+                           └─ TripsListViewModel.trips: StateFlow<List<TripEntity>?>
+                                └─ TripsListScreen (collectAsStateWithLifecycle)
 ```
 
-`StateFlow` usa `initialValue = null` para distinguir **carregando** (`null`) de **lista vazia** (`emptyList()`). Isso alimenta três estados distintos na UI (ver seção *Estados da lista* abaixo).
+`trips` **não** vem direto de `repo.allTrips`: é o `combine` de três fluxos — a lista do Room e as duas preferências de exibição do `SettingsRepository` (`sortTripsByProximity` e `hideCompletedTrips`). O resultado é materializado com `stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initialValue = null)`.
 
-O `Flow` do Room é reativo: qualquer insert/update/delete em `trips` provoca re-emissão automática, atualizando a lista sem intervenção manual.
+A ordenação (`sortByProximity`/`proximityKey`) e a ocultação (`isCompleted`) são funções privadas do `TripsListViewModel` aplicadas dentro do `combine` — nada é apagado do banco; são apenas filtro/reordenação de exibição.
+
+`initialValue = null` distingue **carregando** (`null`) de **lista vazia** (`emptyList()`), alimentando três estados distintos na UI (ver seção *Estados da lista* abaixo). O `WhileSubscribed(5_000)` mantém o fluxo ativo por 5 s após o último coletor sair, evitando recomputar a lista em rotações/navegações curtas.
+
+Qualquer insert/update/delete no Room — ou a troca de uma das preferências — provoca re-emissão automática do `combine`, atualizando a lista sem intervenção manual.
 
 ---
 
@@ -52,15 +63,17 @@ O `Flow` do Room é reativo: qualquer insert/update/delete em `trips` provoca re
 
 **Arquivo:** composable privado `TripCard` em `TripsListScreen.kt`
 
-Cada viagem é renderizada como um `Card` Material 3 com:
+Cada viagem é renderizada como um `Card` Material 3 dividido em duas partes: uma **capa** (≈3/4 da altura) com a imagem de fundo e o título sobreposto, e uma **faixa inferior** (≈1/4) com destino, data e badge.
 
 | Elemento | Fonte de dados | Observação |
 |---|---|---|
-| Emoji (cover) | `TripEntity.coverEmoji` | Exibido em container `GreenMoss` arredondado (12dp) |
-| Nome | `TripEntity.name` | `titleMedium`, `SemiBold`, cor `TextPrimary` |
-| Destino | `TripEntity.destination` | `bodySmall`, cor `TextSecondary` |
-| Datas | `TripEntity.startDate` + `endDate` | Formatadas por `formatDateRange()` (ver abaixo) |
-| Badge de status | calculado por `tripStatus()` | Composable `StatusBadge` |
+| Imagem de capa | `TripCovers.resFor(trip.coverImage)` | `Image` com `ContentScale.Crop` preenchendo a capa (ratio `(16f/9f) / coverScale`) |
+| Emoji (fallback) | `TripEntity.coverEmoji` | Só quando `coverImage` não resolve (viagens antigas): emoji 44sp centralizado sobre fundo `GreenMoss` |
+| Título (sobreposto) | `TripEntity.name` | `titleLarge` com `fontSize = (26f * coverScale).sp`, `Bold`, `Color.White` + `Shadow`; alinhado ao `BottomStart` sobre um scrim vertical escuro |
+| Destino | `TripEntity.destination` | `bodyMedium`, `Medium`, cor `TextPrimary` (faixa inferior) |
+| Data | `TripEntity.startDate` + `endDate` | `labelMedium`, cor `GreenSage`; formatada por `formatDateRange()`, exibida só quando ambas as datas existem |
+| Badge de status | calculado por `tripStatus()` | Composable `StatusBadge` (faixa inferior) |
+| Menu ⋮ | — | `MoreVert` no canto superior direito da capa → `DropdownMenu` (ver seção 4) |
 
 **Border da viagem ativa:**
 ```kotlin
@@ -70,6 +83,18 @@ border = BorderStroke(
 )
 ```
 A viagem `Em curso` recebe border de `2.dp` em `GreenMoss`. As demais recebem `1.dp` em `CardBorder`.
+
+**Capas responsivas (`coverScale`):**
+
+A altura da capa encolhe conforme a lista cresce, para caber mais viagens na tela:
+
+| Nº de viagens | `coverScale` | Altura da capa |
+|---|---|---|
+| ≤ 9 | `1f` | cheia (ratio 16:9) |
+| 10–18 | `2f / 3f` | 2/3 |
+| > 18 | `0.5f` | 1/2 |
+
+`coverScale` é calculado uma vez em `TripsListScreen` (a partir de `trips.size`) e repassado a cada `TripCard`. Ele divide o `aspectRatio` da capa — reduzindo apenas a altura, mantendo a largura cheia — e escala junto a fonte do título (`(26f * coverScale).sp`).
 
 ---
 
@@ -106,7 +131,7 @@ private fun tripStatus(startDate: String?, endDate: String?): TripStatus {
 
 | Status | Fundo | Texto |
 |---|---|---|
-| `PLANNING` | `AmberPrimary` | `Color.White` |
+| `PLANNING` | `AmberPrimary` | `GreenMoss` |
 | `ACTIVE` | `GreenMoss` | `Color.White` |
 | `COMPLETED` | `GreenForest` | `TextSecondary` |
 
@@ -127,40 +152,29 @@ Usa `DateTimeFormatter` com `Locale("pt", "BR")`. As datas são armazenadas no b
 
 ---
 
-### 4. Swipe para revelar ações (`SwipeToRevealTrip`)
+### 4. Menu de ações do card (`DropdownMenu`)
 
-**Implementação:** customizada com `Animatable<Float>` + `Modifier.draggable` — **não** usa `SwipeToDismissBox`.
+Cada `TripCard` tem um ícone `MoreVert` (⋮) no canto superior direito da capa. Ao tocá-lo, `menuOpen` (`remember { mutableStateOf(false) }` por card) abre um `DropdownMenu` com três itens:
 
-**Por que customizado:** o `SwipeToDismissBox` do Material 3 só suporta uma ação. Este componente revela 3 botões simultaneamente.
+| Item | Ícone | Callback |
+|---|---|---|
+| Compartilhar | `ic_share` (`GreenSage`) | `onShare()` → rota `ShareTrip` |
+| Editar | `ic_edit` (`GreenMoss`) | `onEdit()` → rota `EditTrip` |
+| Excluir | `ic_delete` (vermelho `#D32F2F`) | `onDelete()` → abre o diálogo de confirmação |
 
-**Estrutura do layout:**
-```
-Box (fillMaxWidth, height = IntrinsicSize.Min)
- ├─ Row (align = CenterEnd, width = 162.dp)  ← botões fixos no fundo
- │    ├─ Box Compartilhar (GreenSage, arredondado esquerda)
- │    ├─ Box Editar (AmberPrimary)
- │    └─ Box Excluir (vermelho #D32F2F, arredondado direita)
- └─ Box (offset = offsetX)                   ← conteúdo deslizável (TripCard)
-```
-
-**Lógica de snap:**
 ```kotlin
-onDragStopped = { velocity ->
-    if (offsetX.value < -actionWidthPx / 2f || velocity < -600f) {
-        offsetX.animateTo(-actionWidthPx)   // abre (snap para revelar)
-    } else {
-        offsetX.animateTo(0f)               // fecha (snap para fechar)
-    }
+DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = SurfaceWhite) {
+    DropdownMenuItem(text = { Text("Compartilhar", ...) }, onClick = { menuOpen = false; onShare() })
+    DropdownMenuItem(text = { Text("Editar", ...) },       onClick = { menuOpen = false; onEdit()  })
+    DropdownMenuItem(text = { Text("Excluir", ...) },       onClick = { menuOpen = false; onDelete() })
 }
 ```
 
-- Se arrastou mais da metade (`actionWidth = 162.dp`) **ou** velocidade > 600px/s → abre.
-- Caso contrário → fecha com animação.
-- Ao tocar em qualquer botão, o painel fecha antes da ação via `offsetX.animateTo(0f)`.
+- Cada item fecha o menu (`menuOpen = false`) antes de disparar seu callback.
+- A exclusão **não** é imediata: `onDelete` apenas define `pendingDelete = trip`, que abre o `AlertDialog` de confirmação (ver seção 5).
+- `menuOpen` é `remember { }` dentro do `TripCard`, então cada viagem tem estado de menu independente.
 
-**Estado por card:** `Animatable` é criado com `remember(trip.id)`, garantindo estado independente por viagem.
-
-> **Regra de padrão:** Para adicionar ou remover botões do swipe, ajuste apenas a `Row` de botões e o valor `actionWidth`. O mecanismo de drag/snap não precisa ser alterado.
+> **Regra de padrão:** Para adicionar ou remover uma ação do card, ajuste os `DropdownMenuItem` do `DropdownMenu` em `TripCard` e o callback correspondente na assinatura — o restante do card não muda.
 
 ---
 
@@ -168,7 +182,7 @@ onDragStopped = { velocity ->
 
 `pendingDelete: MutableState<TripEntity?>` armazena a viagem aguardando confirmação.
 
-Ao clicar em "Excluir" no swipe:
+Ao tocar em "Excluir" no menu ⋮:
 1. `pendingDelete = trip` — abre o `AlertDialog`
 2. Confirmação → `viewModel.deleteTrip(trip)` → `pendingDelete = null`
 3. Cancelamento → `pendingDelete = null`
@@ -178,24 +192,33 @@ O `AlertDialog` exibe o nome da viagem e avisa que **dias, atividades, contatos 
 ```kotlin
 // ViewModel
 fun deleteTrip(trip: TripEntity) {
-    viewModelScope.launch { repo.deleteTrip(trip) }
+    viewModelScope.launch {
+        runCatching { repo.deleteTrip(trip) }
+            .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir viagem")) }
+    }
 }
 ```
 
-A deleção no Room provoca re-emissão do `Flow`, removendo o card automaticamente sem intervenção manual na lista.
+A deleção no Room provoca re-emissão do `Flow`, removendo o card automaticamente sem intervenção manual na lista. Em caso de falha, o `deleteTrip` envia um evento por um `Channel<UiEvent>` (exposto como `uiEvent`); a `TripsListScreen` coleta esse fluxo em um `LaunchedEffect` e exibe um snackbar **"Erro ao excluir viagem"** (`SnackbarHost` com `containerColor = AmberPrimary`, `contentColor = GreenMoss`).
 
 ---
 
-### 6. Cards de ação no rodapé
+### 6. FAB expansível (criar / importar viagem)
 
-Dois cards fixos no final da `LazyColumn`, renderizados como `item {}` após os cards de viagem:
+No lugar de cards de ação no rodapé, a criação e a importação ficam num **FAB expansível** (`ExpandableFab`) no canto inferior direito, montado no slot `floatingActionButton` do `Scaffold`.
 
-| Card | Ícone | Ação |
-|---|---|---|
-| **Importar viagem** | `FileOpen` (âmbar) | `onImportTrip()` → rota `ImportTrip` |
-| **Nova viagem** | `Add` (verde) | `onNewTripClick()` → rota `CreateTrip` |
+- O FAB principal (`+`, `GreenMoss`) alterna `fabExpanded`; ao expandir, o ícone gira 45° (`+` → `×`) via `animateFloatAsState`.
+- Expandido, revela duas ações (`FabAction`) que sobem com `fadeIn + slideInVertically`:
 
-Ambos usam o composable privado `ActionCard` com parâmetros de ícone, cor e texto. Sempre visíveis, mesmo quando a lista está vazia (o empty state e os cards de ação coexistem).
+| Ação | Ícone | Cores | Callback |
+|---|---|---|---|
+| **Importar viagem** | `ic_import` | `GreenSage` / branco | `onImportTrip()` → rota `ImportTrip` |
+| **Nova viagem** | `ic_add` | `AmberPrimary` / `GreenMoss` | `onNewTripClick()` → rota `CreateTrip` |
+
+- Ao expandir, um **scrim** semitransparente (`Color.Black` a 32%) cobre a tela; tocá-lo recolhe o FAB (`fabExpanded = false`).
+- Cada `FabAction` recolhe o FAB antes de disparar seu callback.
+
+As mesmas ações "Nova viagem" e "Importar viagem" (mais "Configurações") também estão disponíveis na gaveta (`TripsDrawerContent`) aberta pelo botão ☰.
 
 ---
 
@@ -205,7 +228,7 @@ Ambos usam o composable privado `ActionCard` com parâmetros de ícone, cor e te
 when {
     trips == null        -> // Carregando (CircularProgressIndicator)
     trips!!.isEmpty()    -> // Empty state (🗺️ + texto)
-    else                 -> // Lista de cards + swipe
+    else                 -> // Lista de cards (com capa responsiva por coverScale)
 }
 ```
 
@@ -214,17 +237,25 @@ O `null` inicial do `StateFlow` (definido em `TripsListViewModel`) é intenciona
 **Empty state:**
 - Emoji `🗺️` (56sp)
 - Texto "Nenhuma viagem ainda"
-- Subtexto "Crie sua primeira viagem no botão abaixo"
+- Subtexto "Crie sua primeira viagem\nno botão + do canto inferior" (duas linhas)
 
 ---
 
-### 8. Confirmação ao sair do app (`BackHandler`)
+### 8. Botão back do sistema (três `BackHandler`)
+
+O back do sistema é interceptado por três `BackHandler` com prioridade decrescente, cada um habilitado por uma condição mutuamente exclusiva:
 
 ```kotlin
-BackHandler { showExitDialog = true }
+BackHandler(enabled = drawerState.isOpen)                { scope.launch { drawerState.close() } }
+BackHandler(enabled = fabExpanded)                       { fabExpanded = false }
+BackHandler(enabled = drawerState.isClosed && !fabExpanded) { showExitDialog = true }
 ```
 
-Intercepta o botão back do sistema (ou gesto de retorno). Exibe `AlertDialog` com opções "Sair" e "Cancelar". Confirmação chama `activity?.finish()`.
+1. **Gaveta aberta** → fecha a gaveta.
+2. **FAB expandido** → recolhe o FAB.
+3. **Nenhum dos dois** → abre o `AlertDialog` de saída.
+
+O diálogo de saída exibe `AlertDialog` com opções "Sair" e "Cancelar". Confirmação chama `activity?.finish()`.
 
 ```kotlin
 val activity = LocalContext.current as? Activity
@@ -267,7 +298,7 @@ LaunchedEffect(trips) {
 3. `settings.autoOpenActiveTrip == true` — configuração ativada pelo usuário
 4. Exatamente **uma** viagem com `startDate ≤ hoje ≤ endDate`
 
-**Configuração:** `SettingsRepository.autoOpenActiveTrip` — `SharedPreferences` com chave `"auto_open_active_trip"`, padrão `true`.
+**Configuração:** `SettingsRepository.autoOpenActiveTrip` — **DataStore (Preferences)** com chave `"auto_open_active_trip"`, padrão `true`.
 
 > **Regra de padrão:** A lógica de auto-navegação deve permanecer em `AppNavigation`, não na tela. `TripsListScreen` não sabe que existe navegação automática.
 
@@ -295,12 +326,12 @@ TripsListScreen(
 
 | Composable | Responsabilidade |
 |---|---|
-| `TripCard` | Renderiza um card de viagem (emoji, nome, destino, datas, badge) |
+| `TripCard` | Renderiza um card de viagem (capa + título sobreposto, destino, data, badge, menu ⋮) |
 | `StatusBadge` | Pill colorido com label de status |
-| `SwipeToRevealTrip` | Container com drag + botões ocultos (Compartilhar, Editar, Excluir) |
-| `ImportTripCard` | Card de ação "Importar viagem" |
-| `NewTripCard` | Card de ação "Nova viagem" |
-| `ActionCard` | Base reutilizável para cards de ação do rodapé |
+| `ExpandableFab` | FAB `+` que expande em duas ações ("Nova viagem" e "Importar viagem") |
+| `FabAction` | Item de ação revelado pelo `ExpandableFab` (label + `SmallFloatingActionButton`) |
+| `HeaderIconButton` | Botão flutuante ☰ que abre a gaveta (`ModalNavigationDrawer`) |
+| `TripsDrawerContent` | Conteúdo da gaveta: Nova viagem / Importar viagem / Configurações |
 
 ---
 
@@ -319,7 +350,8 @@ Todas são `private fun` (não-composables) sem efeitos colaterais — seguras p
 ## Checklist para futuras modificações
 
 - **Novo status de viagem:** adicionar valor no enum `TripStatus` → atualizar `tripStatus()` → atualizar `StatusBadge` (cores/label) → atualizar `countdownLabel()` se necessário.
-- **Novo botão no swipe:** adicionar `Box` na `Row` de botões em `SwipeToRevealTrip` → ajustar `actionWidth` (atualmente `162.dp` = 3 × 54dp).
+- **Nova ação no card:** adicionar um `DropdownMenuItem` no `DropdownMenu` de `TripCard` (menu ⋮) → adicionar o callback correspondente na assinatura de `TripCard`/`TripsListScreen` → fazer o wiring em `AppNavigation`.
 - **Novo campo no card:** adicionar campo em `TripEntity` + migration Room → ler o campo em `TripCard`.
-- **Novo card de ação no rodapé:** criar composable análogo a `ImportTripCard`/`NewTripCard` usando `ActionCard` → adicionar no `item {}` final da `LazyColumn` → adicionar callback na assinatura de `TripsListScreen` → fazer o wiring em `AppNavigation`.
+- **Nova ação de criação/importação:** adicionar um `FabAction` no `ExpandableFab` (e/ou um `NavigationDrawerItem` em `TripsDrawerContent`) → adicionar callback na assinatura de `TripsListScreen` → fazer o wiring em `AppNavigation`.
+- **Alterar ordenação/ocultação da lista:** ajustar `sortByProximity`/`proximityKey`/`isCompleted` em `TripsListViewModel`; os toggles vêm do `SettingsRepository` e entram pelo `combine` (ver *Fluxo de dados*).
 - **Alterar critério de auto-navegação:** modificar o `LaunchedEffect(trips)` em `AppNavigation.kt` (rota `TripsList`), não em `TripsListScreen`.

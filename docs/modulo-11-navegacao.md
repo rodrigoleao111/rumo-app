@@ -8,7 +8,7 @@
 
 ## Visão geral
 
-`AppNavigation` é o único grafo de navegação do app. Contém todas as rotas, instancia os ViewModels via `viewModel(factory = ...)` e conecta telas estateless com callbacks. `MainPagerScreen`, definida no mesmo arquivo, encapsula as 4 abas da viagem aberta (HorizontalPager + bottom nav em pill + FAB contextual + Snackbar).
+`AppNavigation` é o único grafo de navegação do app. Contém todas as rotas, instancia os ViewModels via `hiltViewModel()` e conecta telas estateless com callbacks. `MainPagerScreen`, definida no mesmo arquivo, encapsula as 5 abas da viagem aberta (HorizontalPager + bottom nav em pill + FAB contextual + Snackbar).
 
 ---
 
@@ -27,6 +27,8 @@ sealed class Screen(val route: String) {
     object EditContact       : Screen("trip/{tripId}/contact/{contactId}")
     object EditVoucher       : Screen("trip/{tripId}/voucher/{voucherId}")
     object EditBoardingPass  : Screen("trip/{tripId}/pass/{passId}")
+    object NoteEditor        : Screen("trip/{tripId}/note/{noteId}")
+    object DayNotes          : Screen("trip/{tripId}/day/{dayNumber}/notes")
     object ImportTrip        : Screen("import_trip")
     object ShareTrip         : Screen("trip/{tripId}/share")
     object Settings          : Screen("settings")
@@ -111,7 +113,7 @@ fun SplashScreen(onFinished: () -> Unit) {
 
 **`popUpTo(Splash) { inclusive = true }`:** remove a rota da splash do backstack. Pressionar "voltar" em `TripsList` sai do app, não volta para a splash.
 
-**Sistema (antes do Compose):** `Theme.GramadoApp.Splash` com `windowBackground = #1B4332` (GreenMoss) e ícone transparente — evita a janela branca padrão do Android enquanto o Compose carrega.
+**Sistema (antes do Compose):** `Theme.PipaApp.Splash` com `windowBackground = #1B4332` (GreenMoss) e ícone transparente — evita a janela branca padrão do Android enquanto o Compose carrega.
 
 ---
 
@@ -150,14 +152,14 @@ LaunchedEffect(trips) {
 
 ---
 
-## `MainPagerScreen` — 4 abas da viagem
+## `MainPagerScreen` — 5 abas da viagem
 
 Composable privado instanciado pelo composable de rota `TripMain`. Recebe todos os dados da viagem como parâmetros (stateless) e emite ações via callbacks.
 
 ### `HorizontalPager`
 
 ```kotlin
-val pagerState = rememberPagerState(pageCount = { TAB_ICONS.size })  // 4 páginas
+val pagerState = rememberPagerState(pageCount = { TAB_ICON_RES.size })  // 5 páginas
 
 HorizontalPager(
     state                   = pagerState,
@@ -168,6 +170,7 @@ HorizontalPager(
         1 -> VouchersScreen(...)
         2 -> BoardingPassScreen(...)
         3 -> ContactsScreen(...)
+        4 -> NotesListContent(...)
     }
 }
 ```
@@ -180,22 +183,26 @@ Não usa `NavigationBar` do Material 3 — é uma `Row` customizada:
 
 ```
 Box (fillMaxWidth, navigationBarsPadding, padding start/end 16dp, top 12dp, bottom 16dp)
- └─ Row (shadow 20dp GreenMoss, clip RoundedCornerShape(32dp), background GreenMoss)
-      └─ PillNavItem × 4
+ └─ Row (shadow 16dp ambient/spot GreenMoss, clip RoundedCornerShape(32dp), background SurfaceWhite)
+      └─ PillNavItem × 5
 ```
+
+Os ícones das abas são vetores da marca (`TAB_ICON_RES`: `ic_home`, `ic_ticket`, `ic_boarding`, `ic_contacts`, `ic_notes_nav`).
 
 **`PillNavItem`:**
 ```kotlin
-Box(modifier = Modifier.clickable { onClick() }.padding(horizontal = 16dp, vertical = 8dp)) {
-    if (selected) {
-        Box(46dp × 32dp, RoundedCornerShape(16dp), background = AmberPrimary 20% alpha)
+Box(modifier = Modifier.clip(RoundedCornerShape(16dp)).clickable { onClick() }.padding(horizontal = 4dp, vertical = 2dp)) {
+    Box(
+        52dp × 36dp, RoundedCornerShape(14dp),
+        background = if (selected) GreenMoss else Color.Transparent
+    ) {
+        Icon(tint = if (selected) Color.White else GreenMoss 45% alpha, size = 22dp)
     }
-    Icon(tint = if (selected) AmberPrimary else Color.White 50% alpha, size = 22dp)
 }
 ```
 
-Aba selecionada: ícone `AmberPrimary` + pill de fundo `AmberPrimary` 20% alpha.  
-Abas não selecionadas: ícone `Color.White` 50% alpha, sem pill.
+Aba selecionada: box de fundo `GreenMoss` 52×36 (canto 14dp) + ícone branco.  
+Abas não selecionadas: ícone `GreenMoss` 45% alpha, sem pill.
 
 **Navegação entre abas:** `coroutineScope.launch { pagerState.animateScrollToPage(index) }` — animação suave de deslize, não salto instantâneo.
 
@@ -206,6 +213,7 @@ val fabAction: (() -> Unit)? = when (pagerState.currentPage) {
     1    -> onAddVoucher
     2    -> onAddBoardingPass
     3    -> onAddContact
+    4    -> onAddNote
     else -> null   // aba Home (0) não tem FAB
 }
 fabAction?.let { action ->
@@ -217,18 +225,20 @@ fabAction?.let { action ->
 }
 ```
 
-O FAB aparece nas abas 1 (Vouchers), 2 (Embarque) e 3 (Contatos). Desaparece na aba 0 (Início) — novas atividades são criadas a partir de `DayDetailScreen`.
+O FAB aparece nas abas 1 (Vouchers), 2 (Embarque), 3 (Contatos) e 4 (Notas). Desaparece na aba 0 (Início) — novas atividades são criadas a partir de `DayDetailScreen`.
 
 ### TopAppBar adaptativa
 
-| Aba | Título | Botão back | Botão Sort |
-|---|---|---|---|
-| 0 — Início | `tripName` | ✅ (volta para `TripsList`) | ❌ |
-| 1 — Vouchers | `"$tripName  •  Vouchers"` | ❌ | ✅ (abre `DropdownMenu`) |
-| 2 — Embarque | `"$tripName  •  Passagens"` | ❌ | ❌ |
-| 3 — Contatos | `"$tripName  •  Contatos"` | ❌ | ❌ |
+A `TopAppBar` verde só é renderizada quando `pagerState.currentPage != 0` — a aba 0 (Início) tem cabeçalho de capa próprio (dentro de `HomeScreen`) e não usa a barra verde. Portanto a app bar verde vale apenas para as abas 1–4, e sempre traz os ícones de ação Compartilhar/Editar.
 
-O botão back só aparece na aba 0 (`if (pagerState.currentPage == 0)`). Nas demais abas, o botão back físico/gesto fecha o pager normalmente.
+| Aba | Título | Botão Sort | Ações |
+|---|---|---|---|
+| 1 — Vouchers | `"$tripName  •  Vouchers"` | ✅ (abre `DropdownMenu`) | Compartilhar / Editar |
+| 2 — Embarque | `"$tripName  •  Passagens"` | ❌ | Compartilhar / Editar |
+| 3 — Contatos | `"$tripName  •  Contatos"` | ❌ | Compartilhar / Editar |
+| 4 — Notas | `"$tripName  •  Notas"` | ❌ | Compartilhar / Editar |
+
+O botão back da aba 0 vive dentro da `HomeScreen` (chama `onBack`, volta para `TripsList`), não na app bar verde. Nas abas 1–4, o botão back físico/gesto fecha o pager normalmente.
 
 **Ícone Sort (aba Vouchers):** `AmberPrimary` quando o modo não é `BY_CATEGORY` (default) — sinaliza que um agrupamento não padrão está ativo.
 
@@ -242,7 +252,7 @@ LaunchedEffect(refreshKey) {
 }
 ```
 
-Disparado sempre que `refreshKey > 0L` — ou seja, toda vez que o usuário volta de uma tela de edição. Cores: `containerColor = AmberPrimary`, `contentColor = Color.White`.
+Disparado sempre que `refreshKey > 0L` — ou seja, toda vez que o usuário volta de uma tela de edição. Cores: `containerColor = AmberPrimary`, `contentColor = GreenMoss`.
 
 ---
 
@@ -261,7 +271,7 @@ onBack = {
 }
 ```
 
-Edições que usam este padrão: `EditTrip`, `EditDay`, `EditActivity`, `EditContact`, `EditVoucher`, `EditBoardingPass`.
+Telas que usam este padrão: `EditTrip`, `EditDay`, `EditActivity`, `EditContact`, `EditVoucher`, `EditBoardingPass`, além de `NoteEditor` e `DayNotes`.
 
 ### Na tela pai (TripMain ou DayDetail):
 
@@ -283,16 +293,18 @@ LaunchedEffect(refreshKey) {
 
 ---
 
-## Instâncias compartilhadas (`remember` no nível de `AppNavigation`)
+## Injeção de dependências (Hilt)
+
+`AppNavigation` não cria mais `db`/`repo`/`settings`/`categoryRepo` manualmente via `remember { ... }`. Toda a árvore de dependências vem do Hilt:
 
 ```kotlin
-val db           = remember { TravelDatabase.getInstance(context) }
-val repo         = remember { TripRepository(db) }
-val settings     = remember { SettingsRepository(context) }
-val categoryRepo = remember { ContactCategoryRepository(context) }
+val settingsVm: SettingsViewModel = hiltViewModel()
+
+// em cada composable de rota:
+val vm: TripViewModel = hiltViewModel()
 ```
 
-`remember { }` sem chave — instanciados uma vez na composição inicial e reutilizados por todas as rotas. Isso garante que todas as telas compartilhem a mesma instância de `TripRepository` (e do `Room` subjacente), evitando caches inconsistentes.
+Cada tela obtém seu ViewModel (`@HiltViewModel`) via `hiltViewModel()`, e o Hilt injeta os repositórios e o `Room` subjacente como singletons no grafo da aplicação. Isso garante que todas as telas compartilhem a mesma instância de repositório sem instanciação manual, evitando caches inconsistentes. As preferências ficam num `SettingsViewModel` (`settingsVm`) obtido no nível de `AppNavigation` — veja a seção seguinte.
 
 ---
 
@@ -326,22 +338,14 @@ Navega para `ImportTrip` sem duplicar a rota se já estiver nela.
 
 ## `showEmergencyContacts` — sincronização após Settings
 
-A preferência é lida no nível do composable de rota `TripMain` via `DisposableEffect`:
+A preferência é coletada uma única vez no nível de `AppNavigation`, a partir de um `StateFlow` do `SettingsViewModel` (respaldado pelo `DataStore`):
 
 ```kotlin
-var showEmergencyContactsCurrent by remember { mutableStateOf(settings.showEmergencyContacts) }
-DisposableEffect(entry) {
-    val observer = LifecycleEventObserver { _, event ->
-        if (event == Lifecycle.Event.ON_RESUME) {
-            showEmergencyContactsCurrent = settings.showEmergencyContacts
-        }
-    }
-    entry.lifecycle.addObserver(observer)
-    onDispose { entry.lifecycle.removeObserver(observer) }
-}
+val settingsVm: SettingsViewModel = hiltViewModel()
+val showEmergencyContacts by settingsVm.showEmergencyContacts.collectAsStateWithLifecycle()
 ```
 
-Relê o `SharedPreferences` toda vez que `TripMain` volta ao foco (`ON_RESUME`) — necessário porque `Settings` atualiza o `SharedPreferences` diretamente, sem passar pelo `TripViewModel`. Sem esse `DisposableEffect`, o toggle de emergência não refletiria a mudança até reabrir a viagem.
+O valor é repassado adiante como estado (`TripScreenState.showEmergencyContacts` → `ContactsScreen`). Como o `DataStore` emite pelo `Flow` sempre que a tela de `Settings` grava a preferência, a mudança se propaga automaticamente — sem `DisposableEffect`, `LifecycleEventObserver` ou releitura manual de `SharedPreferences` no `ON_RESUME`.
 
 ---
 
@@ -351,11 +355,11 @@ Relê o `SharedPreferences` toda vez que `TripMain` volta ao foco (`ON_RESUME`) 
 |---|---|---|
 | `Screen` | `sealed class` | Todas as rotas do app com `createRoute()` onde aplicável |
 | `ANIM_DURATION` | `const val` (320) | Duração de todas as transições entre telas |
-| `TAB_ICONS` / `TAB_LABELS` | `val` | Ícones e labels das 4 abas (em sincronia com o índice de página) |
-| `AppNavigation` | composable | Grafo completo de navegação; instancia DB, repo e settings |
+| `TAB_ICON_RES` / `TAB_LABELS` | `val` | Ícones (drawables da marca) e labels das 5 abas (em sincronia com o índice de página) |
+| `AppNavigation` | composable | Grafo completo de navegação; obtém ViewModels via Hilt (`hiltViewModel()`) |
 | `SplashScreen` | composable | Exibe imagem por 2s, fade-out 300ms, chama `onFinished` |
-| `MainPagerScreen` | composable privado | Pager 4 abas + TopAppBar adaptativa + FAB contextual + Snackbar + bottom nav pill |
-| `PillNavItem` | composable privado | Item da bottom nav em pill (pill `AmberPrimary` na aba ativa) |
+| `MainPagerScreen` | composable privado | Pager 5 abas + TopAppBar adaptativa + FAB contextual + Snackbar + bottom nav pill |
+| `PillNavItem` | composable privado | Item da bottom nav em pill (box `GreenMoss` + ícone branco na aba ativa) |
 | `SortMenuItem` | composable privado | Item do `DropdownMenu` de agrupamento de vouchers com check |
 
 ---
@@ -363,9 +367,8 @@ Relê o `SharedPreferences` toda vez que `TripMain` volta ao foco (`ON_RESUME`) 
 ## Checklist para futuras modificações
 
 - **Nova tela:** adicionar `object Nova : Screen("rota/{param}")` em `Screen` → adicionar `composable(Screen.Nova.route) { ... }` no `NavHost` → adicionar navegação nos composables de origem.
-- **Nova aba no pager:** incrementar `TAB_ICONS`/`TAB_LABELS` (manter em sincronia) → ajustar `when (page)` no `HorizontalPager` → ajustar FAB (`when (pagerState.currentPage)`) se a nova aba precisar de FAB → ajustar título da TopAppBar.
+- **Nova aba no pager:** incrementar `TAB_ICON_RES`/`TAB_LABELS` (manter em sincronia) → ajustar `when (page)` no `HorizontalPager` → ajustar FAB (`when (pagerState.currentPage)`) se a nova aba precisar de FAB → ajustar título da TopAppBar.
 - **Mudar duração das transições:** alterar `ANIM_DURATION`. Afeta todas as rotas do `NavHost` simultaneamente.
 - **Transição customizada por rota:** substituir a transição global do `NavHost` por `enterTransition`/`exitTransition` no `composable(...)` específico — esses parâmetros sobrescrevem o global.
 - **Refresh sem timestamp:** se quiser usar `Boolean` em vez de `Long`, garanta que o `onBack` sempre alterne o valor (ex: `set("refresh", !get("refresh", false))`). O timestamp é mais simples e robusto.
 - **Persistir aba selecionada:** `rememberSaveable { mutableStateOf(0) }` em vez de `rememberPagerState` — sobrevive a recomposição. Atualmente a aba volta para 0 (Início) ao reentrar em `TripMain`.
-- **`showEmergencyContacts` via StateFlow:** substituir `DisposableEffect + LifecycleEventObserver` por um `Flow<Boolean>` exposto pelo `SettingsRepository` (ex: via `DataStore`). Isso eliminaria a necessidade de releitura manual no `ON_RESUME`.

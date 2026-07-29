@@ -7,13 +7,13 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:name=".RumoApplication"
+        android:name=".PipaApplication"
         android:allowBackup="true"
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GramadoApp.Splash">
+        android:theme="@style/Theme.PipaApp.Splash">
 
         <activity
             android:name=".MainActivity"

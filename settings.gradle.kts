@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GramadoApp"
+rootProject.name = "PipaApp"
 include(":app")

@@ -1,10 +1,10 @@
-# Arquitetura Geral — Rumo (GramadoApp)
+# Arquitetura Geral — Pipa (PipaApp)
 
 ---
 
 ## Resumo executivo
 
-O Rumo é um app Android nativo com arquitetura **MVVM em camadas** com **Hilt** para injeção de dependência. O modelo de dados central é o `TripData` (carregado em bloco, não reativamente). A UI é 100% Jetpack Compose com telas stateless que recebem dados via parâmetros e emitem ações via callbacks.
+O Pipa é um app Android nativo com arquitetura **MVVM em camadas** com **Hilt** para injeção de dependência. O modelo de dados central é o `TripData` (carregado em bloco, não reativamente). A UI é 100% Jetpack Compose com telas stateless que recebem dados via parâmetros e emitem ações via callbacks.
 
 ---
 
@@ -43,17 +43,19 @@ O Rumo é um app Android nativo com arquitetura **MVVM em camadas** com **Hilt**
 │  VoucherRepository      ← vouchers + grupos + reordenar         │
 │  BoardingPassRepository ← passagens aéreas/transporte           │
 │  WeatherRepository      ← Open-Meteo API + cache 3h             │
-│  SettingsRepository     ← DataStore("rumo_settings")            │
+│  SettingsRepository     ← DataStore("pipa_settings")            │
 │  ContactCategoryRepository ← SharedPreferences (categorias)     │
 ├─────────────────────────────────────────────────────────────────┤
 │  Data Layer                                                      │
 │                                                                  │
-│  TravelDatabase (Room v18)                                       │
-│    ├─ Entities: Trip, TravelDay, TravelActivity,                 │
-│    │   ActivityBadge, WalkStop, Contact,                         │
-│    │   Voucher, VoucherGroup, BoardingPass                       │
+│  TravelDatabase (Room v19)                                       │
+│    ├─ Entities (12): Trip, TravelDay, TravelActivity,            │
+│    │   ActivityBadge, WalkStop, Contact, Voucher,                │
+│    │   VoucherGroup, BoardingPass, Note, NoteBlock,              │
+│    │   ChecklistItem                                             │
 │    ├─ DAOs: TripDao, TravelDayDao, TravelActivityDao,            │
-│    │   ContactDao, VoucherDao, VoucherGroupDao, BoardingPassDao  │
+│    │   ContactDao, VoucherDao, VoucherGroupDao,                  │
+│    │   BoardingPassDao, NoteDao                                  │
 │    └─ Mappers: entity ↔ domain (Mappers.kt)                     │
 │                                                                  │
 │  Domain Models (Models.kt)                                       │
@@ -247,7 +249,7 @@ DayDetail / TripMain (pai na backstack)
 
 ## Room — entidades e mappers
 
-### Tabelas (9 entidades)
+### Tabelas (12 entidades)
 
 | Entidade | Tabela | Chave externa |
 |---|---|---|
@@ -260,6 +262,9 @@ DayDetail / TripMain (pai na backstack)
 | `VoucherEntity` | `vouchers` | `tripId → trips` |
 | `VoucherGroupEntity` | `voucher_groups` | `tripId → trips` |
 | `BoardingPassEntity` | `boarding_passes` | `tripId → trips` |
+| `NoteEntity` | `notes` | `tripId → trips` |
+| `NoteBlockEntity` | `note_blocks` | `noteId → notes` |
+| `ChecklistItemEntity` | `checklist_items` | `blockId → note_blocks` |
 
 ### Separação entity / domain
 
@@ -292,7 +297,7 @@ O `TripRepository` é o único lugar que chama `toDomain()` e `toEntity()` — o
 
 ### Migrations explícitas
 
-Todas as 15 migrations (v3→v18) estão em `TravelDatabase.kt` como `MIGRATION_N_(N+1)`, expostas em `ALL_MIGRATIONS` com a versão em `CURRENT_VERSION`. `fallbackToDestructiveMigration()` não é usado — `fallbackToDestructiveMigrationFrom(1, 2)` existe apenas para versões pré-histórico sem schema registrado.
+Todas as 16 migrations (v3→v19) estão em `TravelDatabase.kt` como `MIGRATION_N_(N+1)` — a mais recente é `MIGRATION_18_19` (coluna `coverImage`) —, expostas em `ALL_MIGRATIONS` com a versão em `CURRENT_VERSION`. `fallbackToDestructiveMigration()` não é usado — `fallbackToDestructiveMigrationFrom(1, 2)` existe apenas para versões pré-histórico sem schema registrado.
 
 **Regra:** qualquer novo campo no banco exige migration SQL + incremento de `version` + atualização de ambas as direções em `Mappers.kt`.
 
@@ -306,7 +311,7 @@ Operações de orquestração complexas que envolvem múltiplos repositórios ou
 |---|---|---|
 | `SaveGeneratedItineraryUseCase` | Transação: salva dias + atividades + badges do roteiro IA de uma vez via `db.withTransaction { }` | `CreateTripViewModel` |
 
-`TravelExporter` e `TravelImporter` também são operações compostas injetáveis por Hilt (`@Singleton @Inject constructor`). Ficam em `data/export/` e `data/import_trip/` respectivamente — eram instanciados manualmente nos ViewModels até a melhoria #10.
+`TravelExporter` e `TravelImporter` também são operações compostas injetáveis por Hilt (`@Singleton @Inject constructor`). Ficam nas pastas `data/export/` e `data/import/` (esta última com o package `data.import_trip`) respectivamente — eram instanciados manualmente nos ViewModels até a melhoria #10.
 
 ---
 
@@ -329,7 +334,7 @@ Operações de orquestração complexas que envolvem múltiplos repositórios ou
 | Tipo | Onde | O que guarda |
 |---|---|---|
 | **Room** | `TravelDatabase` | Viagens, dias, atividades, contatos, vouchers, passagens — dados estruturados e duráveis |
-| **SharedPreferences** | `SettingsRepository` (`"rumo_settings"`) | `autoOpenActiveTrip`, `showEmergencyContacts` — configurações globais do app |
+| **DataStore** | `SettingsRepository` (`preferencesDataStore(name = "pipa_settings")`) | `autoOpenActiveTrip`, `showEmergencyContacts`, `sortTripsByProximity`, `hideCompletedTrips` — configurações globais do app |
 | **SharedPreferences** | `"boarding_passes"` | Portão e URL de passagens — voláteis, mudam no dia do voo, não merecem migration |
 | **SharedPreferences** | `"reminders"` | Estado do lembrete de check-in |
 | **SharedPreferences** | `ContactCategoryRepository` | Categorias customizadas de contato |
@@ -462,10 +467,7 @@ var showDeleteDialog by remember { mutableStateOf(false) }
 
 | Padrão | Por que não está aqui |
 |---|---|
-| Hilt / Koin | App de escopo pequeno; injeção manual em `AppNavigation` é suficiente e elimina um grafo de anotações |
 | `Flow` reativo por entidade | `getTripData()` + `refresh()` é mais simples; o volume de dados não justifica reatividade granular |
-| Repository por domínio | Um único `TripRepository` reduz o número de dependências a gerenciar sem perda de coesão no tamanho atual |
-| `UseCase` / Interactor | Lógica de negócio está nos ViewModels e no Repository; o app não tem lógica suficientemente complexa para justificar a camada extra |
 | Paginação (Paging 3) | Listas pequenas (dezenas de itens); carregamento em bloco é adequado |
 
 ### Testes — estado atual

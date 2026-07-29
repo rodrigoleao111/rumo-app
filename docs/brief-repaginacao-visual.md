@@ -1,5 +1,7 @@
-# Brief de Repaginação Visual — Rumo
+# Brief de Repaginação Visual — Pipa
 
+> ✅ **Status: repaginação concluída.** As metas centrais deste brief já foram implementadas — paleta ajustada (âmbar `#E9B43C`, verde claro `#A7C957`), Plus Jakarta Sans embarcada, ícone da pipa (adaptativo + monocromático), set de ícones de linha próprio (`res/drawable/ic_*.xml`), capas ilustradas (`cover_*.webp`) e ilustrações de clima/transporte. Este documento é mantido como registro do planejamento; as colunas "Hoje" foram atualizadas onde o estado mudou, e itens já entregues estão marcados.
+>
 > **Objetivo:** elevar a identidade visual do app ao nível da referência de marca (mascote-pipa, "seu companheiro de viagem", visual ilustrado e acolhedor) para deixá-lo pronto para publicação na Play Store.
 >
 > **O que este documento é:** a lista completa de **tudo que precisa ser produzido/fornecido na parte de design** para que a repaginação possa ser implementada. Cada item traz especificação técnica (formato, tamanho, densidades, nomenclatura), onde aparece no app e prioridade.
@@ -34,12 +36,12 @@ Cada item está marcado com um **responsável** e uma **prioridade**:
 
 | Dimensão | Hoje no app | Alvo da referência | Quem resolve |
 |---|---|---|---|
-| **Paleta** | "Forest Dark" (GreenMoss `#1B4332`, GreenSage `#40916C`, Âmbar `#D4A017`) | Quase idêntica; falta o **verde claro `#A7C957`** e o âmbar muda p/ `#E9B43C` | 💻 EU |
-| **Tipografia** | Fonte do sistema (Roboto) | **Plus Jakarta Sans** (Regular/Medium/SemiBold/Bold) | 💻 EU (busco a fonte) |
-| **Ícone do app** | PNG antigo (`ic_launcher_logo`) | **Pipa** em ícone adaptativo + versão monocromática | 🎨 VOCÊ |
-| **Ícones de interface** | Material Icons genéricos | **Conjunto de ícones de linha** próprio | 🎨 VOCÊ (ou fallback Material) |
-| **Ilustrações** | Nenhuma — usa **emoji** como identidade | Mascote, cenários, capas de destino, botânicos | 🎨 VOCÊ |
-| **Clima** | Emoji (☀️ ⛅ 🌧️) | Ícones de clima ilustrados | ⚙️ Decisão + 🎨 VOCÊ |
+| **Paleta** | ✅ GreenMoss `#1B4332`, GreenSage `#40916C`, **verde claro `#A7C957`** e âmbar `AmberPrimary #E9B43C` já em código | Quase idêntica à referência | 💻 EU (feito) |
+| **Tipografia** | ✅ **Plus Jakarta Sans** (Regular/Medium/SemiBold/Bold) embarcada em `res/font/` e ligada no tema | **Plus Jakarta Sans** (Regular/Medium/SemiBold/Bold) | 💻 EU (feito) |
+| **Ícone do app** | ✅ **Pipa** em ícone adaptativo (`ic_launcher_foreground` = pipa, fundo `#1B4332`) + versão monocromática | **Pipa** em ícone adaptativo + versão monocromática | 🎨 VOCÊ (feito) |
+| **Ícones de interface** | ✅ **Set de linha próprio** (`res/drawable/ic_*.xml`); Material Icons só em 5 usos residuais | **Conjunto de ícones de linha** próprio | 🎨 VOCÊ (feito) |
+| **Ilustrações** | ✅ 18 capas de destino (`cover_*.webp`) + ilustrações de clima/transporte | Mascote, cenários, capas de destino, botânicos | 🎨 VOCÊ (parcial) |
+| **Clima** | ✅ Ilustrações `weather_*.png` (emoji só como fallback) | Ícones de clima ilustrados | ⚙️ Decisão + 🎨 VOCÊ (feito) |
 | **Estados vazios** | Emoji grande | Spot illustrations | 🎨 VOCÊ |
 | **Splash** | Ícone estático | Splash com a pipa | 🎨 VOCÊ (usa o mesmo asset do ícone) |
 | **Modo escuro** | Não existe | — (a definir) | ⚙️ Decisão |
@@ -67,27 +69,23 @@ Antes de implementar, preciso que você decida (pode responder junto ao aprovar 
 1. **Capas de viagem/dia** — o modelo de ilustração (ver §8). Recomendo **biblioteca de arquétipos** (praia, montanha, cidade, etc.) em vez de arte sob medida por viagem. **Qual caminho?**
 2. **Ícones de clima** — manter emoji (custo zero) ou produzir conjunto ilustrado próprio? Recomendo **manter emoji no P0** e produzir set custom como P2.
 3. **Modo escuro** — entra agora, depois, ou não entra? (Se entrar, dobra o trabalho de definir cores, mas ilustrações podem ser as mesmas.)
-4. **Nome do pacote / identidade de loja** — o `applicationId` hoje é `com.rodrigoleao.gramado2026` (nome herdado do projeto original). Para publicar como "Rumo", o ideal é renomear para algo como `com.rodrigoleao.rumo`. **É código (eu faço)**, mas afeta a identidade da loja e é irreversível depois de publicado — precisa da sua decisão.
+4. **Nome do pacote / identidade de loja** — ✅ **Concluído.** O `applicationId` foi renomeado de `com.rodrigoleao.gramado2026` (histórico) para `com.rodrigoleao.pipa`, e o nome de exibição do app é **Pipa**. Definido antes da primeira publicação — a identidade da loja é irreversível depois de publicada.
 
 ---
 
 ## 5. Tipografia — Plus Jakarta Sans
 
-**💻 EU implemento / 🎨 arquivos triviais.** A fonte é **open source (SIL Open Font License)** e está no Google Fonts — pode ser embarcada no app sem custo nem restrição.
+**✅ Concluído.** A fonte é **open source (SIL Open Font License)** e está no Google Fonts — foi embarcada no app sem custo nem restrição. Os 4 pesos já estão em `res/font/` e ligados em `Type.kt`/`Theme.kt`.
 
-**Preciso de 4 arquivos `.ttf`** (ou posso baixá-los eu mesmo do Google Fonts, se você preferir):
-
-| Peso | Arquivo esperado | Uso no app |
+| Peso | Arquivo no projeto | Uso no app |
 |---|---|---|
-| Regular (400) | `PlusJakartaSans-Regular.ttf` | Corpo de texto |
-| Medium (500) | `PlusJakartaSans-Medium.ttf` | Labels, botões |
-| SemiBold (600) | `PlusJakartaSans-SemiBold.ttf` | Títulos de card, subtítulos |
-| Bold (700) | `PlusJakartaSans-Bold.ttf` | Títulos de tela ("Minhas viagens", "Férias verão") |
+| Regular (400) | `plus_jakarta_sans_regular.ttf` | Corpo de texto |
+| Medium (500) | `plus_jakarta_sans_medium.ttf` | Labels, botões |
+| SemiBold (600) | `plus_jakarta_sans_semibold.ttf` | Títulos de card, subtítulos |
+| Bold (700) | `plus_jakarta_sans_bold.ttf` | Títulos de tela ("Minhas viagens", "Férias verão") |
 
-- **Destino no projeto:** `app/src/main/res/font/`
+- **Destino no projeto:** `app/src/main/res/font/` ✅
 - **Prioridade: P0** (a fonte é o que mais muda a "cara" percebida, junto com o ícone).
-
-> Se você não fornecer, **eu baixo os 4 arquivos do Google Fonts e embarco** — só confirme que pode.
 
 ---
 
@@ -100,9 +98,9 @@ Você **não precisa produzir nada** aqui; é só a confirmação dos valores qu
 | Verde Musgo | `#1B4332` | Primária — top bars, títulos, badges de data |
 | Verde Sálvia | `#40916C` | Secundária — datas, acentos de suporte |
 | Verde Claro | `#A7C957` | **NOVO** — detalhes, ícones, realces frescos |
-| Areia | `#F4EDE1` | Fundo quente alternativo |
-| Âmbar | `#E9B43C` | Acento/ação (hoje é `#D4A017`, vou ajustar) |
-| Creme | `#FAF7F2` | Fundo geral |
+| Areia | `#F4EDE1` | **Background geral do app** (fundo quente) |
+| Âmbar | `#E9B43C` | Acento/ação (✅ ajustado — antes era `#D4A017`) |
+| Creme | `#FAF7F2` | Superfície clara alternativa |
 | Cinza Claro | `#E7EDE8` | Superfícies suaves |
 | Cinza Médio | `#A8B5A9` | Texto auxiliar, ícones inativos |
 | Cinza Escuro | `#2E3D34` | Texto forte alternativo |
@@ -111,7 +109,9 @@ Você **não precisa produzir nada** aqui; é só a confirmação dos valores qu
 
 ---
 
-## 7. Ícone do aplicativo (launcher) — 🎨 VOCÊ · **P0**
+## 7. Ícone do aplicativo (launcher) — 🎨 VOCÊ · **P0** · ✅ concluído
+
+> ✅ **Entregue.** O ícone da pipa já está no app: adaptive icon com `ic_launcher_foreground` (= `ic_launcher_kite.png`) sobre fundo `#1B4332`, mais a camada monocromática. (Não existe mais `ic_launcher_logo`.) A especificação abaixo é mantida como referência do que foi produzido.
 
 Este é o item de maior impacto para a loja. O Android usa **ícone adaptativo** (camadas separadas de frente e fundo) + uma camada **monocromática** (ícones "temáticos" do Android 13+).
 
@@ -177,9 +177,9 @@ A **pipa** e o **cenário de colinas** são a assinatura da marca. Preciso deles
 | # | Asset | Formato | Especificação / uso |
 |---|---|---|---|
 | 9.1 | **Pipa (mascote) isolada** | SVG + PNG 1024² | A pipa com o rabicho amarelo, sem fundo. Reutilizada em vários lugares. **P0** |
-| 9.2 | **Lockup vertical** (pipa + "Rumo" + "seu companheiro de viagem") | SVG/PNG transparente | Splash, tela "sobre". Como no canto superior esquerdo do board. **P0** |
-| 9.3 | **Lockup horizontal** (pipa à esquerda + "Rumo") | SVG/PNG | Cabeçalhos, cartão de compartilhamento. **P1** |
-| 9.4 | **Wordmark "Rumo" isolado** | SVG | Onde só cabe o texto. **P1** |
+| 9.2 | **Lockup vertical** (pipa + "Pipa" + "seu companheiro de viagem") | SVG/PNG transparente | Splash, tela "sobre". Como no canto superior esquerdo do board. **P0** |
+| 9.3 | **Lockup horizontal** (pipa à esquerda + "Pipa") | SVG/PNG | Cabeçalhos, cartão de compartilhamento. **P1** |
+| 9.4 | **Wordmark "Pipa" isolado** | SVG | Onde só cabe o texto. **P1** |
 | 9.5 | **Cenário/hero de colinas** (as ondas de morros verdes + sol + pássaros) | PNG/WebP largo | Fundo decorativo do topo da Home e dos cabeçalhos. Master **1080×900 px**, transparência opcional. **P0** |
 | 9.6 | **Kit botânico** (ramos de folhas para cantos, folhagem, sol, nuvens, pássaros) | SVG **ou** PNGs transparentes avulsos | Elementos soltos que eu posiciono nos cantos das telas (ver rodapé da Home e cabeçalhos). ~6–8 peças. **P1** |
 | 9.7 | **Motivo do caminho/aviãozinho pontilhado** | SVG | A linha pontilhada com aviãozinho (card "Em curso"). Simples → posso fazer em código, mas se quiser a versão ilustrada, entregue em SVG. **P2** |
@@ -189,11 +189,13 @@ A **pipa** e o **cenário de colinas** são a assinatura da marca. Preciso deles
 
 ---
 
-## 10. Ícones de interface (iconografia de linha) — 🎨 VOCÊ · **P1** (com fallback P0)
+## 10. Ícones de interface (iconografia de linha) — 🎨 VOCÊ · **P1** · ✅ concluído
 
-A referência tem um **conjunto de ícones de linha** próprio (seção "ICONOGRAFIA"). Hoje o app usa Material Icons.
+> ✅ **Entregue.** O app já usa um **set vetorial próprio** (`res/drawable/ic_*.xml`, ~45 ícones). Material Icons sobraram em apenas 5 usos residuais (`Icons.Filled.Menu/MoreVert/Add` no TripsListScreen e `Icons.Outlined.ZoomIn/Close` no seletor de capas). A lista abaixo é mantida como referência do conjunto produzido.
 
-⚙️ **Decisão:** ou (a) você produz o conjunto custom para consistência total de marca, ou (b) **usamos Material Symbols (estilo Rounded)** como fallback — fica coerente e é **custo zero** para você. **Recomendo Material como P0** e o conjunto custom como P1, para não travar a publicação.
+A referência tem um **conjunto de ícones de linha** próprio (seção "ICONOGRAFIA").
+
+⚙️ **Decisão tomada:** optou-se por (a) — conjunto custom próprio, para consistência total de marca (o fallback Material foi mantido só nos 5 pontos residuais acima).
 
 **Se você for produzir**, preciso de cada ícone em **SVG, grid de 24×24 dp, traço ~2 px, cantos arredondados**, monocromático (recoloro por código). Conjunto necessário:
 
@@ -226,11 +228,11 @@ A referência tem um **conjunto de ícones de linha** próprio (seção "ICONOGR
 
 ---
 
-## 11. Ícones de clima — ⚙️ Decisão + 🎨 VOCÊ · **P2**
+## 11. Ícones de clima — ⚙️ Decisão + 🎨 VOCÊ · **P2** · ✅ concluído
 
-Hoje o clima vem da API (Open-Meteo) e é exibido como **emoji** derivado do código WMO. A referência mostra ícones **ilustrados** (sol + nuvem + gotas).
+> ✅ **Decisão tomada + entregue.** O clima (via API Open-Meteo, código WMO) hoje é exibido como **ilustrações raster** `weather_*.png` (10 estados, em `res/drawable-nodpi/`, mapeadas por `weatherCodeDrawable()` em `WeatherIcon.kt`); o emoji ficou só como fallback. A especificação abaixo é mantida como referência.
 
-⚙️ **Decisão:** manter emoji (custo zero, já funciona) ou produzir set próprio?
+Hoje o clima vem da API (Open-Meteo) e o código WMO é mapeado para o set ilustrado próprio. A referência mostra ícones **ilustrados** (sol + nuvem + gotas).
 
 **Se produzir**, preciso de ~9 ícones cobrindo os grupos de código WMO (SVG, 48×48 dp, podem ser multicoloridos no estilo da referência):
 
@@ -284,7 +286,7 @@ Para publicar, a loja exige:
 | # | Asset | Formato | Quem |
 |---|---|---|---|
 | 14.1 | Ícone da loja | PNG 512×512 (§7.4) | 🎨 VOCÊ |
-| 14.2 | **Feature graphic** (banner do topo da ficha) | PNG/JPG **1024×500** | 🎨 VOCÊ — pode ser o cenário de colinas + pipa + "Rumo · seu companheiro de viagem" |
+| 14.2 | **Feature graphic** (banner do topo da ficha) | PNG/JPG **1024×500** | 🎨 VOCÊ — pode ser o cenário de colinas + pipa + "Pipa · seu companheiro de viagem" |
 | 14.3 | **Screenshots de telefone** (mín. 2, ideal 4–8) | PNG, proporção do device | 💻 EU gero a partir do app rodando no emulador (depois da repaginação) |
 | 14.4 | Screenshots de tablet (opcional) | PNG | 💻 EU (se quiser suporte a tablet) |
 | 14.5 | Texto: título, descrição curta e longa | Texto | ⚙️ VOCÊ decide o conteúdo; eu ajudo a redigir |
@@ -331,24 +333,24 @@ Se você entregar **um master em alta resolução**, **eu gero as densidades** �
 - Sufixos de variação quando houver: `il_cover_beach_card` / `il_cover_beach_header`.
 
 ### Como entregar
-Sugiro uma pasta única, ex.: `OneDrive/Rumo/Design/` com subpastas `icone-app/`, `ilustracoes/`, `icones-ui/`, `mascote/`, `fontes/`, `loja/`. Quando estiver pronta, me aponta o caminho que eu importo e organizo dentro do projeto (`app/src/main/res/...`).
+Sugiro uma pasta única, ex.: `OneDrive/Pipa/Design/` com subpastas `icone-app/`, `ilustracoes/`, `icones-ui/`, `mascote/`, `fontes/`, `loja/`. Quando estiver pronta, me aponta o caminho que eu importo e organizo dentro do projeto (`app/src/main/res/...`).
 
 ---
 
 ## 17. Resumo priorizado — checklist de produção
 
 ### 🟥 P0 — mínimo para publicar com a nova identidade
-- [ ] **Fonte** Plus Jakarta Sans (4 `.ttf`) — *ou autorizar que eu baixe*
-- [ ] **Ícone do app**: pipa foreground (PNG/SVG 1024²) + monocromático (SVG) + loja 512² (§7)
+- [x] **Fonte** Plus Jakarta Sans (4 `.ttf`) — ✅ embarcada e ligada ao tema
+- [x] **Ícone do app**: pipa foreground + monocromático + loja 512² (§7) — ✅ concluído
 - [ ] **Mascote-pipa** isolada + **lockup vertical** (§9.1, §9.2)
 - [ ] **Cenário de colinas** (hero) para Home e cabeçalhos (§9.5)
-- [ ] **Capas de destino** — 8 arquétipos base (§8, modelo A)
+- [x] **Capas de destino** — ✅ 18 capas `cover_*.webp` em uso (§8, modelo A)
 - [ ] **Feature graphic** da loja 1024×500 (§14.2)
 - [ ] ⚙️ Decisões §4 (capas, clima, dark mode, nome do pacote) + confirmar hexes §6
 - [ ] *(EU) tokens de cor, tema tipográfico, componentes, screenshots da loja*
 
 ### 🟨 P1 — refinamento
-- [ ] Conjunto completo de **ícones de linha** (§10) — se optar por custom
+- [x] Conjunto completo de **ícones de linha** (§10) — ✅ set vetorial próprio `ic_*.xml` em uso (Material só em 5 usos residuais)
 - [ ] **Kit botânico** e lockup horizontal (§9.6, §9.3)
 - [ ] Capas de destino restantes (arquétipos 9–12, §8)
 - [ ] **Estados vazios** ilustrados (§12)

@@ -39,6 +39,7 @@ checklist_items (id, blockId→note_blocks, text, isChecked, sortOrder)
 | `getAllNotes(tripId)` | Todas as notas da viagem — usado no export |
 | `getNote(id)` | Uma nota completa (editor) |
 | `countNotes(tripId, dayId?)` | Contagem por escopo |
+| `dayNoteCounts(tripId)` | `Map<dayNumber, nº de notas>` — contador por dia usado no `DayDetailScreen` |
 | `createNote` / `updateNoteTitle` / `deleteNote` / `reorderNotes` / `touchNote` | CRUD da nota |
 | `addBlock` / `updateBlockContent` / `deleteBlock` / `reorderBlocks` | Blocos (checklist nasce com 1 item) |
 | `addChecklistItem` / `updateItemText` / `toggleChecklistItem` / `deleteChecklistItem` / `reorderChecklistItems` | Itens |
@@ -97,6 +98,6 @@ Criar nota (FAB) chama `createNote { id -> navega para o editor }`. Voltar do ed
 ## Checklist para futuras modificações
 
 - **Formatação inline / imagens / links nos blocos:** escopo de versão futura (spec F4). Hoje os blocos são texto simples.
-- **Contador de notas por dia no card do `DayDetailScreen`:** `DayNotesButton` aceita `count`, mas hoje recebe `0` (texto genérico). Ligar exigiria expor contagens por dia (ex.: `Map<Int,Int>` no `TripViewModel` via `countNotes`).
+- ✅ **Contador de notas por dia no card do `DayDetailScreen` (concluído):** ligado. `TripViewModel.dayNoteCounts` (`StateFlow<Map<Int,Int>>`, preenchido por `noteRepo.dayNoteCounts(tripId)`) expõe a contagem por dia; o `AppNavigation` passa `dayNotesCount = dayNoteCounts[dayNumber] ?: 0` ao `DayDetailScreen`, que repassa a `DayNotesButton(count = …)`.
 - **Reordenar itens de checklist na UI:** o repositório suporta (`reorderChecklistItems`), mas o editor só expõe reorder de blocos.
 - **Novo tipo de bloco:** adicionar ao enum `NoteBlockType`, ao sealed `NoteBlock`, aos mappers (`typeName`/`contentText`/`toDomain`) e ao `BlockEditor` do `NoteEditorScreen`.

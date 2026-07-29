@@ -1,10 +1,10 @@
-# Design System — Rumo
+# Design System — Pipa
 
 ---
 
 ## Identidade visual
 
-O app usa a paleta da marca **Rumo** (alinhada ao board de identidade — ver [brief-repaginacao-visual.md](brief-repaginacao-visual.md)): verde musgo profundo como cor primária, âmbar como acento, verde sálvia como secundária, e um fundo **creme quente** muito claro. A combinação remete a natureza, leveza e jornada — coerente com o posicionamento "seu companheiro de viagem" — sem cair no visual genérico de apps de turismo.
+O app usa a paleta da marca **Pipa** (alinhada ao board de identidade — ver [brief-repaginacao-visual.md](brief-repaginacao-visual.md)): verde musgo profundo como cor primária, âmbar como acento, verde sálvia como secundária, e um fundo **creme quente** muito claro. A combinação remete a natureza, leveza e jornada — coerente com o posicionamento "seu companheiro de viagem" — sem cair no visual genérico de apps de turismo.
 
 O design é deliberadamente **contido**: poucos tokens de cor, formas arredondadas consistentes. A tipografia de marca é a **Plus Jakarta Sans** (a repaginação tipográfica é uma etapa própria; ver brief).
 
@@ -20,7 +20,7 @@ O design é deliberadamente **contido**: poucos tokens de cor, formas arredondad
 | `GreenSage` | `#40916C` | Verde Sálvia | Secondary — botão compartilhar no swipe, loading indicators, datas |
 | `GreenLime` | `#A7C957` | Verde Claro | Tertiary — realces frescos, detalhes, ícones |
 | `Sand` | `#F4EDE1` | Areia | **Background geral do app** — fundo quente (Activity, Scaffolds, status bar, recortes do boarding pass) |
-| `GreenLight` | `#FAF7F2` | Creme | Superfície clara alternativa (token de paleta; não é mais o fundo principal) |
+| `Cream` | `#FAF7F2` | Creme | Superfície clara alternativa (token de paleta; não é mais o fundo principal) |
 | `GreenForest` | `#E7EDE8` | Cinza Claro | Navigation bar, top bars de sistema, superfícies suaves, cards de fundo |
 | `GreenMist` | `#2E3D34` | Cinza Escuro | Texto/superfície escura alternativa (uso pontual) |
 | `GreenWarm` | `#C2D9CB` | — | Container suave esverdeado, hover states |
@@ -71,7 +71,7 @@ surfaceVariant   = GreenForest     // fundos alternativos
 outline          = CardBorder      // bordas de TextField, chips
 ```
 
-**Status bar:** `Sand` (mesmo que o fundo) com `isAppearanceLightStatusBars = true` — ícones escuros. **Navigation bar:** `GreenForest`. Ambos configurados via `SideEffect` em `GramadoTheme`.
+**Status bar:** `Sand` (mesmo que o fundo) com `isAppearanceLightStatusBars = true` — ícones escuros. **Navigation bar:** `GreenForest`. Ambos configurados via `SideEffect` em `PipaTheme`.
 
 O tema nunca usa modo escuro — `lightColorScheme` sem contraparte `darkColorScheme`. O app não responde a `uiMode` do sistema.
 
@@ -82,8 +82,8 @@ O tema nunca usa modo escuro — `lightColorScheme` sem contraparte `darkColorSc
 Fonte da marca **Plus Jakarta Sans** (SIL Open Font License), embarcada em `res/font/` nos 4 pesos — Regular (400), Medium (500), SemiBold (600), Bold (700). A `FontFamily` (`PlusJakartaSans`) é definida em `Type.kt`.
 
 Três camadas garantem que **nenhum** texto caia no Roboto:
-1. **Todos os 15 papéis** de `GramadoTypography` carregam a família — inclusive os que não têm métrica customizada (`displayLarge/Medium/Small`, `headlineSmall`, `titleSmall`, `labelLarge`), que herdam via `Typography().<papel>.copy(fontFamily = …)`. **Cuidado:** definir só alguns papéis deixa os demais em Roboto — foi o defeito inicial (`headlineSmall` e `titleSmall` apareceram na fonte antiga em "Minhas viagens" e nos títulos de atividade).
-2. `GramadoTheme` injeta a família como estilo base via `CompositionLocalProvider(LocalTextStyle provides …copy(fontFamily = PlusJakartaSans))`, cobrindo os `Text()` com `fontSize`/`fontWeight` **inline**.
+1. **Todos os 15 papéis** de `PipaTypography` carregam a família — inclusive os que não têm métrica customizada (`displayLarge/Medium/Small`, `headlineSmall`, `titleSmall`, `labelLarge`), que herdam via `Typography().<papel>.copy(fontFamily = …)`. **Cuidado:** definir só alguns papéis deixa os demais em Roboto — foi o defeito inicial (`headlineSmall` e `titleSmall` apareceram na fonte antiga em "Minhas viagens" e nos títulos de atividade).
+2. `PipaTheme` injeta a família como estilo base via `CompositionLocalProvider(LocalTextStyle provides …copy(fontFamily = PlusJakartaSans))`, cobrindo os `Text()` com `fontSize`/`fontWeight` **inline**.
 3. Campos de texto que passam um `textStyle` **explícito** (ex.: `TextField` no editor de notas) **substituem** o `LocalTextStyle` — por isso esses `TextStyle` construídos à mão precisam declarar `fontFamily = PlusJakartaSans` explicitamente.
 
 | Estilo | Tamanho | Peso | Uso principal |
@@ -401,7 +401,7 @@ Dois tipos:
 
 2. **Borda em vez de sombra.** `CardBorder` (GreenMoss 31% alpha) delimita cards no fundo `Sand` sem sombra. Sombra só aparece quando há elevação real a comunicar (drag, bottom nav).
 
-3. **Emoji como ícone de identidade.** Viagens têm `coverEmoji`; atividades têm emoji próprio; grupos têm emoji de categoria. Elimina a necessidade de um sistema de ícones customizado.
+3. **Emoji como recurso de identidade complementar.** Viagens têm `coverEmoji`; atividades têm emoji próprio; grupos têm emoji de categoria. A iconografia de interface hoje vem de um set vetorial próprio (`res/drawable/ic_*.xml`) e as viagens ganham capas ilustradas (`TripCovers`, `cover_*.webp`); o emoji ficou como fallback (ex.: card sem capa selecionada) e em alguns realces pontuais.
 
 4. **Uppercase + letter-spacing para labels.** Labels de seção e cabeçalhos de grupo usam 10sp + 2sp de letter-spacing + uppercase. Cria hierarquia tipográfica sem mudar a fonte ou o peso.
 
