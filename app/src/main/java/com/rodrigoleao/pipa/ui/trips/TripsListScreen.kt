@@ -64,7 +64,8 @@ fun TripsListScreen(
     onTripEdit: (Long) -> Unit = {},
     onTripShare: (Long) -> Unit = {},
     onImportTrip: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onAiConversationsClick: () -> Unit = {}
 ) {
     val trips        by viewModel.trips.collectAsStateWithLifecycle()
     val snackbarHost  = remember { SnackbarHostState() }
@@ -95,9 +96,10 @@ fun TripsListScreen(
         drawerState = drawerState,
         drawerContent = {
             TripsDrawerContent(
-                onNewTrip    = { scope.launch { drawerState.close() }; onNewTripClick() },
-                onImportTrip = { scope.launch { drawerState.close() }; onImportTrip() },
-                onSettings   = { scope.launch { drawerState.close() }; onSettingsClick() }
+                onNewTrip         = { scope.launch { drawerState.close() }; onNewTripClick() },
+                onImportTrip      = { scope.launch { drawerState.close() }; onImportTrip() },
+                onAiConversations = { scope.launch { drawerState.close() }; onAiConversationsClick() },
+                onSettings        = { scope.launch { drawerState.close() }; onSettingsClick() }
             )
         }
     ) {
@@ -618,6 +620,7 @@ private fun HeaderIconButton(
 private fun TripsDrawerContent(
     onNewTrip: () -> Unit,
     onImportTrip: () -> Unit,
+    onAiConversations: () -> Unit,
     onSettings: () -> Unit
 ) {
     ModalDrawerSheet(
@@ -660,6 +663,15 @@ private fun TripsDrawerContent(
             icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_import), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
             selected = false,
             onClick  = onImportTrip,
+            colors   = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, unselectedTextColor = TextPrimary),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
+        NavigationDrawerItem(
+            label    = { Text(stringResource(R.string.aiconv_title)) },
+            icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
+            selected = false,
+            onClick  = onAiConversations,
             colors   = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent, unselectedTextColor = TextPrimary),
             modifier = Modifier.padding(horizontal = 12.dp)
         )

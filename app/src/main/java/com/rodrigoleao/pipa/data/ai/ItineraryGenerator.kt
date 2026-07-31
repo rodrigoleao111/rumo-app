@@ -40,6 +40,24 @@ class ItineraryGenerator(
     companion object {
         private const val TAG = "ItineraryGenerator"
 
+        // ── Preço p/ custo estimado ─────────────────────────────────────────────
+        // Valores APROXIMADOS do gemini-3.1-flash-lite (USD por 1M tokens) e câmbio.
+        // ⚠ CONFIRA e ajuste em https://ai.google.dev/gemini-api/docs/pricing
+        private const val PRICE_INPUT_USD_PER_1M  = 0.10   // tokens de entrada
+        private const val PRICE_OUTPUT_USD_PER_1M = 0.40   // tokens de saída (+ thinking)
+        private const val USD_TO_BRL              = 5.40
+
+        /**
+         * Estima o custo da chamada em R$. Tudo além do prompt (saída de texto + thinking)
+         * é cobrado na tarifa de saída — por isso usamos `total - prompt`.
+         */
+        fun estimateCostBrl(promptTokens: Int, totalTokens: Int): Double {
+            val outputTokens = (totalTokens - promptTokens).coerceAtLeast(0)
+            val usd = promptTokens / 1_000_000.0 * PRICE_INPUT_USD_PER_1M +
+                      outputTokens / 1_000_000.0 * PRICE_OUTPUT_USD_PER_1M
+            return usd * USD_TO_BRL
+        }
+
         fun parseJson(text: String): List<GeneratedDay> {
             val t = text.trim()
             val json = when {
@@ -78,7 +96,7 @@ class ItineraryGenerator(
     private val initialGreeting: String = buildInitialGreeting()
 
     private val model = GenerativeModel(
-        modelName         = "gemini-2.0-flash",
+        modelName         = "gemini-3.1-flash-lite",
         apiKey            = apiKey,
         systemInstruction = content { text(buildSystemPrompt()) }
     )
@@ -91,23 +109,46 @@ class ItineraryGenerator(
 
     fun getInitialGreeting(): String = initialGreeting
 
-    suspend fun sendMessage(userText: String): String {
+    /** Resposta do chat com contagem real de tokens (usageMetadata), latência e custo estimado. */
+    data class ChatReply(
+        val text: String,
+        val promptTokens: Int,      // entrada (system + histórico reenviado + mensagem)
+        val candidatesTokens: Int,  // saída de texto (thinking não entra aqui, mas entra no total)
+        val totalTokens: Int,       // total cobrado (prompt + saída + thinking)
+        val latencyMs: Long,        // tempo da chamada à API
+        val costBrl: Double         // custo estimado em R$ (ver constantes de preço/câmbio)
+    )
+
+    suspend fun sendMessage(userText: String): ChatReply {
         Log.d(TAG, ">>> USER: $userText")
         return try {
-            val response = chat.sendMessage(userText).text
-                ?: "Não consegui responder. Pode tentar de novo?"
-            Log.d(TAG, "<<< AI: $response")
-            response
+            val t0       = System.currentTimeMillis()
+            val response = chat.sendMessage(userText)
+            val latency  = System.currentTimeMillis() - t0
+            val text     = response.text ?: "Não consegui responder. Pode tentar de novo?"
+            val usage    = response.usageMetadata
+            val prompt   = usage?.promptTokenCount ?: 0
+            val cand     = usage?.candidatesTokenCount ?: 0
+            val total    = usage?.totalTokenCount ?: 0
+            val cost     = estimateCostBrl(prompt, total)
+            Log.d(TAG, "<<< AI ${latency}ms | prompt=$prompt out=$cand total=$total tk | ~R$ ${String.format(Locale.US, "%.4f", cost)}: $text")
+            ChatReply(text, prompt, cand, total, latency, cost)
         } catch (e: Exception) {
             Log.e(TAG, "sendMessage error", e)
-            "Erro de conexão. Verifique sua internet e tente novamente."
+            ChatReply("Erro de conexão. Verifique sua internet e tente novamente.", 0, 0, 0, 0L, 0.0)
         }
     }
 
     suspend fun generateItinerary(): List<GeneratedDay> {
         Log.d(TAG, ">>> GENERATE: sending generation prompt")
-        val raw = chat.sendMessage(buildGenerationPrompt()).text
-            ?: throw Exception("Resposta vazia da IA")
+        val t0 = System.currentTimeMillis()
+        val response = chat.sendMessage(buildGenerationPrompt())
+        val latency = System.currentTimeMillis() - t0
+        val raw = response.text ?: throw Exception("Resposta vazia da IA")
+        val usage = response.usageMetadata
+        val prompt = usage?.promptTokenCount ?: 0
+        val total = usage?.totalTokenCount ?: 0
+        Log.d(TAG, "<<< GENERATE ${latency}ms | prompt=$prompt out=${usage?.candidatesTokenCount ?: 0} total=$total tk | ~R$ ${String.format(Locale.US, "%.4f", estimateCostBrl(prompt, total))}")
         Log.d(TAG, "<<< GENERATE RAW:\n$raw")
         val json = extractJson(raw)
         Log.d(TAG, "<<< GENERATE JSON:\n$json")

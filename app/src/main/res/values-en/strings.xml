@@ -87,6 +87,12 @@
     <string name="create_assistant_not_initialized_short">Assistant not initialized.</string>
     <string name="create_generate_failed">I couldn\'t generate the itinerary. %1$s</string>
     <string name="create_try_again">Try again.</string>
+    <string name="create_token_nudge">I\'ve got a good picture of your trip 🙌 Want me to generate the itinerary now? You can also keep refining for a few more messages.</string>
+    <string name="create_limit_title">Conversation limit reached</string>
+    <string name="create_limit_body">To keep AI usage in check, this conversation has reached its limit. You can generate the itinerary now from what we\'ve discussed, or copy the conversation to continue in an external AI and import the JSON later.</string>
+    <string name="create_copy_conversation">Copy conversation</string>
+    <string name="create_copied">Copied!</string>
+    <string name="create_daily_limit_note">You\'ve reached the limit of 3 AI conversations per day on this device. You can still import a ready-made itinerary or try again tomorrow.</string>
     <plurals name="create_day_count">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
@@ -532,4 +538,16 @@
         <item quantity="one">in %1$d year</item>
         <item quantity="other">in %1$d years</item>
     </plurals>
+
+    <!-- My AI conversations -->
+    <string name="aiconv_title">My AI conversations</string>
+    <string name="aiconv_untitled">Untitled conversation</string>
+    <string name="aiconv_empty_title">No conversations yet</string>
+    <string name="aiconv_empty_msg">Conversations you have with the AI while creating trips will show up here.</string>
+    <string name="aiconv_you">You</string>
+    <string name="aiconv_assistant">Assistant</string>
+    <string name="aiconv_not_found">Conversation not found.</string>
+    <string name="aiconv_delete_title">Delete conversation?</string>
+    <string name="aiconv_delete_msg">This conversation will be permanently removed.</string>
+    <string name="aiconv_delete_cd">Delete conversation</string>
 </resources>

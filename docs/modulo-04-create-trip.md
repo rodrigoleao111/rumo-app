@@ -42,7 +42,9 @@ CreateTripViewModel
   ├─ chatMessages / chatInput / chatPhase     ← estado do chat
   ├─ generatedDays / cameFromImport           ← resultado da IA
   ├─ importJsonText / importError             ← modo importação
-  └─ canGenerate: StateFlow<Boolean>          ← derivado de chatMessages
+  ├─ canGenerate: StateFlow<Boolean>          ← derivado de chatMessages
+  ├─ tokensUsed / chatLimitReached            ← orçamento de tokens (usageMetadata.totalTokenCount)
+  └─ dailyConversationsUsed / canStartConversation ← cap diário (3/dia/dispositivo via DataStore)
 
 CreateTripScreen
   ├─ step: Int (0–3) — local, não no ViewModel
@@ -195,9 +197,10 @@ Botão "Pular e acessar a viagem" (`TextButton`, `TextSecondary`) — chama `ski
 ### Fase CHATTING / GENERATING — Chat com Gemini
 
 **Chat:**
-- `LazyColumn` de `ChatBubble` com scroll automático para a última mensagem: `LaunchedEffect(messages.size) { listState.animateScrollToItem(messages.size - 1) }`
+- `LazyColumn` de `ChatBubble` com scroll automático para a última mensagem. O `LaunchedEffect` observa `messages.size` **e** o texto/estado de loading da última mensagem — necessário porque, quando a resposta da IA substitui o placeholder "digitando…", o tamanho da lista não muda (remove o placeholder e adiciona a resposta), só o conteúdo.
 - Mensagem de loading da IA: 3 círculos cinzas (`TextSecondary` 40% alpha, 6dp, `CircleShape`)
 - Guard contra envio duplo: `if (_chatMessages.value.any { it.isLoading }) return`
+- **Teclado:** `ChatScreen` usa `.imePadding()` (o input sobe acima do teclado, já que edge-to-edge não redimensiona a janela) e o envio (`submit`) colapsa o teclado (`keyboardController.hide()` + `focusManager.clearFocus()`).
 
 **Bolhas de chat (`ChatBubble`):**
 
@@ -208,11 +211,32 @@ Botão "Pular e acessar a viagem" (`TextButton`, `TextSecondary`) — chama `ski
 
 A IA tem avatar ✨ em círculo `GreenMoss` 32dp à esquerda. O `shape` da bolha adapta o canto superior: usuário → canto superior direito 4dp; IA → canto superior esquerdo 4dp.
 
+> **Markdown nas respostas:** as bolhas da IA passam por `MarkdownText` — um renderizador leve próprio (sem dependências) que converte `**negrito**`, `*itálico*`, `` `código` ``, `[texto](url)`, listas com marcador/numeradas e cabeçalhos (`#`) em `AnnotatedString`. As bolhas do usuário continuam texto puro.
+
 **`canGenerate`:** `StateFlow<Boolean>` derivado de `chatMessages.map { msgs -> msgs.count { it.role == ChatRole.USER } >= 1 }` — o botão "Gerar roteiro agora" aparece após ao menos 1 mensagem do usuário.
 
 **Geração:** `generateItinerary()` → `chatPhase = GENERATING` → `ItineraryGenerator.generateItinerary()` → `_generatedDays.value = days` → `chatPhase = PREVIEW`. Em caso de erro: mensagem de IA com o erro + volta para `CHATTING`.
 
 **Fase `GENERATING`:** substitui o campo de input por um `CircularProgressIndicator` + "Montando seu roteiro...".
+
+### Controle de uso da IA — orçamento de tokens + cap diário
+
+Para conter custo e quota (a chave do Gemini é embutida no APK e **compartilhada** por todos os installs — ver `docs/ai-itinerary-schema.md`), o chat aplica dois limites.
+
+**1. Orçamento de tokens por conversa (tokens reais).**
+`ItineraryGenerator.sendMessage()` devolve `ChatReply(text, totalTokens)` lendo `response.usageMetadata.totalTokenCount` — contagem exata da chamada, já incluindo o histórico reenviado e os tokens de *thinking*. O ViewModel acumula em `tokensUsed`:
+- **≥ 80%** de `MAX_CONVERSATION_TOKENS` (20.000): **nudge suave** — injeta uma bolha da IA (`create_token_nudge`) oferecendo gerar o roteiro. Uma vez por conversa (`nudgeGiven`).
+- **≥ 100%**: `chatLimitReached = true` → **trava dura**. O input some e o `ChatScreen` mostra um painel (`create_limit_title`/`create_limit_body`) com **Gerar roteiro** (`onGenerate`) e **Copiar conversa**. O "Copiar conversa" copia `buildConversationExport()` (= `buildImportPrompt()` + transcrição) para o clipboard, para colar numa IA externa e depois usar a aba **Importar**.
+
+**2. Cap diário de conversas (3/dia/dispositivo).**
+Persistido em `SettingsRepository` (DataStore: `ai_conversations_date` + `ai_conversations_count`, com reset automático na virada do dia).
+- `canStartConversation: StateFlow<Boolean>` (= `dailyConversationsUsed < 3`) desabilita o card "Chat com IA" na fase CHOOSING e mostra `create_daily_limit_note`.
+- A contagem incrementa na **1ª mensagem** de cada conversa (`conversationCounted`) — abrir o chat e só ler a saudação não consome uma conversa.
+- O modo **Importar** não usa a IA e não é afetado pelo cap.
+
+Constantes em `CreateTripViewModel.Companion`: `MAX_CONVERSATION_TOKENS`, `NUDGE_RATIO`, `MAX_DAILY_CONVERSATIONS`.
+
+> **Debug:** em builds `BuildConfig.DEBUG`, `limitsEnabled = false` — nudge, trava e cap diário ficam **desligados** (a contagem de tokens continua ativa, só não bloqueia). O consumo é logado no Logcat com a tag **`PipaAiUsage`**: por turno mostra **latência (ms)**, tokens da chamada (prompt/out), acumulado, `%` do teto, **custo em R$ da chamada e acumulado**, estado do orçamento (`OK`/`NUDGE`/`LIMIT`/`OFF(debug)`) e conversas do dia. O `ItineraryGenerator` também loga latência, breakdown e custo de cada chamada (inclusive a geração). O custo é estimado por `ItineraryGenerator.estimateCostBrl()` a partir das constantes `PRICE_INPUT_USD_PER_1M`, `PRICE_OUTPUT_USD_PER_1M` e `USD_TO_BRL` — **valores aproximados, confira em `ai.google.dev/gemini-api/docs/pricing`**. Filtrar com `adb logcat -s PipaAiUsage ItineraryGenerator`.
 
 ### Fase PREVIEW — Preview do roteiro gerado
 
@@ -269,9 +293,10 @@ data class CreateTripForm(
 | `Step4Content` | 3 | Dispatcher entre fases do Passo 4 |
 | `ChoosingScreen` | `CHOOSING` | Dois cards de escolha + pular |
 | `ImportScreen` | `IMPORTING` | Instruções + copiar prompt + campo JSON + file picker |
-| `ChatScreen` | `CHATTING` / `GENERATING` | Chat de mensagens + campo de input |
+| `ChatScreen` | `CHATTING` / `GENERATING` | Chat de mensagens, input, e painel de trava (limite de tokens) |
 | `ItineraryPreview` | `PREVIEW` | Lista de dias gerados + salvar/voltar |
 | `ChatBubble` | `CHATTING` | Bolha individual de mensagem |
+| `MarkdownText` | `CHATTING` | Renderizador leve de markdown das respostas da IA |
 | `OptionCard` | `CHOOSING` | Card clicável de seleção de modo |
 | `CoverPicker` | Passo 1 | Seletor de capa: ilustrações da marca por categoria + zoom |
 | `SectionLabel` | várias | Rótulo de seção em maiúsculas (10sp, `GreenMoss`) |
@@ -285,6 +310,7 @@ data class CreateTripForm(
 - **Novo campo no wizard (Passos 1–3):** adicionar campo em `CreateTripForm` → método `updateX()` no ViewModel → campo de formulário no `StepNContent` → passar para `repo.createTrip()`.
 - **Novo passo no wizard:** incrementar `totalSteps` em `StepIndicator` → adicionar `stepTitles[4]` → adicionar `step == 4 -> Step5Content(...)` no `when(step)` → ajustar lógica de avanço.
 - **Nova fase no Passo 4:** adicionar valor ao enum `ChatPhase` → adicionar `ChatPhase.NOVA -> NovaScreen(...)` no `when(phase)` em `Step4Content` → adicionar transição no ViewModel.
-- **Alterar modelo Gemini:** mudar em `ItineraryGenerator.kt` (parâmetro `model` na inicialização do SDK). Ver restrições em `docs/ai-itinerary-schema.md`.
+- **Alterar modelo Gemini:** mudar em `ItineraryGenerator.kt` (parâmetro `modelName` na inicialização do SDK). Ver restrições em `docs/ai-itinerary-schema.md`.
+- **Ajustar limites de uso da IA:** as constantes `MAX_CONVERSATION_TOKENS`, `NUDGE_RATIO` e `MAX_DAILY_CONVERSATIONS` ficam no `companion object` de `CreateTripViewModel`. O contador diário vive em `SettingsRepository` (`aiConversationsToday`/`incrementAiConversations`).
 - **Alterar debounce do autocomplete:** mudar o `delay(350)` em `updateDestination()` e/ou `updateHotelAddress()`.
 - **Adicionar validação no Step 3:** atualmente qualquer dado de hospedagem é aceito (inclusive em branco). Para tornar obrigatório, adicionar `canProceed` e desabilitar o botão de criar.

@@ -30,11 +30,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -55,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.ui.components.CoverPicker
+import com.rodrigoleao.pipa.ui.components.MarkdownText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +82,8 @@ fun CreateTripScreen(
     val importError        by viewModel.importError.collectAsStateWithLifecycle()
     val importJsonText     by viewModel.importJsonText.collectAsStateWithLifecycle()
     val cameFromImport     by viewModel.cameFromImport.collectAsStateWithLifecycle()
+    val chatLimitReached   by viewModel.chatLimitReached.collectAsStateWithLifecycle()
+    val canStartChat       by viewModel.canStartConversation.collectAsStateWithLifecycle()
 
     var step          by remember { mutableIntStateOf(0) }
     var showHelpSheet by remember { mutableStateOf(false) }
@@ -199,6 +205,9 @@ fun CreateTripScreen(
                 importPrompt     = remember(form) { viewModel.buildImportPrompt() },
                 importJsonText   = importJsonText,
                 cameFromImport   = cameFromImport,
+                chatLimitReached = chatLimitReached,
+                canStartChat     = canStartChat,
+                buildExport      = viewModel::buildConversationExport,
                 contentPadding   = innerPadding,
                 onStartImport    = viewModel::startImport,
                 onStartChat      = viewModel::startChat,
@@ -743,6 +752,9 @@ private fun Step4Content(
     importPrompt: String,
     importJsonText: String,
     cameFromImport: Boolean,
+    chatLimitReached: Boolean,
+    canStartChat: Boolean,
+    buildExport: () -> String,
     contentPadding: PaddingValues,
     onStartImport: () -> Unit,
     onStartChat: () -> Unit,
@@ -759,6 +771,7 @@ private fun Step4Content(
     when (phase) {
         ChatPhase.CHOOSING -> ChoosingScreen(
             contentPadding = contentPadding,
+            canChat        = canStartChat,
             onImport       = onStartImport,
             onChat         = onStartChat,
             onSkip         = onSkip
@@ -792,6 +805,8 @@ private fun Step4Content(
             input          = input,
             isGenerating   = phase == ChatPhase.GENERATING,
             canGenerate    = canGenerate,
+            limitReached   = chatLimitReached,
+            buildExport    = buildExport,
             contentPadding = contentPadding,
             onInputChange  = onInputChange,
             onSend         = onSend,
@@ -806,6 +821,7 @@ private fun Step4Content(
 @Composable
 private fun ChoosingScreen(
     contentPadding: PaddingValues,
+    canChat: Boolean,
     onImport: () -> Unit,
     onChat: () -> Unit,
     onSkip: () -> Unit
@@ -853,7 +869,18 @@ private fun ChoosingScreen(
                 iconBg      = GreenMoss.copy(alpha = 0.10f),
                 title       = stringResource(R.string.create_chat_ai),
                 description = stringResource(R.string.create_option_chat_desc),
+                enabled     = canChat,
                 onClick     = onChat
+            )
+        }
+
+        if (!canChat) {
+            Text(
+                text       = stringResource(R.string.create_daily_limit_note),
+                fontSize   = 12.sp,
+                lineHeight = 16.sp,
+                color      = TextSecondary,
+                modifier   = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -876,11 +903,13 @@ private fun OptionCard(
     iconBg: Color,
     title: String,
     description: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Card(
-        modifier  = modifier,
+        modifier  = modifier.alpha(if (enabled) 1f else 0.45f),
         onClick   = onClick,
+        enabled   = enabled,
         shape     = RoundedCornerShape(16.dp),
         colors    = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -1085,6 +1114,8 @@ private fun ChatScreen(
     input: String,
     isGenerating: Boolean,
     canGenerate: Boolean,
+    limitReached: Boolean,
+    buildExport: () -> String,
     contentPadding: PaddingValues,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
@@ -1092,14 +1123,32 @@ private fun ChatScreen(
     onSkip: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val clipboard = LocalClipboardManager.current
+    var conversationCopied by remember { mutableStateOf(false) }
 
-    LaunchedEffect(messages.size) {
+    // Envia a mensagem e colapsa o teclado (esconde + tira o foco do campo).
+    val submit: () -> Unit = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        onSend()
+    }
+
+    // Rola até a mensagem mais recente sempre que a lista cresce OU quando o
+    // conteúdo da última mensagem muda. Este segundo caso é essencial: quando a
+    // resposta da IA substitui o placeholder "digitando…", messages.size não muda
+    // (remove o placeholder e adiciona a resposta), só o conteúdo — então observar
+    // apenas o tamanho não dispararia o scroll e a resposta ficaria escondida.
+    val lastMessage = messages.lastOrNull()
+    LaunchedEffect(messages.size, lastMessage?.text, lastMessage?.isLoading) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()               // sobe o input acima do teclado (edge-to-edge não redimensiona a janela)
             .padding(contentPadding)
     ) {
         // ── Mensagens ─────────────────────────────────────────────────────────
@@ -1122,22 +1171,9 @@ private fun ChatScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Botão de gerar roteiro (aparece após 1ª resposta do usuário)
-                if (canGenerate && !isGenerating) {
-                    Button(
-                        onClick  = onGenerate,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
-                    ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.create_generate_now), fontWeight = FontWeight.SemiBold, color = AmberPrimary)
-                    }
-                }
-
-                if (isGenerating) {
-                    Row(
+                when {
+                    // Gerando roteiro
+                    isGenerating -> Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
@@ -1146,52 +1182,105 @@ private fun ChatScreen(
                         Spacer(Modifier.width(10.dp))
                         Text(stringResource(R.string.create_building), color = TextSecondary, fontSize = 14.sp)
                     }
-                } else {
-                    // Campo de input
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value         = input,
-                            onValueChange = onInputChange,
-                            modifier      = Modifier.weight(1f),
-                            placeholder   = { Text(stringResource(R.string.create_message_placeholder), fontSize = 14.sp) },
-                            singleLine    = false,
-                            maxLines      = 4,
-                            shape         = RoundedCornerShape(20.dp),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                            keyboardActions = KeyboardActions(onSend = { onSend() }),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor      = GreenMoss,
-                                unfocusedBorderColor    = CardBorder,
-                                focusedContainerColor   = SurfaceWhite,
-                                unfocusedContainerColor = SurfaceWhite,
-                                cursorColor             = GreenMoss
-                            )
-                        )
-                        IconButton(
-                            onClick  = onSend,
-                            enabled  = input.isNotBlank(),
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(if (input.isNotBlank()) GreenMoss else CardBorder)
+
+                    // Trava dura: limite de tokens da conversa atingido
+                    limitReached -> {
+                        Text(stringResource(R.string.create_limit_title), fontWeight = FontWeight.SemiBold, color = TextPrimary, fontSize = 14.sp)
+                        Text(stringResource(R.string.create_limit_body), color = TextSecondary, fontSize = 12.sp, lineHeight = 16.sp)
+                        Button(
+                            onClick  = onGenerate,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape    = RoundedCornerShape(12.dp),
+                            colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                         ) {
-                            Icon(
-                                ImageVector.vectorResource(R.drawable.ic_send),
-                                contentDescription = stringResource(R.string.create_send),
-                                tint     = Color.White,
-                                modifier = Modifier.size(20.dp)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.create_generate_now), fontWeight = FontWeight.SemiBold, color = AmberPrimary)
+                        }
+                        OutlinedButton(
+                            onClick  = {
+                                clipboard.setText(AnnotatedString(buildExport()))
+                                conversationCopied = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape    = RoundedCornerShape(12.dp),
+                            border   = BorderStroke(1.dp, GreenMoss)
+                        ) {
+                            Icon(Icons.Filled.ContentCopy, contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(if (conversationCopied) R.string.create_copied else R.string.create_copy_conversation),
+                                fontWeight = FontWeight.SemiBold, color = GreenMoss, fontSize = 13.sp
                             )
+                        }
+                        TextButton(
+                            onClick  = onSkip,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text(stringResource(R.string.create_skip), color = TextSecondary, fontSize = 12.sp)
                         }
                     }
 
-                    TextButton(
-                        onClick  = onSkip,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Text(stringResource(R.string.create_skip), color = TextSecondary, fontSize = 12.sp)
+                    // Fluxo normal: (botão gerar após 1ª troca) + campo de input
+                    else -> {
+                        if (canGenerate) {
+                            Button(
+                                onClick  = onGenerate,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape    = RoundedCornerShape(12.dp),
+                                colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
+                            ) {
+                                Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.create_generate_now), fontWeight = FontWeight.SemiBold, color = AmberPrimary)
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value         = input,
+                                onValueChange = onInputChange,
+                                modifier      = Modifier.weight(1f),
+                                placeholder   = { Text(stringResource(R.string.create_message_placeholder), fontSize = 14.sp) },
+                                singleLine    = false,
+                                maxLines      = 4,
+                                shape         = RoundedCornerShape(20.dp),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                                keyboardActions = KeyboardActions(onSend = { submit() }),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor      = GreenMoss,
+                                    unfocusedBorderColor    = CardBorder,
+                                    focusedContainerColor   = SurfaceWhite,
+                                    unfocusedContainerColor = SurfaceWhite,
+                                    cursorColor             = GreenMoss
+                                )
+                            )
+                            IconButton(
+                                onClick  = submit,
+                                enabled  = input.isNotBlank(),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(if (input.isNotBlank()) GreenMoss else CardBorder)
+                            ) {
+                                Icon(
+                                    ImageVector.vectorResource(R.drawable.ic_send),
+                                    contentDescription = stringResource(R.string.create_send),
+                                    tint     = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        TextButton(
+                            onClick  = onSkip,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text(stringResource(R.string.create_skip), color = TextSecondary, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -1245,13 +1334,19 @@ private fun ChatBubble(msg: ChatMessage) {
                         )
                     }
                 }
-            } else {
+            } else if (isUser) {
                 Text(
                     text     = msg.text,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     fontSize = 14.sp,
-                    color    = if (isUser) Color.White else TextPrimary,
+                    color    = Color.White,
                     lineHeight = 20.sp
+                )
+            } else {
+                MarkdownText(
+                    text     = msg.text,
+                    color    = TextPrimary,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                 )
             }
         }

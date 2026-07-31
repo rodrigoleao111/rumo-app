@@ -87,6 +87,12 @@
     <string name="create_assistant_not_initialized_short">Assistente não inicializado.</string>
     <string name="create_generate_failed">Não consegui gerar o roteiro. %1$s</string>
     <string name="create_try_again">Tente novamente.</string>
+    <string name="create_token_nudge">Já tenho um bom panorama da sua viagem 🙌 Quer que eu gere o roteiro agora? Você também pode continuar ajustando por mais algumas mensagens.</string>
+    <string name="create_limit_title">Limite da conversa atingido</string>
+    <string name="create_limit_body">Para manter o uso da IA sob controle, esta conversa chegou ao limite. Você pode gerar o roteiro agora com o que já conversamos, ou copiar a conversa para continuar numa IA externa e depois importar o JSON.</string>
+    <string name="create_copy_conversation">Copiar conversa</string>
+    <string name="create_copied">Copiado!</string>
+    <string name="create_daily_limit_note">Você atingiu o limite de 3 conversas com IA por dia neste dispositivo. Ainda dá para importar um roteiro pronto ou tentar novamente amanhã.</string>
     <plurals name="create_day_count">
         <item quantity="one">%1$d dia</item>
         <item quantity="other">%1$d dias</item>
@@ -532,4 +538,16 @@
         <item quantity="one">em %1$d ano</item>
         <item quantity="other">em %1$d anos</item>
     </plurals>
+
+    <!-- Minhas conversas com a IA -->
+    <string name="aiconv_title">Minhas conversas com a IA</string>
+    <string name="aiconv_untitled">Conversa sem título</string>
+    <string name="aiconv_empty_title">Nenhuma conversa ainda</string>
+    <string name="aiconv_empty_msg">As conversas que você tiver com a IA ao criar viagens aparecerão aqui.</string>
+    <string name="aiconv_you">Você</string>
+    <string name="aiconv_assistant">Assistente</string>
+    <string name="aiconv_not_found">Conversa não encontrada.</string>
+    <string name="aiconv_delete_title">Excluir conversa?</string>
+    <string name="aiconv_delete_msg">Esta conversa será removida permanentemente.</string>
+    <string name="aiconv_delete_cd">Excluir conversa</string>
 </resources>

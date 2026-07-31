@@ -102,10 +102,12 @@ O wizard de criação (Step 4) oferece dois modos de entrada do JSON:
 
 ### Modo Chat (Gemini)
 
-- O app inicia uma sessão de chat com `gemini-2.0-flash` via SDK `com.google.ai.client.generativeai`
+- O app inicia uma sessão de chat com `gemini-3.1-flash-lite` via SDK `com.google.ai.client.generativeai`
 - O system prompt já contém o contexto da viagem (destino, datas, hospedagem)
 - Após ao menos 1 mensagem, o botão "Gerar roteiro agora" instrui o modelo a produzir o JSON completo
 - O JSON é gerado internamente — o usuário não precisa copiar/colar nada
+
+> **Chave compartilhada e controle de uso.** A chave (`BuildConfig.GEMINI_API_KEY`, vinda de `local.properties`) é **embutida no APK** e, portanto, **compartilhada por todos os installs** — quota e custo são do desenvolvedor. Uma chave embutida é sempre extraível; mitigue restringindo-a no Google Cloud (restrição por app Android + só a Generative Language API) e com teto de orçamento/quota. No app, o chat impõe um **orçamento de tokens por conversa** (via `usageMetadata.totalTokenCount`, com nudge em 80% e trava em 100%) e um **cap de 3 conversas/dia por dispositivo**. Detalhes em `docs/modulo-04-create-trip.md` → "Controle de uso da IA".
 
 ### Modo Importar (JSON externo)
 

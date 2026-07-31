@@ -1,11 +1,15 @@
 package com.rodrigoleao.pipa.ui.trips
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.BuildConfig
 import com.rodrigoleao.pipa.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.rodrigoleao.pipa.data.ai.ItineraryGenerator
+import com.rodrigoleao.pipa.data.model.AiChatMessage
+import com.rodrigoleao.pipa.data.preferences.SettingsRepository
+import com.rodrigoleao.pipa.data.repository.AiConversationRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.usecase.SaveGeneratedItineraryUseCase
 import com.rodrigoleao.pipa.data.weather.GeocodingResult
@@ -23,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.Locale
 import javax.inject.Inject
 
 // ── Wizard form ───────────────────────────────────────────────────────────────
@@ -59,6 +64,8 @@ enum class ChatPhase { CHOOSING, CHATTING, IMPORTING, GENERATING, PREVIEW, SAVIN
 class CreateTripViewModel @Inject constructor(
     private val repo: TripRepository,
     private val saveItineraryUseCase: SaveGeneratedItineraryUseCase,
+    private val settingsRepo: SettingsRepository,
+    private val aiConversationRepo: AiConversationRepository,
     @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
@@ -183,6 +190,32 @@ class CreateTripViewModel @Inject constructor(
 
     private var generator: ItineraryGenerator? = null
 
+    // Em build DEBUG os limites de IA ficam desligados (facilita testes); a contagem
+    // de tokens continua ativa para os logs. Em release, os limites valem normalmente.
+    private val limitsEnabled = !BuildConfig.DEBUG
+
+    // ── Orçamento de tokens da conversa (tokens reais via usageMetadata) ─────────
+    private val _tokensUsed = MutableStateFlow(0)
+    val tokensUsed: StateFlow<Int> = _tokensUsed.asStateFlow()
+
+    private val _chatLimitReached = MutableStateFlow(false)
+    val chatLimitReached: StateFlow<Boolean> = _chatLimitReached.asStateFlow()
+
+    private var nudgeGiven          = false   // nudge suave já dado nesta conversa?
+    private var conversationCounted = false   // já contou no cap diário nesta conversa?
+    private var accumulatedCostBrl  = 0.0     // custo estimado acumulado na conversa (R$)
+    private var currentConversationId: Long? = null   // id da conversa persistida (upsert)
+
+    // ── Cap diário de conversas com IA (3/dia/dispositivo) ──────────────────────
+    val dailyConversationsUsed: StateFlow<Int> =
+        settingsRepo.aiConversationsToday(today())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val canStartConversation: StateFlow<Boolean> =
+        dailyConversationsUsed
+            .map { !limitsEnabled || it < MAX_DAILY_CONVERSATIONS }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     private val _importError = MutableStateFlow<String?>(null)
     val importError: StateFlow<String?> = _importError.asStateFlow()
 
@@ -215,8 +248,17 @@ class CreateTripViewModel @Inject constructor(
     }
 
     fun startChat() {
+        if (!canStartConversation.value) return   // defensivo; a UI já bloqueia o card
+        // Reinicia o orçamento a cada nova conversa
+        _tokensUsed.value       = 0
+        _chatLimitReached.value = false
+        nudgeGiven          = false
+        conversationCounted = false
+        accumulatedCostBrl  = 0.0
+        currentConversationId = null
         _chatPhase.value    = ChatPhase.CHATTING
         _chatMessages.value = listOf(ChatMessage(ChatRole.AI, generator?.getInitialGreeting() ?: appContext.getString(R.string.create_default_greeting)))
+        Log.d(TAG, "conversa iniciada | dailyConv=${dailyConversationsUsed.value}/$MAX_DAILY_CONVERSATIONS | teto=$MAX_CONVERSATION_TOKENS tk | limits=${if (limitsEnabled) "on" else "off"}")
     }
 
     fun startImport() {
@@ -321,18 +363,101 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     fun sendChatMessage() {
         val text = _chatInput.value.trim().ifEmpty { return }
         if (_chatMessages.value.any { it.isLoading }) return
+        if (_chatLimitReached.value) return   // trava dura: não aceita mais mensagens
         _chatInput.value = ""
+
+        // Cap diário: conta a conversa na 1ª mensagem enviada (abrir e só ler não gasta).
+        // Em debug (limitsEnabled = false) não conta nem bloqueia.
+        if (limitsEnabled && !conversationCounted) {
+            conversationCounted = true
+            viewModelScope.launch { settingsRepo.incrementAiConversations(today()) }
+        }
 
         _chatMessages.value = _chatMessages.value +
             ChatMessage(ChatRole.USER, text) +
             ChatMessage(ChatRole.AI, "", isLoading = true)
 
         viewModelScope.launch {
-            val response = generator?.sendMessage(text)
-                ?: appContext.getString(R.string.create_assistant_not_initialized)
+            val reply     = generator?.sendMessage(text)
+            val replyText = reply?.text ?: appContext.getString(R.string.create_assistant_not_initialized)
             _chatMessages.value = _chatMessages.value.dropLast(1) +
-                ChatMessage(ChatRole.AI, response)
+                ChatMessage(ChatRole.AI, replyText)
+
+            // Orçamento de tokens reais: acumula, loga e (se limitsEnabled) decide nudge/trava
+            if (reply != null && reply.totalTokens > 0) {
+                val used = _tokensUsed.value + reply.totalTokens
+                _tokensUsed.value = used
+                logAiUsage(reply, used)
+                if (limitsEnabled) {
+                    when {
+                        used >= MAX_CONVERSATION_TOKENS ->
+                            _chatLimitReached.value = true
+                        used >= (MAX_CONVERSATION_TOKENS * NUDGE_RATIO).toInt() && !nudgeGiven -> {
+                            nudgeGiven = true
+                            _chatMessages.value = _chatMessages.value +
+                                ChatMessage(ChatRole.AI, appContext.getString(R.string.create_token_nudge))
+                        }
+                    }
+                }
+            }
+            persistConversation()
         }
+    }
+
+    /** Persiste (upsert) a conversa atual para aparecer em "Minhas conversas com a IA". */
+    private fun persistConversation() {
+        val msgs = _chatMessages.value.filter { !it.isLoading && it.text.isNotBlank() }
+        if (msgs.none { it.role == ChatRole.USER }) return
+        val model = msgs.map { AiChatMessage(fromUser = it.role == ChatRole.USER, text = it.text) }
+        val f = _form.value
+        viewModelScope.launch {
+            val id = currentConversationId
+            if (id == null) {
+                currentConversationId = aiConversationRepo.insert(
+                    tripId      = _createdTripId.value,
+                    tripName    = f.name,
+                    destination = f.destination,
+                    startDate   = f.startDate,
+                    endDate     = f.endDate,
+                    messages    = model,
+                    createdAt   = System.currentTimeMillis()
+                )
+            } else {
+                aiConversationRepo.updateMessages(id, model)
+            }
+        }
+    }
+
+    /** Loga consumo e estatísticas (tokens, latência, custo em R$) no Logcat (tag "PipaAiUsage"). */
+    private fun logAiUsage(reply: ItineraryGenerator.ChatReply, used: Int) {
+        accumulatedCostBrl += reply.costBrl
+        val turns = _chatMessages.value.count { it.role == ChatRole.USER }
+        val pct   = used * 100 / MAX_CONVERSATION_TOKENS
+        val state = when {
+            !limitsEnabled                                         -> "OFF(debug)"
+            used >= MAX_CONVERSATION_TOKENS                        -> "LIMIT"
+            used >= (MAX_CONVERSATION_TOKENS * NUDGE_RATIO).toInt() -> "NUDGE"
+            else                                                   -> "OK"
+        }
+        Log.d(
+            TAG,
+            "turn=$turns | ${reply.latencyMs}ms | +${reply.totalTokens} tk (prompt ${reply.promptTokens}/out ${reply.candidatesTokens}) | " +
+                "total=$used/$MAX_CONVERSATION_TOKENS tk ($pct%) | " +
+                "~R$ ${String.format(Locale.US, "%.4f", reply.costBrl)} (acum R$ ${String.format(Locale.US, "%.4f", accumulatedCostBrl)}) | " +
+                "budget=$state | dailyConv=${dailyConversationsUsed.value}/$MAX_DAILY_CONVERSATIONS | limits=${if (limitsEnabled) "on" else "off"}"
+        )
+    }
+
+    /** Exporta o prompt de importação + a conversa, para colar numa IA externa e depois importar o JSON. */
+    fun buildConversationExport(): String {
+        val transcript = _chatMessages.value
+            .filter { !it.isLoading && it.text.isNotBlank() }
+            .joinToString("\n") { m ->
+                val who = if (m.role == ChatRole.USER) "Usuário" else "Assistente"
+                "$who: ${m.text}"
+            }
+        return buildImportPrompt() +
+            "\n\n## Conversa até agora (preferências do viajante)\n" + transcript
     }
 
     fun generateItinerary() {
@@ -399,4 +524,15 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         }
     }
 
+    private fun today(): String = LocalDate.now().toString()
+
+    companion object {
+        private const val TAG = "PipaAiUsage"
+        /** Teto de tokens (cumulativos, cobrados) por conversa antes da trava dura. */
+        private const val MAX_CONVERSATION_TOKENS = 20_000
+        /** Fração do teto em que o nudge suave é oferecido. */
+        private const val NUDGE_RATIO             = 0.8
+        /** Máximo de conversas com IA por dia por dispositivo. */
+        private const val MAX_DAILY_CONVERSATIONS = 3
+    }
 }

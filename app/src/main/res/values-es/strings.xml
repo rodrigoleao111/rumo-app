@@ -87,6 +87,12 @@
     <string name="create_assistant_not_initialized_short">Asistente no inicializado.</string>
     <string name="create_generate_failed">No pude generar el itinerario. %1$s</string>
     <string name="create_try_again">Inténtalo de nuevo.</string>
+    <string name="create_token_nudge">Ya tengo una buena idea de tu viaje 🙌 ¿Quieres que genere el itinerario ahora? También puedes seguir ajustando con algunos mensajes más.</string>
+    <string name="create_limit_title">Límite de la conversación alcanzado</string>
+    <string name="create_limit_body">Para mantener el uso de la IA bajo control, esta conversación alcanzó su límite. Puedes generar el itinerario ahora con lo que hablamos, o copiar la conversación para continuar en una IA externa e importar el JSON después.</string>
+    <string name="create_copy_conversation">Copiar conversación</string>
+    <string name="create_copied">¡Copiado!</string>
+    <string name="create_daily_limit_note">Alcanzaste el límite de 3 conversaciones con IA por día en este dispositivo. Aún puedes importar un itinerario listo o volver a intentarlo mañana.</string>
     <plurals name="create_day_count">
         <item quantity="one">%1$d día</item>
         <item quantity="other">%1$d días</item>
@@ -532,4 +538,16 @@
         <item quantity="one">en %1$d año</item>
         <item quantity="other">en %1$d años</item>
     </plurals>
+
+    <!-- Mis conversaciones con la IA -->
+    <string name="aiconv_title">Mis conversaciones con la IA</string>
+    <string name="aiconv_untitled">Conversación sin título</string>
+    <string name="aiconv_empty_title">Aún no hay conversaciones</string>
+    <string name="aiconv_empty_msg">Las conversaciones que tengas con la IA al crear viajes aparecerán aquí.</string>
+    <string name="aiconv_you">Tú</string>
+    <string name="aiconv_assistant">Asistente</string>
+    <string name="aiconv_not_found">Conversación no encontrada.</string>
+    <string name="aiconv_delete_title">¿Eliminar conversación?</string>
+    <string name="aiconv_delete_msg">Esta conversación se eliminará de forma permanente.</string>
+    <string name="aiconv_delete_cd">Eliminar conversación</string>
 </resources>

@@ -79,7 +79,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 - Android Studio Hedgehog ou superior
 - JDK 17 (incluso no Android Studio)
 - Dispositivo ou emulador Android 8.0+
-- Conta no [Google AI Studio](https://aistudio.google.com) com acesso ao `gemini-2.0-flash` (requer plano pago)
+- Conta no [Google AI Studio](https://aistudio.google.com) com uma chave de API para o `gemini-3.1-flash-lite` (a chave deve ser de um projeto com quota disponível — projetos com faturamento pré-pago sem crédito retornam `429 RESOURCE_EXHAUSTED`)
 
 ### Configuração
 

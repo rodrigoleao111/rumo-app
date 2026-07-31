@@ -5,6 +5,7 @@ import com.rodrigoleao.pipa.data.db.TravelDatabase
 import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.pipa.data.preferences.SettingsRepository
 import com.rodrigoleao.pipa.data.preferences.settingsDataStore
+import com.rodrigoleao.pipa.data.repository.AiConversationRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import dagger.Module
 import dagger.Provides
@@ -25,6 +26,11 @@ object AppModule {
     @Provides
     @Singleton
     fun provideTripRepository(db: TravelDatabase): TripRepository = TripRepository(db)
+
+    @Provides
+    @Singleton
+    fun provideAiConversationRepository(db: TravelDatabase): AiConversationRepository =
+        AiConversationRepository(db)
 
     @Provides
     @Singleton

@@ -37,7 +37,7 @@ Comandos:
 ## Room — regras invioláveis
 
 - **Nunca** `fallbackToDestructiveMigration()`. Migrations são explícitas em `TravelDatabase.kt`.
-- Versão atual: `TravelDatabase.CURRENT_VERSION` (**19**) — fonte única de verdade (anotação `@Database` + testes).
+- Versão atual: `TravelDatabase.CURRENT_VERSION` (**20**) — fonte única de verdade (anotação `@Database` + testes).
 - Para alterar o schema: nova `MIGRATION_N_(N+1)` → incrementa `CURRENT_VERSION` → registra em `ALL_MIGRATIONS` → teste de migração com `MigrationTestHelper`.
 - `app/schemas/*.json` são **versionados no git — nunca apagar** (histórico usado pelos testes de migração).
 

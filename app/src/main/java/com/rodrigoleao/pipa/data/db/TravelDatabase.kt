@@ -22,7 +22,8 @@ import com.rodrigoleao.pipa.data.db.entity.*
         BoardingPassEntity::class,
         NoteEntity::class,
         NoteBlockEntity::class,
-        ChecklistItemEntity::class
+        ChecklistItemEntity::class,
+        AiConversationEntity::class
     ],
     version = TravelDatabase.CURRENT_VERSION,
     exportSchema = true
@@ -37,10 +38,11 @@ abstract class TravelDatabase : RoomDatabase() {
     abstract fun voucherGroupDao(): VoucherGroupDao
     abstract fun boardingPassDao(): BoardingPassDao
     abstract fun noteDao(): NoteDao
+    abstract fun aiConversationDao(): AiConversationDao
 
     companion object {
         /** Versão atual do schema — única fonte de verdade (usada na anotação @Database e nos testes). */
-        const val CURRENT_VERSION = 19
+        const val CURRENT_VERSION = 20
 
         @Volatile private var INSTANCE: TravelDatabase? = null
 
@@ -167,6 +169,19 @@ abstract class TravelDatabase : RoomDatabase() {
             }
         }
 
+        // v19 → v20: tabela de conversas com a IA (ai_conversations) — sem FK (snapshot independente)
+        private val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ai_conversations` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`tripId` INTEGER, `tripName` TEXT NOT NULL, `destination` TEXT NOT NULL, " +
+                        "`startDate` TEXT, `endDate` TEXT, `messagesJson` TEXT NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL)"
+                )
+            }
+        }
+
         // v10 → v11: preferência de agrupamento de vouchers por viagem
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -201,7 +216,7 @@ abstract class TravelDatabase : RoomDatabase() {
             MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
             MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13,
             MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18,
-            MIGRATION_18_19
+            MIGRATION_18_19, MIGRATION_19_20
         )
 
         fun getInstance(context: Context): TravelDatabase =

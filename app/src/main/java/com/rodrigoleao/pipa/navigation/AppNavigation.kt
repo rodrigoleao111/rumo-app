@@ -76,6 +76,10 @@ import com.rodrigoleao.pipa.ui.notes.NoteEditorScreen
 import com.rodrigoleao.pipa.ui.notes.NotesListContent
 import com.rodrigoleao.pipa.ui.notes.NoteEditorViewModel
 import com.rodrigoleao.pipa.ui.notes.NotesListViewModel
+import com.rodrigoleao.pipa.ui.aiconversations.AiConversationDetailScreen
+import com.rodrigoleao.pipa.ui.aiconversations.AiConversationDetailViewModel
+import com.rodrigoleao.pipa.ui.aiconversations.AiConversationsScreen
+import com.rodrigoleao.pipa.ui.aiconversations.AiConversationsViewModel
 import com.rodrigoleao.pipa.ui.splash.SplashScreen
 import com.rodrigoleao.pipa.ui.share_trip.ShareTripScreen
 import com.rodrigoleao.pipa.ui.share_trip.ShareTripViewModel
@@ -135,6 +139,10 @@ sealed class Screen(val route: String) {
         fun createRoute(tripId: Long) = "trip/$tripId/share"
     }
     object Settings   : Screen("settings")
+    object AiConversations : Screen("ai_conversations")
+    object AiConversationDetail : Screen("ai_conversation/{conversationId}") {
+        fun createRoute(conversationId: Long) = "ai_conversation/$conversationId"
+    }
 }
 
 private val TAB_ICON_RES = listOf(R.drawable.ic_home, R.drawable.ic_ticket, R.drawable.ic_boarding, R.drawable.ic_contacts, R.drawable.ic_notes_nav)
@@ -214,7 +222,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 onTripEdit     = { tripId -> navController.navigate(Screen.EditTrip.createRoute(tripId)) },
                 onTripShare    = { tripId -> navController.navigate(Screen.ShareTrip.createRoute(tripId)) },
                 onImportTrip   = { navController.navigate(Screen.ImportTrip.route) },
-                onSettingsClick = { navController.navigate(Screen.Settings.route) }
+                onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                onAiConversationsClick = { navController.navigate(Screen.AiConversations.route) }
             )
         }
 
@@ -222,6 +231,26 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
         composable(Screen.Settings.route) {
             val vm: SettingsViewModel = hiltViewModel()
             SettingsScreen(
+                viewModel = vm,
+                onBack    = { navController.popBackStack() }
+            )
+        }
+
+        // ── Minhas conversas com a IA ────────────────────────────────────────
+        composable(Screen.AiConversations.route) {
+            val vm: AiConversationsViewModel = hiltViewModel()
+            AiConversationsScreen(
+                viewModel           = vm,
+                onConversationClick = { id -> navController.navigate(Screen.AiConversationDetail.createRoute(id)) },
+                onBack              = { navController.popBackStack() }
+            )
+        }
+        composable(
+            route     = Screen.AiConversationDetail.route,
+            arguments = listOf(navArgument("conversationId") { type = NavType.LongType })
+        ) {
+            val vm: AiConversationDetailViewModel = hiltViewModel()
+            AiConversationDetailScreen(
                 viewModel = vm,
                 onBack    = { navController.popBackStack() }
             )
