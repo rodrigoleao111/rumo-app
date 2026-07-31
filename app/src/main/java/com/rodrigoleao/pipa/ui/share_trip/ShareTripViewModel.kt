@@ -4,8 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.data.export.TravelExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +24,7 @@ sealed class SharePhase {
 @HiltViewModel
 class ShareTripViewModel @Inject constructor(
     private val exporter: TravelExporter,
+    @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,7 +40,7 @@ class ShareTripViewModel @Inject constructor(
             _phase.value = try {
                 SharePhase.Ready(exporter.export(tripId))
             } catch (e: Exception) {
-                SharePhase.Error(e.message ?: "Erro ao preparar o arquivo.")
+                SharePhase.Error(e.message ?: appContext.getString(R.string.share_error_fallback))
             }
         }
     }

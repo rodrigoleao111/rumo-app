@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -32,10 +33,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configurações", color = Color.White, fontWeight = FontWeight.SemiBold) },
+                title = { Text(stringResource(R.string.settings_title), color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -57,14 +58,14 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
-                        text       = "Abrir viagem em curso automaticamente",
+                        text       = stringResource(R.string.settings_auto_open_title),
                         style      = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color      = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text  = "Ao abrir o app, vai direto para a viagem ativa (quando houver apenas uma)",
+                        text  = stringResource(R.string.settings_auto_open_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -95,14 +96,14 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
-                        text       = "Adicionar números de emergência nos contatos das viagens",
+                        text       = stringResource(R.string.settings_emergency_title),
                         style      = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color      = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text  = "Exibe SAMU (192), Bombeiros (193) e Polícia Militar (190) na aba de contatos de todas as viagens",
+                        text  = stringResource(R.string.settings_emergency_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -133,14 +134,14 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
-                        text       = "Ordenar viagens por proximidade",
+                        text       = stringResource(R.string.settings_sort_proximity_title),
                         style      = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color      = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text  = "Mostra primeiro a viagem em curso e as mais próximas; viagens concluídas ficam por último",
+                        text  = stringResource(R.string.settings_sort_proximity_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -171,14 +172,14 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                     Text(
-                        text       = "Ocultar viagens concluídas",
+                        text       = stringResource(R.string.settings_hide_completed_title),
                         style      = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color      = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text  = "Esconde da lista as viagens já encerradas (não são apagadas — reaparecem ao desativar)",
+                        text  = stringResource(R.string.settings_hide_completed_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -198,6 +199,9 @@ fun SettingsScreen(
                     )
                 }
             }
+            HorizontalDivider(color = Sand)
+
+            LanguageSettingRow()
             HorizontalDivider(color = Sand)
         }
     }

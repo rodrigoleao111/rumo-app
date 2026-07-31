@@ -65,6 +65,8 @@ import com.rodrigoleao.pipa.ui.components.BadgeChip
 import com.rodrigoleao.pipa.ui.components.WeatherIcon
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -94,7 +96,7 @@ fun DayDetailScreen(
     var refreshTrigger by remember { mutableStateOf(0) }
 
     LaunchedEffect(refreshKey) {
-        if (refreshKey > 0L) snackbarHostState.showSnackbar("Alterações salvas ✓")
+        if (refreshKey > 0L) snackbarHostState.showSnackbar(context.getString(R.string.day_changes_saved))
     }
 
     LaunchedEffect(refreshTrigger) {
@@ -125,12 +127,12 @@ fun DayDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onEditDay) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar dia", tint = GreenMoss)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = stringResource(R.string.day_edit_day), tint = GreenMoss)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
@@ -143,7 +145,7 @@ fun DayDetailScreen(
                 contentColor      = GreenMoss,
                 shape             = RoundedCornerShape(16.dp)
             ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Adicionar atividade")
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.day_add_activity_cd))
             }
         },
         containerColor = Sand,
@@ -187,8 +189,9 @@ fun DayDetailScreen(
             // ── Link / documento do dia ──────────────────────────────────
             if (!day.dayLinkUrl.isNullOrBlank()) {
                 item {
+                    val defaultLinkLabel = stringResource(R.string.day_view_document)
                     DayLinkCard(
-                        label = day.dayLinkLabel.ifBlank { "Ver documento" },
+                        label = day.dayLinkLabel.ifBlank { defaultLinkLabel },
                         url   = day.dayLinkUrl,
                         context = context
                     )
@@ -198,8 +201,9 @@ fun DayDetailScreen(
             // ── Documento do dia ─────────────────────────────────────────
             if (!day.dayDocumentPath.isNullOrBlank()) {
                 item {
+                    val defaultDocName = stringResource(R.string.day_document_default)
                     DayDocumentCard(
-                        name    = day.dayDocumentTitle.ifBlank { day.dayDocumentName.ifBlank { "Documento" } },
+                        name    = day.dayDocumentTitle.ifBlank { day.dayDocumentName.ifBlank { defaultDocName } },
                         path    = day.dayDocumentPath,
                         context = context
                     )
@@ -225,8 +229,8 @@ fun DayDetailScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("📋", fontSize = 36.sp)
-                            Text("Nenhuma atividade ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                            Text("Toque em + para adicionar", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+                            Text(stringResource(R.string.day_no_activities), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                            Text(stringResource(R.string.day_tap_plus_to_add), style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -265,16 +269,16 @@ fun DayDetailScreen(
     activityToDelete?.let { actId ->
         AlertDialog(
             onDismissRequest = { activityToDelete = null },
-            title = { Text("Excluir atividade?") },
-            text  = { Text("Esta atividade será removida permanentemente do dia.") },
+            title = { Text(stringResource(R.string.day_delete_activity_title)) },
+            text  = { Text(stringResource(R.string.day_delete_activity_msg)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteActivity(actId)
                     activityToDelete = null
-                }) { Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
+                }) { Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { activityToDelete = null }) { Text("Cancelar") }
+                TextButton(onClick = { activityToDelete = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -324,7 +328,7 @@ private fun DayDocumentCard(name: String, path: String, context: Context) {
                 setDataAndType(uri, mime)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            runCatching { context.startActivity(Intent.createChooser(intent, "Abrir com…")) }
+            runCatching { context.startActivity(Intent.createChooser(intent, context.getString(R.string.day_open_with))) }
         },
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         shape    = RoundedCornerShape(12.dp),
@@ -339,7 +343,7 @@ private fun DayDocumentCard(name: String, path: String, context: Context) {
             Text("📎", fontSize = 24.sp)
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss, maxLines = 1)
-                Text("Toque para abrir", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(stringResource(R.string.day_tap_to_open), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
             Text("›", fontSize = 20.sp, color = GreenMoss, fontWeight = FontWeight.Bold)
         }
@@ -360,9 +364,9 @@ private fun DayNotesButton(count: Int, onClick: () -> Unit) {
         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("📝", fontSize = 24.sp)
             Column(modifier = Modifier.weight(1f)) {
-                Text("Notas do dia", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss)
+                Text(stringResource(R.string.day_notes_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = GreenMoss)
                 Text(
-                    text  = if (count > 0) "$count ${if (count == 1) "nota" else "notas"}" else "Ver e adicionar anotações",
+                    text  = if (count > 0) pluralStringResource(R.plurals.day_notes_count, count, count) else stringResource(R.string.day_notes_add_hint),
                     style = MaterialTheme.typography.bodySmall, color = TextSecondary
                 )
             }
@@ -407,21 +411,21 @@ private fun WeatherCard(liveWeather: LiveWeatherDay?, isLoading: Boolean, onRefr
                     // nada além do spinner
                 } else if (!hasData) {
                     Text(
-                        "Temperatura indisponível no momento",
+                        stringResource(R.string.day_weather_unavailable),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${liveWeather!!.minTemp}°C  ~  ${liveWeather.maxTemp}°C", style = MaterialTheme.typography.titleMedium, color = AmberPrimary, fontWeight = FontWeight.SemiBold)
-                        Text("● ao vivo", fontSize = 9.sp, color = GreenMoss, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.day_temp_range, liveWeather!!.minTemp, liveWeather.maxTemp), style = MaterialTheme.typography.titleMedium, color = AmberPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.day_weather_live), fontSize = 9.sp, color = GreenMoss, fontWeight = FontWeight.SemiBold)
                     }
                     if (condition != null) Text(condition, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
             }
 
             IconButton(onClick = { if (!isLoading) onRefresh() }, modifier = Modifier.size(36.dp), enabled = !isLoading) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_refresh), contentDescription = if (isLoading) "Atualizando…" else "Atualizar clima",
+                Icon(ImageVector.vectorResource(R.drawable.ic_refresh), contentDescription = if (isLoading) stringResource(R.string.day_weather_updating) else stringResource(R.string.day_weather_refresh_cd),
                     tint = if (isLoading) AmberPrimary else GreenSage,
                     modifier = Modifier.size(22.dp).rotate(if (isLoading) spinAngle else 0f))
             }
@@ -451,7 +455,7 @@ private fun DayAlertCard(message: String) {
 @Composable
 private fun VoucherChecklist(vouchers: List<DayVoucher>) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text("🎫  LEVAR HOJE", fontSize = 10.sp, color = GreenMoss, letterSpacing = 2.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.day_take_today), fontSize = 10.sp, color = GreenMoss, letterSpacing = 2.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             vouchers.forEach { voucher ->
@@ -511,7 +515,7 @@ private fun ActivityItem(
 
                     Icon(
                         imageVector        = if (expanded) ImageVector.vectorResource(R.drawable.ic_chevron_up) else ImageVector.vectorResource(R.drawable.ic_chevron_down),
-                        contentDescription = if (expanded) "Recolher" else "Ver detalhes",
+                        contentDescription = if (expanded) stringResource(R.string.day_collapse_cd) else stringResource(R.string.day_expand_cd),
                         tint               = GreenSage.copy(alpha = 0.65f),
                         modifier           = Modifier.size(24.dp)
                     )
@@ -584,7 +588,7 @@ private fun SwipeToRevealActivity(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar", tint = GreenMoss, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = stringResource(R.string.common_edit), tint = GreenMoss, modifier = Modifier.size(22.dp))
             }
             // Deletar — fundo vermelho, ícone branco
             Box(
@@ -598,7 +602,7 @@ private fun SwipeToRevealActivity(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color.White, modifier = Modifier.size(22.dp))
             }
         }
 

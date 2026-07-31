@@ -183,9 +183,11 @@ Não usa `NavigationBar` do Material 3 — é uma `Row` customizada:
 
 ```
 Box (fillMaxWidth, navigationBarsPadding, padding start/end 16dp, top 12dp, bottom 16dp)
- └─ Row (shadow 16dp ambient/spot GreenMoss, clip RoundedCornerShape(32dp), background SurfaceWhite)
+ └─ Row (softDropShadow blur 18dp / GreenMoss 45% halo, clip RoundedCornerShape(32dp), background Cream)
       └─ PillNavItem × 5
 ```
+
+> **Sombra da pílula:** usa o helper privado `Modifier.softDropShadow` (em `AppNavigation.kt`), que desenha um halo borrado via `BlurMaskFilter` num `drawBehind`. O `Modifier.shadow` padrão do Compose, com `spotColor`/`ambientColor` tingidos e alpha baixo, fica praticamente invisível sobre o fundo `Sand` (ainda mais com a pílula em `Cream`, quase da cor do fundo) — por isso a sombra é desenhada à mão. Ajuste `color`/`blurRadius`/`offsetY` para calibrar.
 
 Os ícones das abas são vetores da marca (`TAB_ICON_RES`: `ic_home`, `ic_ticket`, `ic_boarding`, `ic_contacts`, `ic_notes_nav`).
 

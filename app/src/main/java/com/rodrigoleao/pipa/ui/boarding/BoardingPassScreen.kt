@@ -41,6 +41,8 @@ import com.rodrigoleao.pipa.ui.theme.*
 import java.io.File
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -56,17 +58,19 @@ private fun transportDrawable(type: String) = when (type) {
     else     -> R.drawable.transport_ticket
 }
 
+@StringRes
 private fun identifierLabel(type: String) = when (type) {
-    "FLIGHT" -> "VOO"
-    "TRAIN"  -> "TREM"
-    "BUS"    -> "LINHA"
-    "SHIP"   -> "SERVIÇO"
-    else     -> "REF."
+    "FLIGHT" -> R.string.boarding_identifier_flight
+    "TRAIN"  -> R.string.boarding_identifier_train
+    "BUS"    -> R.string.boarding_identifier_bus
+    "SHIP"   -> R.string.boarding_identifier_ship
+    else     -> R.string.boarding_identifier_other
 }
 
+@StringRes
 private fun departureLabel(type: String) = when (type) {
-    "FLIGHT" -> "EMBARQUE"
-    else     -> "PARTIDA"
+    "FLIGHT" -> R.string.boarding_departure_flight
+    else     -> R.string.boarding_departure_other
 }
 
 // Chave única por cartão de embarque (por passageiro)
@@ -128,8 +132,8 @@ fun BoardingPassScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("🎟️", fontSize = 36.sp)
-                Text("Nenhuma passagem ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                Text("Toque em + para adicionar", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+                Text(stringResource(R.string.boarding_empty_title), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text(stringResource(R.string.boarding_empty_hint), style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
             }
         }
         return
@@ -151,7 +155,7 @@ fun BoardingPassScreen(
         grouped.forEach { (date, passesForDate) ->
             item {
                 Text(
-                    text          = "📅  $date",
+                    text          = stringResource(R.string.boarding_date_header, date),
                     modifier      = Modifier.padding(top = 8.dp, bottom = 2.dp),
                     fontSize      = 10.sp,
                     color         = GreenMoss,
@@ -177,7 +181,7 @@ fun BoardingPassScreen(
                         onOpenFile         = { path ->
                             val file = File(path)
                             if (!file.exists()) {
-                                android.widget.Toast.makeText(context, "Arquivo não encontrado.", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, context.getString(R.string.boarding_file_not_found), android.widget.Toast.LENGTH_SHORT).show()
                                 return@BoardingPassCard
                             }
                             runCatching {
@@ -231,7 +235,7 @@ fun BoardingPassScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text      = "ℹ️  Toque em ✏️ ao lado do passageiro para adicionar o link da passagem digital após fazer o check-in.",
+                        text      = stringResource(R.string.boarding_link_tip),
                         modifier  = Modifier.padding(12.dp),
                         style     = MaterialTheme.typography.bodySmall,
                         color     = BadgeBookedText,
@@ -258,7 +262,7 @@ fun BoardingPassScreen(
     dialogGatePass?.let { pass ->
         EditGateDialog(
             currentGate = savedGates[gateKey(pass)] ?: "",
-            flightLabel = "${pass.origin} → ${pass.destination}  ·  ${pass.flightNumber}",
+            flightLabel = stringResource(R.string.boarding_route_title, pass.origin, pass.destination, pass.flightNumber),
             onConfirm   = { gate ->
                 if (gate.isBlank()) {
                     savedGates.remove(gateKey(pass))
@@ -303,16 +307,16 @@ private fun CheckInReminderCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text       = "Lembrete de check-in",
+                    text       = stringResource(R.string.boarding_checkin_reminder_title),
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color      = if (isActive) GreenMoss else TextPrimary
                 )
                 Text(
                     text      = if (isActive)
-                        "✅  Notificação agendada para ${NotificationHelper.reminderDisplay}"
+                        stringResource(R.string.boarding_checkin_scheduled, NotificationHelper.reminderDisplay)
                     else
-                        "Notificar 72h antes do voo de volta (${NotificationHelper.reminderDisplay})",
+                        stringResource(R.string.boarding_checkin_notify_before, NotificationHelper.reminderDisplay),
                     style      = MaterialTheme.typography.bodySmall,
                     color      = TextSecondary,
                     lineHeight = 17.sp
@@ -322,14 +326,14 @@ private fun CheckInReminderCard(
                 TextButton(
                     onClick = onCancel,
                     colors  = ButtonDefaults.textButtonColors(contentColor = Color(0xFFCC3333))
-                ) { Text("Cancelar", fontSize = 12.sp) }
+                ) { Text(stringResource(R.string.common_cancel), fontSize = 12.sp) }
             } else {
                 Button(
                     onClick          = onActivate,
                     colors           = ButtonDefaults.buttonColors(containerColor = AmberPrimary),
                     contentPadding   = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     shape            = RoundedCornerShape(10.dp)
-                ) { Text("🔔  Ativar", color = GreenMoss, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                ) { Text(stringResource(R.string.boarding_activate), color = GreenMoss, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
             }
         }
     }
@@ -439,9 +443,9 @@ private fun BoardingPassCard(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                InfoBlock("DATA",                      first.date)
-                InfoBlock(departureLabel(first.transportType), first.boardingTime)
-                InfoBlock(identifierLabel(first.transportType), first.flightNumber)
+                InfoBlock(stringResource(R.string.boarding_label_date), first.date)
+                InfoBlock(stringResource(departureLabel(first.transportType)), first.boardingTime)
+                InfoBlock(stringResource(identifierLabel(first.transportType)), first.flightNumber)
                 if (isFlight) {
                     GateBlock(gate = gate, onClick = onEditGateClick)
                 }
@@ -528,7 +532,7 @@ private fun GateBlock(gate: String, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier            = Modifier.clickable { onClick() }.padding(4.dp)
     ) {
-        Text("PORTÃO", fontSize = 9.sp, color = TextSecondary, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium)
+        Text(stringResource(R.string.boarding_label_gate), fontSize = 9.sp, color = TextSecondary, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
@@ -540,7 +544,7 @@ private fun GateBlock(gate: String, onClick: () -> Unit) {
             )
             Icon(
                 imageVector        = ImageVector.vectorResource(R.drawable.ic_edit),
-                contentDescription = "Editar portão",
+                contentDescription = stringResource(R.string.boarding_edit_gate_cd),
                 tint               = if (hasGate) GreenSage else TextSecondary.copy(alpha = 0.35f),
                 modifier           = Modifier.size(11.dp)
             )
@@ -567,11 +571,11 @@ private fun PassengerRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("PASSAGEIRO", fontSize = 9.sp, color = TextSecondary, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.boarding_label_passenger), fontSize = 9.sp, color = TextSecondary, letterSpacing = 1.5.sp, fontWeight = FontWeight.Medium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(pass.passenger, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                 IconButton(onClick = onEditBoardingPass, modifier = Modifier.size(22.dp)) {
-                    Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar passagem", tint = GreenSage.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
+                    Icon(ImageVector.vectorResource(R.drawable.ic_edit), stringResource(R.string.boarding_edit_pass_cd), tint = GreenSage.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
                 }
             }
         }
@@ -588,7 +592,7 @@ private fun PassengerRow(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_attach), null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Passagem", color = AmberPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.boarding_ticket_button), color = AmberPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
             effectiveUrl != null -> {
@@ -599,10 +603,10 @@ private fun PassengerRow(
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                         shape          = RoundedCornerShape(10.dp)
                     ) {
-                        Text("🎫  Abrir", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.boarding_open_button), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                     IconButton(onClick = onAddUrlClick, modifier = Modifier.size(36.dp)) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar link", tint = GreenSage, modifier = Modifier.size(18.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), stringResource(R.string.boarding_edit_link_cd), tint = GreenSage, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -615,7 +619,7 @@ private fun PassengerRow(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_edit), null, tint = AmberPrimary, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Adicionar link", fontSize = 12.sp, color = AmberPrimary)
+                    Text(stringResource(R.string.boarding_add_link_button), fontSize = 12.sp, color = AmberPrimary)
                 }
             }
         }
@@ -636,15 +640,15 @@ private fun EditGateDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor   = SurfaceWhite,
-        title = { Text("Portão de embarque", style = MaterialTheme.typography.titleMedium, color = GreenMoss) },
+        title = { Text(stringResource(R.string.boarding_gate_dialog_title), style = MaterialTheme.typography.titleMedium, color = GreenMoss) },
         text  = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(flightLabel, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 OutlinedTextField(
                     value         = gate,
                     onValueChange = { gate = it.uppercase().take(6) },
-                    label         = { Text("Portão") },
-                    placeholder   = { Text("Ex: A12, B3, C05") },
+                    label         = { Text(stringResource(R.string.boarding_gate_field_label)) },
+                    placeholder   = { Text(stringResource(R.string.boarding_gate_field_placeholder)) },
                     singleLine    = true,
                     modifier      = Modifier.fillMaxWidth(),
                     colors        = OutlinedTextFieldDefaults.colors(
@@ -653,7 +657,7 @@ private fun EditGateDialog(
                     )
                 )
                 Text(
-                    "💡 Consulte o app da companhia ou o painel do terminal no dia do embarque.",
+                    stringResource(R.string.boarding_gate_hint),
                     style     = MaterialTheme.typography.labelSmall,
                     color     = TextSecondary.copy(alpha = 0.7f),
                     lineHeight = 16.sp
@@ -665,13 +669,13 @@ private fun EditGateDialog(
                 onClick = { onConfirm(gate.trim()) },
                 enabled = gate.isNotBlank(),
                 colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
-            ) { Text("Salvar", color = Color.White) }
+            ) { Text(stringResource(R.string.common_save), color = Color.White) }
         },
         dismissButton = {
             if (currentGate.isNotBlank()) {
-                TextButton(onClick = { onConfirm("") }) { Text("Limpar", color = AmberPrimary) }
+                TextButton(onClick = { onConfirm("") }) { Text(stringResource(R.string.boarding_clear), color = AmberPrimary) }
             } else {
-                TextButton(onClick = onDismiss) { Text("Cancelar", color = TextSecondary) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel), color = TextSecondary) }
             }
         }
     )
@@ -693,7 +697,7 @@ private fun AddLinkDialog(
         containerColor   = SurfaceWhite,
         title = {
             Text(
-                "${pass.origin} → ${pass.destination}  ·  ${pass.flightNumber}",
+                stringResource(R.string.boarding_route_title, pass.origin, pass.destination, pass.flightNumber),
                 style = MaterialTheme.typography.titleMedium,
                 color = GreenMoss
             )
@@ -704,8 +708,8 @@ private fun AddLinkDialog(
                 OutlinedTextField(
                     value           = url,
                     onValueChange   = { url = it },
-                    label           = { Text("Link da passagem") },
-                    placeholder     = { Text("https://...") },
+                    label           = { Text(stringResource(R.string.boarding_link_field_label)) },
+                    placeholder     = { Text(stringResource(R.string.boarding_link_field_placeholder)) },
                     modifier        = Modifier.fillMaxWidth(),
                     minLines        = 3,
                     maxLines        = 5,
@@ -722,10 +726,10 @@ private fun AddLinkDialog(
                 onClick = { onConfirm(url.trim()) },
                 enabled = url.isNotBlank() && url.startsWith("http"),
                 colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
-            ) { Text("Salvar", color = Color.White) }
+            ) { Text(stringResource(R.string.common_save), color = Color.White) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = TextSecondary) }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel), color = TextSecondary) }
         }
     )
 }

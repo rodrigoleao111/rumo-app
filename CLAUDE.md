@@ -49,6 +49,15 @@ Comandos:
 - **Tipografia:** Plus Jakarta Sans (`res/font/`), já ligada no tema.
 - **VectorDrawable — armadilha:** `viewportWidth/Height` DEVE bater com a escala das coordenadas do `pathData`. Ícone invisível/gigante geralmente é viewport errado (ex.: pathData em escala 512 com viewport 24).
 
+## Internacionalização (i18n)
+
+App traduzido para **pt (padrão), en, es**. Textos de UI ficam em `res/values{,-en,-es}/strings.xml` — **as três com o mesmo conjunto de chaves**. Nada de string hardcoded na UI.
+
+- **Adicionar texto novo:** crie a chave nas **três** `strings.xml` e use `stringResource(R.string.x)` (composable) ou `context.getString(...)` (ViewModel/Worker — VMs Hilt recebem `@ApplicationContext appContext: Context` no construtor). Chaves `snake_case` com prefixo por módulo; reutilize o glossário `common_*` (Salvar/Cancelar/OK/Voltar…).
+- **Não traduzir:** identificadores/valores persistidos (`"BY_CATEGORY"`), nomes de rota, chaves de `savedStateHandle`, nomes de recurso/drawable, e o prompt do Gemini.
+- **Seleção de idioma:** `locale/LocaleHelper.kt` (`SharedPreferences` `pipa_locale`) + `MainActivity.attachBaseContext`; troca via `LanguageSettingRow` em Configurações → `Activity.recreate()`. `"system"` segue o aparelho. Detalhes em `docs/arquitetura-geral.md` e `docs/modulo-10-settings.md`.
+- **Verificação:** garanta paridade de chaves entre os 3 arquivos; chave referenciada e não definida = erro de compilação. `assembleRelease`/`compileDebugKotlin` acusam faltas.
+
 ## Armadilhas conhecidas
 
 - **Edge-to-edge:** `MainActivity` chama `enableEdgeToEdge()`, o que desativa o resize automático da janela pelo teclado. Telas com formulário precisam de `.imePadding()` antes do scroll para o campo focado subir acima do teclado virtual (padrão já aplicado em `Edit*`, `CreateTrip` e no editor de notas).

@@ -1,5 +1,6 @@
 package com.rodrigoleao.pipa
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.rodrigoleao.pipa.data.db.TravelDatabase
 import com.rodrigoleao.pipa.data.seeder.DatabaseSeeder
+import com.rodrigoleao.pipa.locale.LocaleHelper
 import com.rodrigoleao.pipa.navigation.AppNavigation
 import com.rodrigoleao.pipa.notifications.NotificationHelper
 import com.rodrigoleao.pipa.ui.theme.PipaTheme
@@ -23,6 +25,11 @@ class MainActivity : ComponentActivity() {
 
     // Estado reativo: atualizado tanto em onCreate (intent inicial) quanto em onNewIntent
     private val importUriState = mutableStateOf<Uri?>(null)
+
+    // Aplica o idioma escolhido pelo usuário antes de qualquer recurso ser resolvido.
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

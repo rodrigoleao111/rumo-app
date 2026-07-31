@@ -33,6 +33,8 @@ import com.rodrigoleao.pipa.ui.theme.*
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -49,10 +51,10 @@ fun DayNotesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notas — $dayLabel", color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text(stringResource(R.string.note_day_notes_title, dayLabel), color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -64,7 +66,7 @@ fun DayNotesScreen(
                 containerColor = AmberPrimary,
                 contentColor   = GreenMoss,
                 shape          = RoundedCornerShape(16.dp)
-            ) { Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Nova nota") }
+            ) { Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.note_new_note)) }
         },
         containerColor = Sand
     ) { padding ->
@@ -95,8 +97,8 @@ fun NotesListContent(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("📝", fontSize = 40.sp)
-                Text("Nenhuma anotação ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                Text("Toque em + para criar sua primeira nota", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+                Text(stringResource(R.string.note_empty_title), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text(stringResource(R.string.note_empty_subtitle), style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
             }
         }
         return
@@ -150,7 +152,7 @@ fun NotesListContent(
                                 contentAlignment = Alignment.CenterEnd
                             ) {
                                 if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                                    Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Remover", tint = Color.White, modifier = Modifier.size(22.dp))
+                                    Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_remove), tint = Color.White, modifier = Modifier.size(22.dp))
                                 }
                             }
                         }
@@ -160,7 +162,7 @@ fun NotesListContent(
                             onClick    = { onOpenNote(note.id) },
                             dragHandle = {
                                 IconButton(modifier = Modifier.size(36.dp).longPressDraggableHandle(), onClick = {}) {
-                                    Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                    Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = stringResource(R.string.note_reorder), tint = TextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                                 }
                             }
                         )
@@ -173,14 +175,14 @@ fun NotesListContent(
     noteToDelete?.let { n ->
         AlertDialog(
             onDismissRequest = { noteToDelete = null },
-            title = { Text("Remover nota?") },
-            text  = { Text("\"${n.title.ifBlank { "Sem título" }}\" e todo o seu conteúdo serão removidos permanentemente.") },
+            title = { Text(stringResource(R.string.note_delete_dialog_title)) },
+            text  = { Text(stringResource(R.string.note_delete_dialog_msg, n.title.ifBlank { stringResource(R.string.note_untitled) })) },
             confirmButton = {
                 TextButton(onClick = { onDeleteNote(n.id); noteToDelete = null }) {
-                    Text("Remover", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_remove), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { noteToDelete = null }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { noteToDelete = null }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 }
@@ -191,6 +193,7 @@ private fun NoteCard(
     onClick: () -> Unit,
     dragHandle: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape    = RoundedCornerShape(12.dp),
@@ -200,21 +203,21 @@ private fun NoteCard(
             dragHandle()
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text       = note.title.ifBlank { "Sem título" },
+                    text       = note.title.ifBlank { stringResource(R.string.note_untitled) },
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color      = if (note.title.isBlank()) TextSecondary else TextPrimary,
                     maxLines   = 1, overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text     = note.previewText(),
+                    text     = note.previewText(context),
                     style    = MaterialTheme.typography.bodySmall,
                     color    = TextSecondary,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 Text(
-                    text     = "Editada em ${formatNoteTimestamp(note.updatedAt)}",
+                    text     = stringResource(R.string.note_edited_at, formatNoteTimestamp(note.updatedAt)),
                     style    = MaterialTheme.typography.labelSmall,
                     color    = TextSecondary.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 4.dp)
@@ -225,16 +228,16 @@ private fun NoteCard(
 }
 
 // Resumo dos 2 primeiros blocos (UC-F4: texto truncado / "X itens, Y marcados").
-private fun Note.previewText(): String {
-    if (blocks.isEmpty()) return "Nota vazia"
+private fun Note.previewText(context: android.content.Context): String {
+    if (blocks.isEmpty()) return context.getString(R.string.note_empty_note)
     return blocks.take(2).joinToString("  ·  ") { b ->
         when (b) {
-            is NoteBlock.TextBlock      -> b.content.trim().take(50).ifBlank { "Texto" }
-            is NoteBlock.HeadingBlock   -> b.content.trim().take(50).ifBlank { "Título" }
+            is NoteBlock.TextBlock      -> b.content.trim().take(50).ifBlank { context.getString(R.string.note_toolbar_text) }
+            is NoteBlock.HeadingBlock   -> b.content.trim().take(50).ifBlank { context.getString(R.string.note_toolbar_heading) }
             is NoteBlock.ChecklistBlock -> {
                 val total = b.items.size
                 val done  = b.items.count { it.isChecked }
-                "$total ${if (total == 1) "item" else "itens"}, $done ✓"
+                context.resources.getQuantityString(R.plurals.note_checklist_summary, total, total, done)
             }
         }
     }

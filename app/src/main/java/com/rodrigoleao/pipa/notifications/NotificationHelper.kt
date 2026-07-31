@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.work.*
+import com.rodrigoleao.pipa.R
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -12,7 +13,6 @@ import java.util.concurrent.TimeUnit
 object NotificationHelper {
 
     const val CHANNEL_ID         = "gramado_reminders"
-    const val CHANNEL_NAME       = "Lembretes da Viagem"
     const val NOTIFICATION_ID    = 1001
     const val WORK_TAG           = "checkin_reminder"
 
@@ -29,10 +29,10 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                context.getString(R.string.notif_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Lembretes importantes para a viagem a Gramado"
+                description = context.getString(R.string.notif_channel_desc)
                 enableLights(true)
                 enableVibration(true)
             }

@@ -30,6 +30,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -235,18 +237,18 @@ private fun TripCoverHeader(
         ) {
             HeaderIconButton(
                 icon               = ImageVector.vectorResource(R.drawable.ic_arrow_back),
-                contentDescription = "Minhas viagens",
+                contentDescription = stringResource(R.string.home_back_to_trips),
                 onClick            = onBack
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 HeaderIconButton(
                     icon               = ImageVector.vectorResource(R.drawable.ic_share),
-                    contentDescription = "Compartilhar viagem",
+                    contentDescription = stringResource(R.string.home_share_trip),
                     onClick            = onShare
                 )
                 HeaderIconButton(
                     icon               = ImageVector.vectorResource(R.drawable.ic_edit),
-                    contentDescription = "Editar viagem",
+                    contentDescription = stringResource(R.string.home_edit_trip),
                     onClick            = onEdit
                 )
             }
@@ -381,13 +383,13 @@ private fun DayCard(
                     CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = AmberPrimary)
                 } else if (!hasWeather) {
                     Text(
-                        text  = "Temperatura indisponível",
+                        text  = stringResource(R.string.home_weather_unavailable),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
                 } else {
                     Text(
-                        text       = "${liveWeather!!.minTemp}°  ~  ${liveWeather.maxTemp}°C",
+                        text       = stringResource(R.string.home_temp_range, liveWeather!!.minTemp, liveWeather.maxTemp),
                         style      = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color      = AmberPrimary
@@ -400,7 +402,7 @@ private fun DayCard(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text          = "● ao vivo",
+                        text          = stringResource(R.string.home_live_badge),
                         fontSize      = 9.sp,
                         color         = GreenMoss,
                         fontWeight    = FontWeight.SemiBold,
@@ -411,7 +413,7 @@ private fun DayCard(
 
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text  = "${day.activities.size} atividades  ·  toque para ver o roteiro",
+                text  = pluralStringResource(R.plurals.home_day_activities, day.activities.size, day.activities.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = GreenSage
             )
@@ -487,10 +489,10 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                             contentColor   = Color.White
                         )
                     ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_map), contentDescription = "Maps", modifier = Modifier.size(iconSize))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_map), contentDescription = stringResource(R.string.home_maps_button), modifier = Modifier.size(iconSize))
                         if (showText) {
                             Spacer(Modifier.width(6.dp))
-                            Text("Maps", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                            Text(stringResource(R.string.home_maps_button), fontWeight = FontWeight.SemiBold, maxLines = 1)
                         }
                     }
 
@@ -511,10 +513,10 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                             contentColor   = GreenMoss
                         )
                     ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_car), contentDescription = "Uber", modifier = Modifier.size(iconSize))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_car), contentDescription = stringResource(R.string.home_uber_button), modifier = Modifier.size(iconSize))
                         if (showText) {
                             Spacer(Modifier.width(6.dp))
-                            Text("Uber", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                            Text(stringResource(R.string.home_uber_button), fontWeight = FontWeight.SemiBold, maxLines = 1)
                         }
                     }
 
@@ -533,10 +535,10 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
                                 contentColor   = Color.White
                             )
                         ) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_phone), contentDescription = "Ligar", modifier = Modifier.size(iconSize))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_phone), contentDescription = stringResource(R.string.home_call_button), modifier = Modifier.size(iconSize))
                             if (showText) {
                                 Spacer(Modifier.width(6.dp))
-                                Text("Ligar", fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                Text(stringResource(R.string.home_call_button), fontWeight = FontWeight.SemiBold, maxLines = 1)
                             }
                         }
                     }
@@ -552,7 +554,7 @@ private fun HotelCard(hotelName: String, hotelAddress: String, hotelPhone: Strin
 private fun HojeBadge() {
     Surface(shape = RoundedCornerShape(100.dp), color = GreenMoss) {
         Text(
-            text          = "HOJE",
+            text          = stringResource(R.string.home_today_badge),
             modifier      = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             fontSize      = 9.sp,
             fontWeight    = FontWeight.Bold,

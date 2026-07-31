@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -64,20 +65,20 @@ fun EditContactScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar contato" else "Novo contato", fontWeight = FontWeight.SemiBold, color = Color.White) },
+                title = { Text(if (isEditing) stringResource(R.string.contact_edit_title) else stringResource(R.string.contact_new_title), fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color(0xFFFFAA99))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color(0xFFFFAA99))
                         }
                     }
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -102,16 +103,16 @@ fun EditContactScreen(
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            EditSectionLabel("Nome")
-            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = "Ex: Hotel San Lucas")
+            EditSectionLabel(stringResource(R.string.contact_field_name))
+            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = stringResource(R.string.contact_name_placeholder))
 
-            EditSectionLabel("Função / descrição")
-            EditTextField(value = state.role, onValueChange = viewModel::updateRole, placeholder = "Ex: Recepção 24h")
+            EditSectionLabel(stringResource(R.string.contact_field_role))
+            EditTextField(value = state.role, onValueChange = viewModel::updateRole, placeholder = stringResource(R.string.contact_role_placeholder))
 
-            EditSectionLabel("Telefone")
-            EditTextField(value = state.phone, onValueChange = viewModel::updatePhone, placeholder = "Ex: 54999001122")
+            EditSectionLabel(stringResource(R.string.contact_field_phone))
+            EditTextField(value = state.phone, onValueChange = viewModel::updatePhone, placeholder = stringResource(R.string.contact_phone_placeholder))
 
-            EditSectionLabel("Categoria")
+            EditSectionLabel(stringResource(R.string.contact_field_category))
             CategorySelector(
                 selected         = state.selectedCategory,
                 customCategories = state.customCategories,
@@ -124,7 +125,7 @@ fun EditContactScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Checkbox(checked = state.hasWhatsApp, onCheckedChange = { viewModel.toggleWhatsApp() }, colors = CheckboxDefaults.colors(checkedColor = GreenMoss))
-                Text("Tem WhatsApp", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                Text(stringResource(R.string.contact_has_whatsapp), style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -137,7 +138,7 @@ fun EditContactScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text(if (isEditing) "Salvar contato" else "Adicionar contato", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                else Text(if (isEditing) stringResource(R.string.contact_save_button) else stringResource(R.string.contact_add_button), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
     }
@@ -145,40 +146,40 @@ fun EditContactScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir contato?") },
+            title = { Text(stringResource(R.string.contact_delete_title)) },
             confirmButton = {
                 TextButton(onClick = { showDeleteDialog = false; viewModel.delete() }) {
-                    Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Descartar alterações?") },
-            text  = { Text("As informações preenchidas serão perdidas.") },
+            title = { Text(stringResource(R.string.contact_discard_title)) },
+            text  = { Text(stringResource(R.string.contact_discard_message)) },
             confirmButton = {
                 TextButton(onClick = { showDiscardDialog = false; onBack() }) {
-                    Text("Descartar", color = Color(0xFFD32F2F))
+                    Text(stringResource(R.string.contact_discard_confirm), color = Color(0xFFD32F2F))
                 }
             },
-            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") } }
+            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.contact_discard_dismiss)) } }
         )
     }
 
     if (showAddCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showAddCategoryDialog = false; newCategoryName = "" },
-            title = { Text("Nova categoria") },
+            title = { Text(stringResource(R.string.contact_new_category_title)) },
             text = {
                 OutlinedTextField(
                     value = newCategoryName,
                     onValueChange = { newCategoryName = it },
-                    label = { Text("Nome da categoria") },
-                    placeholder = { Text("Ex: Médico, Guia, Amigos...") },
+                    label = { Text(stringResource(R.string.contact_category_name_label)) },
+                    placeholder = { Text(stringResource(R.string.contact_category_name_placeholder)) },
                     singleLine = true
                 )
             },
@@ -193,10 +194,10 @@ fun EditContactScreen(
                         newCategoryName = ""
                     },
                     enabled = newCategoryName.isNotBlank()
-                ) { Text("Adicionar", color = GreenMoss) }
+                ) { Text(stringResource(R.string.common_add), color = GreenMoss) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddCategoryDialog = false; newCategoryName = "" }) { Text("Cancelar") }
+                TextButton(onClick = { showAddCategoryDialog = false; newCategoryName = "" }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -211,11 +212,11 @@ private fun CategorySelector(
     onAddCategory: () -> Unit
 ) {
     val builtinOptions = listOf(
-        "AGENCY"     to "Agência",
-        "HOTEL"      to "Hotel",
-        "ATTRACTION" to "Atração",
-        "EMERGENCY"  to "Emergência",
-        "FAMILY"     to "Família"
+        "AGENCY"     to stringResource(R.string.contact_category_agency),
+        "HOTEL"      to stringResource(R.string.contact_category_hotel),
+        "ATTRACTION" to stringResource(R.string.contact_category_attraction),
+        "EMERGENCY"  to stringResource(R.string.contact_category_emergency),
+        "FAMILY"     to stringResource(R.string.contact_category_family)
     )
 
     FlowRow(
@@ -269,8 +270,8 @@ private fun CategorySelector(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Nova categoria", tint = TextSecondary, modifier = Modifier.size(14.dp))
-                Text("Nova", fontSize = 12.sp, color = TextSecondary)
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.contact_new_category_title), tint = TextSecondary, modifier = Modifier.size(14.dp))
+                Text(stringResource(R.string.contact_new_category_chip), fontSize = 12.sp, color = TextSecondary)
             }
         }
     }

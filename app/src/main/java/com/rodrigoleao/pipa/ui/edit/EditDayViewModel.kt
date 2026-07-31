@@ -7,7 +7,9 @@ import com.rodrigoleao.pipa.data.db.entity.TravelDayEntity
 import com.rodrigoleao.pipa.data.repository.DayRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.model.UiEvent
+import com.rodrigoleao.pipa.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +36,7 @@ data class EditDayState(
 
 @HiltViewModel
 class EditDayViewModel @Inject constructor(
+    @ApplicationContext private val appContext: android.content.Context,
     private val repo: DayRepository,
     private val tripRepo: TripRepository,
     savedStateHandle: SavedStateHandle
@@ -103,7 +106,7 @@ class EditDayViewModel @Inject constructor(
                 ))
             }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar dia")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.editd_error_save_day))) }
         }
     }
 }

@@ -51,6 +51,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.ui.components.CoverPicker
 
@@ -95,12 +97,17 @@ fun CreateTripScreen(
     }
 
     val step4Title = when (chatPhase) {
-        ChatPhase.IMPORTING               -> "Importar roteiro"
-        ChatPhase.CHATTING, ChatPhase.GENERATING -> "Chat com IA"
-        ChatPhase.PREVIEW, ChatPhase.SAVING      -> "Roteiro gerado"
-        else                                     -> "Roteiro com IA"
+        ChatPhase.IMPORTING               -> stringResource(R.string.create_import_itinerary)
+        ChatPhase.CHATTING, ChatPhase.GENERATING -> stringResource(R.string.create_chat_ai)
+        ChatPhase.PREVIEW, ChatPhase.SAVING      -> stringResource(R.string.create_step_title_generated)
+        else                                     -> stringResource(R.string.create_step_title_ai)
     }
-    val stepTitles = listOf("Nova viagem", "Datas da viagem", "Hospedagem", step4Title)
+    val stepTitles = listOf(
+        stringResource(R.string.create_step_title_new),
+        stringResource(R.string.create_step_title_dates),
+        stringResource(R.string.create_step_title_lodging),
+        step4Title
+    )
 
     val showBackInStep4 = chatPhase == ChatPhase.IMPORTING ||
             chatPhase == ChatPhase.CHATTING ||
@@ -120,11 +127,11 @@ fun CreateTripScreen(
                     ) {
                         if (step < 3) {
                             IconButton(onClick = { if (step > 0) step-- else onBack() }) {
-                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                             }
                         } else if (showBackInStep4) {
                             IconButton(onClick = { viewModel.backToChoosing() }) {
-                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                             }
                         } else {
                             Spacer(Modifier.width(16.dp))
@@ -138,7 +145,7 @@ fun CreateTripScreen(
                         )
                         if (step == 3 && chatPhase == ChatPhase.CHOOSING) {
                             IconButton(onClick = { showHelpSheet = true }) {
-                                Icon(ImageVector.vectorResource(R.drawable.ic_help), contentDescription = "Ajuda", tint = Color.White)
+                                Icon(ImageVector.vectorResource(R.drawable.ic_help), contentDescription = stringResource(R.string.create_help_cd), tint = Color.White)
                             }
                         }
                     }
@@ -234,14 +241,14 @@ private fun ItineraryHelpSheet() {
     ) {
         // Título
         Text(
-            text       = "Como montar o roteiro?",
+            text       = stringResource(R.string.create_help_title),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color      = TextPrimary
         )
 
         Text(
-            text       = "Você tem duas formas de montar o roteiro da viagem. Escolha a que melhor se encaixa no seu momento.",
+            text       = stringResource(R.string.create_help_intro),
             fontSize   = 14.sp,
             color      = TextSecondary,
             lineHeight = 20.sp
@@ -252,8 +259,8 @@ private fun ItineraryHelpSheet() {
             iconBg      = AmberPrimary.copy(alpha = 0.10f),
             icon        = ImageVector.vectorResource(R.drawable.ic_file_upload),
             iconTint    = AmberPrimary,
-            title       = "Importar roteiro",
-            description = "Ideal se você já tem um roteiro em mente ou encontrou sugestões em algum lugar — um blog, um vídeo, uma conversa com o ChatGPT.\n\nO app gera um texto de instrução que você copia e cola em qualquer IA. Ela devolve o roteiro no formato certo. Depois é só colar aqui e pronto."
+            title       = stringResource(R.string.create_import_itinerary),
+            description = stringResource(R.string.create_help_import_desc)
         )
 
         // Opção 2: Chat com IA
@@ -261,8 +268,8 @@ private fun ItineraryHelpSheet() {
             iconBg      = GreenMoss.copy(alpha = 0.10f),
             icon        = ImageVector.vectorResource(R.drawable.ic_auto_awesome),
             iconTint    = GreenMoss,
-            title       = "Chat com IA",
-            description = "Ideal se você ainda não tem um roteiro definido e quer montar do zero conversando com a IA do próprio app.\n\nA IA já conhece seu destino, datas e hospedagem. Você conta o perfil da viagem (família, casal, amigos…) e o que prefere fazer, e ela monta um roteiro personalizado diretamente no app."
+            title       = stringResource(R.string.create_chat_ai),
+            description = stringResource(R.string.create_help_chat_desc)
         )
 
         // Dica
@@ -278,7 +285,7 @@ private fun ItineraryHelpSheet() {
             ) {
                 Text("💡", fontSize = 16.sp)
                 Text(
-                    text       = "Você pode pular essa etapa e montar o roteiro manualmente depois, direto na tela de cada dia.",
+                    text       = stringResource(R.string.create_help_tip),
                     fontSize   = 13.sp,
                     color      = TextPrimary,
                     lineHeight = 19.sp
@@ -374,7 +381,7 @@ private fun Step1Content(
             .padding(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        SectionLabel("Destino")
+        SectionLabel(stringResource(R.string.create_label_destination))
         ExposedDropdownMenuBox(
             expanded         = dropdownOpen,
             onExpandedChange = { if (!it) onDismissSearch() }
@@ -383,7 +390,7 @@ private fun Step1Content(
                 value         = form.destination,
                 onValueChange = onUpdateDest,
                 modifier      = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
-                placeholder   = { Text("Ex: Gramado, RS") },
+                placeholder   = { Text(stringResource(R.string.create_dest_placeholder)) },
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
                 colors        = tripFieldColors(),
@@ -399,7 +406,7 @@ private fun Step1Content(
                     }
                 },
                 supportingText = if (hasCoords) {
-                    { Text("📍 Localização confirmada", fontSize = 11.sp, color = GreenMoss) }
+                    { Text(stringResource(R.string.create_location_confirmed), fontSize = 11.sp, color = GreenMoss) }
                 } else null
             )
             ExposedDropdownMenu(
@@ -427,18 +434,18 @@ private fun Step1Content(
             }
         }
 
-        SectionLabel("Nome da viagem")
+        SectionLabel(stringResource(R.string.create_label_trip_name))
         OutlinedTextField(
             value         = form.name,
             onValueChange = onUpdateName,
             modifier      = Modifier.fillMaxWidth(),
-            placeholder   = { Text("Ex: Férias de inverno 2026") },
+            placeholder   = { Text(stringResource(R.string.create_trip_name_placeholder)) },
             singleLine    = true,
             shape         = RoundedCornerShape(12.dp),
             colors        = tripFieldColors()
         )
 
-        SectionLabel("Capa da viagem")
+        SectionLabel(stringResource(R.string.create_label_cover))
         CoverPicker(
             selectedId = form.coverImage,
             onSelect   = { onUpdateCover(it.id) }
@@ -456,7 +463,7 @@ private fun Step1Content(
                 disabledContainerColor = AmberPrimary.copy(alpha = 0.35f)
             )
         ) {
-            Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
+            Text(stringResource(R.string.create_next), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
         }
     }
 }
@@ -515,7 +522,7 @@ private fun Step2Content(
                 showModeToggle = false,
                 title = {
                     Text(
-                        text     = "Toque no início e depois no fim",
+                        text     = stringResource(R.string.create_date_picker_hint),
                         modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 4.dp),
                         style    = MaterialTheme.typography.labelMedium,
                         color    = TextSecondary
@@ -574,7 +581,7 @@ private fun Step2Content(
                             Spacer(Modifier.weight(1f))
                             Surface(shape = RoundedCornerShape(12.dp), color = GreenMoss) {
                                 Text(
-                                    text     = "$dayCount ${if (dayCount == 1) "dia" else "dias"}",
+                                    text     = pluralStringResource(R.plurals.create_day_count, dayCount, dayCount),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
                                     style    = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
@@ -595,7 +602,7 @@ private fun Step2Content(
                         disabledContainerColor = AmberPrimary.copy(alpha = 0.35f)
                     )
                 ) {
-                    Text("Próximo →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
+                    Text(stringResource(R.string.create_next), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GreenMoss)
                 }
             }
         }
@@ -630,23 +637,23 @@ private fun Step3Content(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Text(
-            text  = "Preencha os dados da sua hospedagem para facilitar o acesso aos mapas e Uber durante a viagem.",
+            text  = stringResource(R.string.create_hotel_intro),
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary
         )
 
-        SectionLabel("Nome da hospedagem")
+        SectionLabel(stringResource(R.string.create_label_hotel_name))
         OutlinedTextField(
             value         = form.hotelName,
             onValueChange = onUpdateHotelName,
             modifier      = Modifier.fillMaxWidth(),
-            placeholder   = { Text("Ex: Hotel Laghetto Stilo") },
+            placeholder   = { Text(stringResource(R.string.create_hotel_name_placeholder)) },
             singleLine    = true,
             shape         = RoundedCornerShape(12.dp),
             colors        = tripFieldColors()
         )
 
-        SectionLabel("Endereço")
+        SectionLabel(stringResource(R.string.create_label_address))
         ExposedDropdownMenuBox(
             expanded         = dropdownOpen,
             onExpandedChange = { if (!it) onDismissHotelSearch() }
@@ -655,7 +662,7 @@ private fun Step3Content(
                 value         = form.hotelAddress,
                 onValueChange = onUpdateHotelAddress,
                 modifier      = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
-                placeholder   = { Text("Ex: Rua Coberta, Gramado, RS") },
+                placeholder   = { Text(stringResource(R.string.create_hotel_address_placeholder)) },
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
                 colors        = tripFieldColors(),
@@ -692,12 +699,12 @@ private fun Step3Content(
             }
         }
 
-        SectionLabel("Telefone")
+        SectionLabel(stringResource(R.string.create_label_phone))
         OutlinedTextField(
             value         = form.hotelPhone,
             onValueChange = onUpdateHotelPhone,
             modifier      = Modifier.fillMaxWidth(),
-            placeholder   = { Text("Ex: +55 54 3286-0000") },
+            placeholder   = { Text(stringResource(R.string.create_hotel_phone_placeholder)) },
             singleLine    = true,
             shape         = RoundedCornerShape(12.dp),
             colors        = tripFieldColors(),
@@ -717,7 +724,7 @@ private fun Step3Content(
         ) {
             Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Criar viagem e montar roteiro →", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
+            Text(stringResource(R.string.create_create_and_build), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
         }
     }
 }
@@ -777,7 +784,7 @@ private fun Step4Content(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 CircularProgressIndicator(color = GreenMoss)
-                Text("Salvando seu roteiro...", color = TextSecondary)
+                Text(stringResource(R.string.create_saving), color = TextSecondary)
             }
         }
         else -> ChatScreen(
@@ -813,13 +820,13 @@ private fun ChoosingScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text       = "Como deseja montar o roteiro?",
+            text       = stringResource(R.string.create_choose_title),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color      = TextPrimary
         )
         Text(
-            text  = "Converse com a IA do app ou importe um roteiro gerado em qualquer outra ferramenta.",
+            text  = stringResource(R.string.create_choose_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary
         )
@@ -835,8 +842,8 @@ private fun ChoosingScreen(
                 icon        = ImageVector.vectorResource(R.drawable.ic_file_upload),
                 iconTint    = AmberPrimary,
                 iconBg      = AmberPrimary.copy(alpha = 0.10f),
-                title       = "Importar roteiro",
-                description = "Traga um roteiro pronto de qualquer lugar",
+                title       = stringResource(R.string.create_import_itinerary),
+                description = stringResource(R.string.create_option_import_desc),
                 onClick     = onImport
             )
             OptionCard(
@@ -844,8 +851,8 @@ private fun ChoosingScreen(
                 icon        = ImageVector.vectorResource(R.drawable.ic_auto_awesome),
                 iconTint    = GreenMoss,
                 iconBg      = GreenMoss.copy(alpha = 0.10f),
-                title       = "Chat com IA",
-                description = "Monte o roteiro em conversa com o Gemini",
+                title       = stringResource(R.string.create_chat_ai),
+                description = stringResource(R.string.create_option_chat_desc),
                 onClick     = onChat
             )
         }
@@ -856,7 +863,7 @@ private fun ChoosingScreen(
             onClick  = onSkip,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Pular e acessar a viagem", color = TextSecondary, fontSize = 12.sp)
+            Text(stringResource(R.string.create_skip), color = TextSecondary, fontSize = 12.sp)
         }
     }
 }
@@ -953,10 +960,10 @@ private fun ImportScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text("💡", fontSize = 16.sp)
-                        Text("Como importar", fontWeight = FontWeight.SemiBold, color = GreenMoss, fontSize = 13.sp)
+                        Text(stringResource(R.string.create_how_to_import), fontWeight = FontWeight.SemiBold, color = GreenMoss, fontSize = 13.sp)
                     }
                     Text(
-                        text       = "1. Abra qualquer IA (ChatGPT, Gemini…) e monte ou descreva seu roteiro\n2. Com o roteiro finalizado, copie o texto de instrução clicando no botão abaixo e cole na mesma conversa\n3. A IA vai organizar o roteiro no formato que o app entende\n4. Cole a resposta aqui embaixo",
+                        text       = stringResource(R.string.create_import_instructions),
                         fontSize   = 12.sp,
                         color      = TextPrimary,
                         lineHeight = 18.sp
@@ -972,7 +979,7 @@ private fun ImportScreen(
                     ) {
                         Text("⚠️", fontSize = 11.sp)
                         Text(
-                            text       = "Cole a resposta da IA exatamente como ela aparecer, sem editar nada. Qualquer alteração pode causar erro na importação.",
+                            text       = stringResource(R.string.create_import_warning),
                             fontSize   = 11.sp,
                             color      = TextSecondary,
                             lineHeight = 16.sp
@@ -999,13 +1006,13 @@ private fun ImportScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text       = if (wasCopied) "Texto copiado!" else "Copiar texto de instrução",
+                    text       = if (wasCopied) stringResource(R.string.create_text_copied) else stringResource(R.string.create_copy_instruction),
                     fontWeight = FontWeight.SemiBold,
                     color      = AmberPrimary
                 )
             }
 
-            SectionLabel("Cole aqui a resposta da IA")
+            SectionLabel(stringResource(R.string.create_label_paste))
 
             // Campo de texto ocupa o espaço restante
             OutlinedTextField(
@@ -1050,7 +1057,7 @@ private fun ImportScreen(
                     ) {
                         Icon(ImageVector.vectorResource(R.drawable.ic_upload), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Importar arquivo", color = GreenMoss, fontSize = 13.sp)
+                        Text(stringResource(R.string.create_import_file), color = GreenMoss, fontSize = 13.sp)
                     }
                     Button(
                         onClick  = { onImport(importJsonText) },
@@ -1064,7 +1071,7 @@ private fun ImportScreen(
                     ) {
                         Icon(ImageVector.vectorResource(R.drawable.ic_file_upload), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Importar roteiro", fontWeight = FontWeight.SemiBold, color = AmberPrimary, fontSize = 13.sp)
+                        Text(stringResource(R.string.create_import_itinerary), fontWeight = FontWeight.SemiBold, color = AmberPrimary, fontSize = 13.sp)
                     }
                 }
             }
@@ -1125,7 +1132,7 @@ private fun ChatScreen(
                     ) {
                         Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Gerar roteiro agora", fontWeight = FontWeight.SemiBold, color = AmberPrimary)
+                        Text(stringResource(R.string.create_generate_now), fontWeight = FontWeight.SemiBold, color = AmberPrimary)
                     }
                 }
 
@@ -1137,7 +1144,7 @@ private fun ChatScreen(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), color = GreenMoss, strokeWidth = 2.dp)
                         Spacer(Modifier.width(10.dp))
-                        Text("Montando seu roteiro...", color = TextSecondary, fontSize = 14.sp)
+                        Text(stringResource(R.string.create_building), color = TextSecondary, fontSize = 14.sp)
                     }
                 } else {
                     // Campo de input
@@ -1149,7 +1156,7 @@ private fun ChatScreen(
                             value         = input,
                             onValueChange = onInputChange,
                             modifier      = Modifier.weight(1f),
-                            placeholder   = { Text("Escreva sua mensagem...", fontSize = 14.sp) },
+                            placeholder   = { Text(stringResource(R.string.create_message_placeholder), fontSize = 14.sp) },
                             singleLine    = false,
                             maxLines      = 4,
                             shape         = RoundedCornerShape(20.dp),
@@ -1173,7 +1180,7 @@ private fun ChatScreen(
                         ) {
                             Icon(
                                 ImageVector.vectorResource(R.drawable.ic_send),
-                                contentDescription = "Enviar",
+                                contentDescription = stringResource(R.string.create_send),
                                 tint     = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -1184,7 +1191,7 @@ private fun ChatScreen(
                         onClick  = onSkip,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
-                        Text("Pular e acessar a viagem", color = TextSecondary, fontSize = 12.sp)
+                        Text(stringResource(R.string.create_skip), color = TextSecondary, fontSize = 12.sp)
                     }
                 }
             }
@@ -1269,8 +1276,8 @@ private fun ItineraryPreview(
             ) {
                 Icon(ImageVector.vectorResource(R.drawable.ic_auto_awesome), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp))
                 Column {
-                    Text("Roteiro gerado!", fontWeight = FontWeight.Bold, color = GreenMoss)
-                    Text("Revise e salve no app", fontSize = 12.sp, color = TextSecondary)
+                    Text(stringResource(R.string.create_itinerary_generated), fontWeight = FontWeight.Bold, color = GreenMoss)
+                    Text(stringResource(R.string.create_review_and_save), fontSize = 12.sp, color = TextSecondary)
                 }
             }
         }
@@ -1295,7 +1302,7 @@ private fun ItineraryPreview(
                         ) {
                             Surface(shape = RoundedCornerShape(8.dp), color = GreenMoss) {
                                 Text(
-                                    "Dia ${day.dayNumber}",
+                                    stringResource(R.string.create_day_number, day.dayNumber),
                                     modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                     fontSize   = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1351,14 +1358,14 @@ private fun ItineraryPreview(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Salvar roteiro", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
+                    Text(stringResource(R.string.create_save_itinerary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = AmberPrimary)
                 }
                 TextButton(
                     onClick  = onBack,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text  = if (cameFromImport) "Voltar à importação" else "Voltar ao chat para ajustar",
+                        text  = if (cameFromImport) stringResource(R.string.create_back_to_import) else stringResource(R.string.create_back_to_chat),
                         color = TextSecondary
                     )
                 }

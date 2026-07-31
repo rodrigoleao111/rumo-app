@@ -26,12 +26,11 @@ class CheckInReminderWorker(
 
         val notification = NotificationCompat.Builder(applicationContext, NotificationHelper.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("✈️ Hora do check-in da volta!")
-            .setContentText("Seu voo POA → VCP → REC é daqui a 3 dias (13 Jun às 20h30).")
+            .setContentTitle(applicationContext.getString(R.string.notif_checkin_title))
+            .setContentText(applicationContext.getString(R.string.notif_checkin_text))
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Faça o check-in agora no app da Azul e adicione os cartões ao Google Wallet.\n\n" +
-                    "No app Pipa: Cartões de Embarque → toque em ✏️ e cole os links."
+                    applicationContext.getString(R.string.notif_checkin_bigtext)
                 )
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)

@@ -512,5 +512,19 @@ Schemas do Room exportados em `app/schemas/` (`exportSchema = true`) — version
 | Novo campo no export `.travel` | `TravelExporter.buildJson()` + `TravelImporter.parseTripJson()` + `docs/travel-export-schema.md` |
 | Nova tela sem estado próprio | Composable stateless com parâmetros + callbacks → rota em `AppNavigation` |
 | Nova tela com formulário | `*State` data class + `*ViewModel` com `StateFlow` + `Factory` → rota em `AppNavigation` |
-| Nova aba no pager da viagem | `TAB_ICONS`/`TAB_LABELS` + `when (page)` no `HorizontalPager` + FAB contextual |
+| Nova aba no pager da viagem | `TAB_ICON_RES`/`TAB_LABEL_RES` (IDs de recurso) + `when (page)` no `HorizontalPager` + FAB contextual |
 | Lógica de negócio complexa | No ViewModel se depende de estado de UI; no Repository se é operação de dados pura |
+| Novo texto visível ao usuário | Chave nas **três** `strings.xml` (pt/en/es) + `stringResource`/`getString` — nunca hardcode (ver *Internacionalização*) |
+
+---
+
+## Internacionalização (i18n)
+
+O app é traduzido para **português (padrão), inglês e espanhol**. Todos os textos de UI ficam em recursos, não hardcoded.
+
+- **Recursos:** `res/values/strings.xml` (pt — idioma padrão e fallback), `res/values-en/strings.xml`, `res/values-es/strings.xml`. As três mantêm **exatamente o mesmo conjunto de chaves** (paridade obrigatória — chave referenciada e não definida = erro de compilação).
+- **Convenção de chaves:** `snake_case` com prefixo por módulo (`home_`, `trips_`, `create_`, `voucher_`, `edita_`, `nav_`, `settings_`, `notif_`, `cover_`, …) + um glossário comum `common_*` (Salvar/Cancelar/OK/Voltar…) reutilizado em todas as telas.
+- **Uso no código:** em `@Composable`, `stringResource(R.string.chave)` / `pluralStringResource(R.plurals.chave, n, n)`; fora de composable (Worker, ViewModel), `context.getString(...)` — ViewModels Hilt que precisam de texto recebem `@ApplicationContext appContext: Context` no construtor.
+- **Seleção de idioma:** `LocaleHelper` (`locale/LocaleHelper.kt`) guarda a escolha em `SharedPreferences` (`pipa_locale`), e `MainActivity.attachBaseContext` aplica o locale **antes** de resolver recursos. A opção `"system"` segue o aparelho. A troca (via `LanguageSettingRow` em Configurações) grava a preferência e chama `Activity.recreate()`. Detalhes em `docs/modulo-10-settings.md`.
+
+> **Regra ao adicionar texto de UI:** nunca hardcode uma string visível. Crie a chave nas **três** `strings.xml` e referencie via `stringResource`/`getString`. **Não** traduza identificadores/valores persistidos (ex.: `"BY_CATEGORY"`), nomes de rota, chaves de `savedStateHandle`, nomes de recurso/drawable, nem o prompt do Gemini.

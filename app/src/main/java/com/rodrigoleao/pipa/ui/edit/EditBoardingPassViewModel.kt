@@ -3,11 +3,13 @@ package com.rodrigoleao.pipa.ui.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.data.db.entity.BoardingPassEntity
 import com.rodrigoleao.pipa.data.repository.BoardingPassRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,6 +47,7 @@ data class EditBoardingPassState(
 class EditBoardingPassViewModel @Inject constructor(
     private val repo: BoardingPassRepository,
     private val tripRepo: TripRepository,
+    @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -157,7 +160,7 @@ class EditBoardingPassViewModel @Inject constructor(
             )
             runCatching { repo.upsertBoardingPass(tripId, entity) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar passagem")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_save_pass))) }
         }
     }
 
@@ -166,7 +169,7 @@ class EditBoardingPassViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.deleteBoardingPass(passId) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir passagem")) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_delete_pass))) }
         }
     }
 }

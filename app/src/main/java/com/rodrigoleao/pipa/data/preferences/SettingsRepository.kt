@@ -20,7 +20,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         .map { it[KEY_EMERGENCY_CONTACTS] ?: true }
 
     val sortTripsByProximity: Flow<Boolean> = dataStore.data
-        .map { it[KEY_SORT_BY_PROXIMITY] ?: false }
+        .map { it[KEY_SORT_BY_PROXIMITY] ?: true }
 
     val hideCompletedTrips: Flow<Boolean> = dataStore.data
         .map { it[KEY_HIDE_COMPLETED] ?: false }

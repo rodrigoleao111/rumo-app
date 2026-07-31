@@ -9,7 +9,9 @@ import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.pipa.data.repository.ContactRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.model.UiEvent
+import com.rodrigoleao.pipa.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +41,7 @@ class EditContactViewModel @Inject constructor(
     private val repo: ContactRepository,
     private val categoryRepo: ContactCategoryRepository,
     private val tripRepo: TripRepository,
+    @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -134,7 +137,7 @@ class EditContactViewModel @Inject constructor(
             )
             runCatching { repo.upsertContact(tripId, entity) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar contato")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.contact_error_save))) }
         }
     }
 
@@ -143,7 +146,7 @@ class EditContactViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.deleteContact(contactId) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir contato")) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.contact_error_delete))) }
         }
     }
 }

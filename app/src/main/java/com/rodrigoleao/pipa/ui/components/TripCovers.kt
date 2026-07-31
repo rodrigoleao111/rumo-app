@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -43,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,12 +67,12 @@ data class TripCover(
     /** id estável salvo no banco (ex.: "cover_praia_tropical"). */
     val id: String,
     @DrawableRes val res: Int,
-    val label: String
+    @StringRes val labelRes: Int
 )
 
 /** Grupo de capas exibido como categoria expansível no seletor. */
 data class TripCoverCategory(
-    val title: String,
+    @StringRes val titleRes: Int,
     /** Emoji representativo — usado como fallback de `coverEmoji`. */
     val emoji: String,
     val covers: List<TripCover>
@@ -79,31 +81,31 @@ data class TripCoverCategory(
 object TripCovers {
 
     val CATEGORIES: List<TripCoverCategory> = listOf(
-        TripCoverCategory("Praia & Mar", "🏖️", listOf(
-            TripCover("cover_praia_tropical", R.drawable.cover_praia_tropical, "Praia tropical"),
-            TripCover("cover_orla",           R.drawable.cover_orla,           "Orla"),
-            TripCover("cover_dunas",          R.drawable.cover_dunas,          "Dunas"),
-            TripCover("cover_navio",          R.drawable.cover_navio,          "Cruzeiro"),
+        TripCoverCategory(R.string.cover_cat_beach, "🏖️", listOf(
+            TripCover("cover_praia_tropical", R.drawable.cover_praia_tropical, R.string.cover_beach_tropical),
+            TripCover("cover_orla",           R.drawable.cover_orla,           R.string.cover_seafront),
+            TripCover("cover_dunas",          R.drawable.cover_dunas,          R.string.cover_dunes),
+            TripCover("cover_navio",          R.drawable.cover_navio,          R.string.cover_cruise),
         )),
-        TripCoverCategory("Natureza & Campo", "🌿", listOf(
-            TripCover("cover_cachoeira",      R.drawable.cover_cachoeira,      "Cachoeira"),
-            TripCover("cover_floresta",       R.drawable.cover_floresta,       "Floresta"),
-            TripCover("cover_lago",           R.drawable.cover_lago,           "Lago"),
-            TripCover("cover_lago_2",         R.drawable.cover_lago_2,         "Lago II"),
-            TripCover("cover_campo",          R.drawable.cover_campo,          "Campo"),
-            TripCover("cover_montanha_serra", R.drawable.cover_montanha_serra, "Serra"),
+        TripCoverCategory(R.string.cover_cat_nature, "🌿", listOf(
+            TripCover("cover_cachoeira",      R.drawable.cover_cachoeira,      R.string.cover_waterfall),
+            TripCover("cover_floresta",       R.drawable.cover_floresta,       R.string.cover_forest),
+            TripCover("cover_lago",           R.drawable.cover_lago,           R.string.cover_lake),
+            TripCover("cover_lago_2",         R.drawable.cover_lago_2,         R.string.cover_lake_2),
+            TripCover("cover_campo",          R.drawable.cover_campo,          R.string.cover_countryside),
+            TripCover("cover_montanha_serra", R.drawable.cover_montanha_serra, R.string.cover_mountains),
         )),
-        TripCoverCategory("Cidade & Cultura", "🏙️", listOf(
-            TripCover("cover_cidade_grande",    R.drawable.cover_cidade_grande,    "Cidade grande"),
-            TripCover("cover_cidade_historica", R.drawable.cover_cidade_historica, "Cidade histórica"),
-            TripCover("cover_cultural",         R.drawable.cover_cultural,         "Cultural"),
-            TripCover("cover_musical",          R.drawable.cover_musical,          "Musical"),
-            TripCover("cover_generica",         R.drawable.cover_generica,         "Genérica"),
+        TripCoverCategory(R.string.cover_cat_city, "🏙️", listOf(
+            TripCover("cover_cidade_grande",    R.drawable.cover_cidade_grande,    R.string.cover_big_city),
+            TripCover("cover_cidade_historica", R.drawable.cover_cidade_historica, R.string.cover_historic_city),
+            TripCover("cover_cultural",         R.drawable.cover_cultural,         R.string.cover_cultural),
+            TripCover("cover_musical",          R.drawable.cover_musical,          R.string.cover_musical),
+            TripCover("cover_generica",         R.drawable.cover_generica,         R.string.cover_generic),
         )),
-        TripCoverCategory("Inverno & Neve", "❄️", listOf(
-            TripCover("cover_inverno_cidade", R.drawable.cover_inverno_cidade, "Inverno na cidade"),
-            TripCover("cover_inverno_campo",  R.drawable.cover_inverno_campo,  "Inverno no campo"),
-            TripCover("cover_neve",           R.drawable.cover_neve,           "Neve"),
+        TripCoverCategory(R.string.cover_cat_winter, "❄️", listOf(
+            TripCover("cover_inverno_cidade", R.drawable.cover_inverno_cidade, R.string.cover_winter_city),
+            TripCover("cover_inverno_campo",  R.drawable.cover_inverno_campo,  R.string.cover_winter_country),
+            TripCover("cover_neve",           R.drawable.cover_neve,           R.string.cover_snow),
         )),
     )
 
@@ -183,7 +185,7 @@ private fun CoverCategorySection(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text       = category.title,
+                text       = stringResource(category.titleRes),
                 fontWeight = FontWeight.SemiBold,
                 color      = GreenMoss,
                 fontSize   = 14.sp
@@ -199,7 +201,7 @@ private fun CoverCategorySection(
                     ImageVector.vectorResource(R.drawable.ic_chevron_up)
                 else
                     ImageVector.vectorResource(R.drawable.ic_chevron_down),
-                contentDescription = if (expanded) "Retrair" else "Expandir",
+                contentDescription = if (expanded) stringResource(R.string.cover_collapse) else stringResource(R.string.cover_expand),
                 tint     = GreenMoss,
                 modifier = Modifier.size(22.dp)
             )
@@ -251,7 +253,7 @@ private fun CoverCard(
                 // Imagem completa (sem cortar) — respeita a proporção original
                 Image(
                     painter            = painterResource(cover.res),
-                    contentDescription = cover.label,
+                    contentDescription = stringResource(cover.labelRes),
                     contentScale       = ContentScale.Fit,
                     modifier           = Modifier
                         .fillMaxWidth()
@@ -284,7 +286,7 @@ private fun CoverCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text       = cover.label,
+                    text       = stringResource(cover.labelRes),
                     fontSize   = 12.sp,
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                     color      = if (selected) GreenMoss else TextPrimary,
@@ -301,7 +303,7 @@ private fun CoverCard(
                 ) {
                     Icon(
                         imageVector        = Icons.Outlined.ZoomIn,
-                        contentDescription = "Ver em tela cheia",
+                        contentDescription = stringResource(R.string.cover_view_fullscreen),
                         tint               = GreenMoss,
                         modifier           = Modifier.size(20.dp)
                     )
@@ -337,11 +339,11 @@ private fun CoverFullscreenDialog(cover: TripCover, onDismiss: () -> Unit) {
         ) {
             ZoomableImage(
                 res      = cover.res,
-                desc     = cover.label,
+                desc     = stringResource(cover.labelRes),
                 modifier = Modifier.fillMaxSize()
             )
             Text(
-                text       = cover.label,
+                text       = stringResource(cover.labelRes),
                 color      = Color.White,
                 fontSize   = 15.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -358,7 +360,7 @@ private fun CoverFullscreenDialog(cover: TripCover, onDismiss: () -> Unit) {
             ) {
                 Icon(
                     imageVector        = Icons.Outlined.Close,
-                    contentDescription = "Fechar",
+                    contentDescription = stringResource(R.string.common_close),
                     tint               = Color.White,
                     modifier           = Modifier.size(28.dp)
                 )

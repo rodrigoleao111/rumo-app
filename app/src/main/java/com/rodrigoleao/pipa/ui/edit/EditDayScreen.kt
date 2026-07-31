@@ -30,6 +30,7 @@ import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.ui.theme.*
 import java.io.File
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -85,16 +86,16 @@ fun EditDayScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Editar dia", fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(stringResource(R.string.editd_edit_day_title), fontWeight = FontWeight.SemiBold, color = Color.White)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -122,27 +123,27 @@ fun EditDayScreen(
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            EditSectionLabel("Título do dia")
+            EditSectionLabel(stringResource(R.string.editd_label_day_title))
             EditTextField(
                 value         = state.title,
                 onValueChange = viewModel::updateTitle,
-                placeholder   = "Ex: Chegada em Gramado"
+                placeholder   = stringResource(R.string.editd_day_title_placeholder)
             )
 
-            EditSectionLabel("Alerta do dia (opcional)")
+            EditSectionLabel(stringResource(R.string.editd_label_day_alert))
             EditTextField(
                 value         = state.dayAlert,
                 onValueChange = viewModel::updateDayAlert,
-                placeholder   = "Ex: Confirmar reserva de jantar",
+                placeholder   = stringResource(R.string.editd_day_alert_placeholder),
                 singleLine    = false,
                 minLines      = 2
             )
 
             HorizontalDivider(color = CardBorder)
 
-            EditSectionLabel("Link ou documento (opcional)")
+            EditSectionLabel(stringResource(R.string.editd_label_link_or_doc))
             Text(
-                text  = "Adicione um link útil para o dia — mapa, cardápio, ingresso online, etc.",
+                text  = stringResource(R.string.editd_link_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -150,14 +151,14 @@ fun EditDayScreen(
             EditTextField(
                 value         = state.dayLinkLabel,
                 onValueChange = viewModel::updateDayLinkLabel,
-                placeholder   = "Rótulo  (ex: Mapa de Rotas, Cardápio)"
+                placeholder   = stringResource(R.string.editd_link_label_placeholder)
             )
 
             OutlinedTextField(
                 value         = state.dayLinkUrl,
                 onValueChange = viewModel::updateDayLinkUrl,
                 modifier      = Modifier.fillMaxWidth(),
-                placeholder   = { Text("https://...", color = TextSecondary.copy(alpha = 0.5f)) },
+                placeholder   = { Text(stringResource(R.string.editd_url_placeholder), color = TextSecondary.copy(alpha = 0.5f)) },
                 singleLine    = true,
                 shape         = RoundedCornerShape(12.dp),
                 leadingIcon   = {
@@ -175,9 +176,9 @@ fun EditDayScreen(
 
             HorizontalDivider(color = CardBorder)
 
-            EditSectionLabel("Documento (opcional)")
+            EditSectionLabel(stringResource(R.string.editd_label_document))
             Text(
-                text  = "Importe um PDF, imagem ou outro arquivo salvo no dispositivo.",
+                text  = stringResource(R.string.editd_document_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -196,7 +197,7 @@ fun EditDayScreen(
                     ) {
                         Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp))
                         Text(
-                            text     = state.dayDocumentName.ifBlank { "Documento" },
+                            text     = state.dayDocumentName.ifBlank { stringResource(R.string.editd_document_fallback) },
                             style    = MaterialTheme.typography.bodyMedium,
                             color    = GreenMoss,
                             modifier = Modifier.weight(1f),
@@ -204,7 +205,7 @@ fun EditDayScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = { viewModel.clearDocument() }, modifier = Modifier.size(32.dp)) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = stringResource(R.string.common_remove), tint = TextSecondary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -212,7 +213,7 @@ fun EditDayScreen(
                 EditTextField(
                     value         = state.dayDocumentTitle,
                     onValueChange = viewModel::updateDocumentTitle,
-                    placeholder   = "Título do documento (ex: Ingresso Parque do Caracol)"
+                    placeholder   = stringResource(R.string.editd_document_title_placeholder)
                 )
             } else {
                 OutlinedButton(
@@ -224,7 +225,7 @@ fun EditDayScreen(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Importar documento")
+                    Text(stringResource(R.string.editd_import_document))
                 }
             }
 
@@ -238,7 +239,7 @@ fun EditDayScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text("Salvar dia", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                else Text(stringResource(R.string.editd_save_day), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
     }

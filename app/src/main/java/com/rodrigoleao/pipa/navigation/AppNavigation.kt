@@ -29,10 +29,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.graphics.BlurMaskFilter
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,6 +91,7 @@ import androidx.compose.runtime.MutableState
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import com.rodrigoleao.pipa.R
 
 // ── ROTAS ─────────────────────────────────────────────────────────────────────
@@ -132,7 +138,7 @@ sealed class Screen(val route: String) {
 }
 
 private val TAB_ICON_RES = listOf(R.drawable.ic_home, R.drawable.ic_ticket, R.drawable.ic_boarding, R.drawable.ic_contacts, R.drawable.ic_notes_nav)
-private val TAB_LABELS = listOf("Início", "Vouchers", "Embarque", "Contatos", "Notas")
+private val TAB_LABEL_RES = listOf(R.string.nav_tab_home, R.string.nav_tab_vouchers, R.string.nav_tab_boarding, R.string.nav_tab_contacts, R.string.nav_tab_notes)
 private const val ANIM_DURATION = 320
 
 // ── NAVEGAÇÃO PRINCIPAL ───────────────────────────────────────────────────────
@@ -513,7 +519,7 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 
             DayNotesScreen(
                 viewModel  = vm,
-                dayLabel   = "Dia $dayNumber",
+                dayLabel   = stringResource(R.string.nav_day_label, dayNumber),
                 onOpenNote = { noteId -> navController.navigate(Screen.NoteEditor.createRoute(tripId, noteId)) },
                 onBack     = {
                     navController.previousBackStackEntry?.savedStateHandle?.set("refresh", System.currentTimeMillis())
@@ -558,6 +564,39 @@ private data class TripScreenActions(
     val onBack: () -> Unit
 )
 
+/**
+ * Sombra suave desenhada manualmente. O `Modifier.shadow` padrão, com cor
+ * tingida e alpha baixo, quase some sobre fundos claros; este desenha um halo
+ * borrado (BlurMaskFilter) atrás do elemento, com cor e alcance controláveis.
+ */
+private fun Modifier.softDropShadow(
+    color: Color,
+    cornerRadius: Dp,
+    blurRadius: Dp,
+    offsetY: Dp,
+) = this.drawBehind {
+    val argb    = color.toArgb()
+    val blurPx  = blurRadius.toPx()
+    val cornerPx = cornerRadius.toPx()
+    val dy      = offsetY.toPx()
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            this.color  = argb
+            maskFilter  = BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL)
+        }
+        canvas.nativeCanvas.drawRoundRect(
+            0f,
+            dy,
+            size.width,
+            size.height + dy,
+            cornerPx,
+            cornerPx,
+            paint,
+        )
+    }
+}
+
 // ── PAGER DA VIAGEM ───────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -579,8 +618,9 @@ private fun MainPagerScreen(
     }
     var showSortMenu      by remember { mutableStateOf(false) }
 
+    val changesSavedMsg = stringResource(R.string.nav_changes_saved)
     LaunchedEffect(state.refreshKey) {
-        if (state.refreshKey > 0L) snackbarHostState.showSnackbar("Alterações salvas ✓")
+        if (state.refreshKey > 0L) snackbarHostState.showSnackbar(changesSavedMsg)
     }
 
     Scaffold(
@@ -597,10 +637,10 @@ private fun MainPagerScreen(
                 title = {
                     val titleText = when (pagerState.currentPage) {
                         0    -> trip?.name ?: ""
-                        1    -> "${trip?.name ?: ""}  •  Vouchers"
-                        2    -> "${trip?.name ?: ""}  •  Passagens"
-                        3    -> "${trip?.name ?: ""}  •  Contatos"
-                        4    -> "${trip?.name ?: ""}  •  Notas"
+                        1    -> "${trip?.name ?: ""}  •  ${stringResource(R.string.nav_section_vouchers)}"
+                        2    -> "${trip?.name ?: ""}  •  ${stringResource(R.string.nav_section_passes)}"
+                        3    -> "${trip?.name ?: ""}  •  ${stringResource(R.string.nav_section_contacts)}"
+                        4    -> "${trip?.name ?: ""}  •  ${stringResource(R.string.nav_section_notes)}"
                         else -> trip?.name ?: ""
                     }
                     Text(
@@ -616,7 +656,7 @@ private fun MainPagerScreen(
                         IconButton(onClick = actions.onBack) {
                             Icon(
                                 ImageVector.vectorResource(R.drawable.ic_arrow_back),
-                                contentDescription = "Minhas viagens",
+                                contentDescription = stringResource(R.string.nav_my_trips),
                                 tint = Color.White
                             )
                         }
@@ -629,7 +669,7 @@ private fun MainPagerScreen(
                             IconButton(onClick = { showSortMenu = true }) {
                                 Icon(
                                     ImageVector.vectorResource(R.drawable.ic_sort),
-                                    contentDescription = "Agrupar vouchers",
+                                    contentDescription = stringResource(R.string.nav_group_vouchers),
                                     tint = if (voucherSortMode != VoucherSortMode.BY_CATEGORY)
                                                AmberPrimary else Color.White
                                 )
@@ -640,17 +680,17 @@ private fun MainPagerScreen(
                                 containerColor   = SurfaceWhite
                             ) {
                                 SortMenuItem(
-                                    label    = "Por categoria",
+                                    label    = stringResource(R.string.nav_sort_by_category),
                                     selected = voucherSortMode == VoucherSortMode.BY_CATEGORY,
                                     onClick  = { voucherSortMode = VoucherSortMode.BY_CATEGORY; actions.onVoucherSortMode(VoucherSortMode.BY_CATEGORY); showSortMenu = false }
                                 )
                                 SortMenuItem(
-                                    label    = "Por pessoa",
+                                    label    = stringResource(R.string.nav_sort_by_person),
                                     selected = voucherSortMode == VoucherSortMode.BY_PERSON,
                                     onClick  = { voucherSortMode = VoucherSortMode.BY_PERSON; actions.onVoucherSortMode(VoucherSortMode.BY_PERSON); showSortMenu = false }
                                 )
                                 SortMenuItem(
-                                    label    = "Por dia da viagem",
+                                    label    = stringResource(R.string.nav_sort_by_day),
                                     selected = voucherSortMode == VoucherSortMode.BY_DAY,
                                     onClick  = { voucherSortMode = VoucherSortMode.BY_DAY; actions.onVoucherSortMode(VoucherSortMode.BY_DAY); showSortMenu = false }
                                 )
@@ -658,10 +698,10 @@ private fun MainPagerScreen(
                         }
                     }
                     IconButton(onClick = actions.onShareTrip) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = "Compartilhar viagem")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = stringResource(R.string.nav_share_trip))
                     }
                     IconButton(onClick = actions.onEditTrip) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = "Editar viagem")
+                        Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = stringResource(R.string.nav_edit_trip))
                     }
                 },
                 colors        = TopAppBarDefaults.topAppBarColors(
@@ -689,7 +729,7 @@ private fun MainPagerScreen(
                     contentColor   = GreenMoss,
                     shape          = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Adicionar")
+                    Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.common_add))
                 }
             }
         },
@@ -712,14 +752,14 @@ private fun MainPagerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(
-                            elevation    = 16.dp,
-                            shape        = RoundedCornerShape(32.dp),
-                            ambientColor = GreenMoss.copy(alpha = 0.12f),
-                            spotColor    = GreenMoss.copy(alpha = 0.20f)
+                        .softDropShadow(
+                            color        = GreenMoss.copy(alpha = 0.45f),
+                            cornerRadius = 32.dp,
+                            blurRadius   = 18.dp,
+                            offsetY      = 5.dp
                         )
                         .clip(RoundedCornerShape(32.dp))
-                        .background(SurfaceWhite)
+                        .background(Cream)
                         .padding(vertical = 8.dp, horizontal = 6.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment     = Alignment.CenterVertically
@@ -727,7 +767,7 @@ private fun MainPagerScreen(
                     TAB_ICON_RES.forEachIndexed { index, iconRes ->
                         PillNavItem(
                             icon     = ImageVector.vectorResource(iconRes),
-                            label    = TAB_LABELS[index],
+                            label    = stringResource(TAB_LABEL_RES[index]),
                             selected = pagerState.currentPage == index,
                             onClick  = { coroutineScope.launch { pagerState.animateScrollToPage(index) } }
                         )

@@ -37,6 +37,7 @@ import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -67,10 +68,10 @@ fun NoteEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nota", color = Color.White, fontWeight = FontWeight.SemiBold) },
+                title = { Text(stringResource(R.string.note_editor_title), color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -105,7 +106,7 @@ fun NoteEditorScreen(
                     value         = state.title,
                     onValueChange = viewModel::updateTitle,
                     modifier      = Modifier.fillMaxWidth(),
-                    placeholder   = { Text("Título da nota", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextSecondary.copy(alpha = 0.5f)) },
+                    placeholder   = { Text(stringResource(R.string.note_title_placeholder), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextSecondary.copy(alpha = 0.5f)) },
                     textStyle     = androidx.compose.ui.text.TextStyle(fontFamily = PlusJakartaSans, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary),
                     colors        = transparentFieldColors(),
                     singleLine    = true
@@ -125,7 +126,7 @@ fun NoteEditorScreen(
                                 modifier = Modifier.longPressDraggableHandle().size(40.dp),
                                 onClick  = {}
                             ) {
-                                Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar", tint = TextSecondary.copy(alpha = 0.5f))
+                                Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = stringResource(R.string.note_reorder), tint = TextSecondary.copy(alpha = 0.5f))
                             }
                             Box(Modifier.weight(1f).padding(top = 4.dp)) {
                                 BlockEditor(
@@ -150,7 +151,7 @@ fun NoteEditorScreen(
             if (localBlocks.isEmpty()) {
                 item(key = "empty_hint") {
                     Text(
-                        text     = "Toque em Texto, Checklist ou Título abaixo para começar.",
+                        text     = stringResource(R.string.note_empty_editor_hint),
                         style    = MaterialTheme.typography.bodyMedium,
                         color    = TextSecondary,
                         modifier = Modifier.padding(16.dp)
@@ -181,12 +182,12 @@ private fun BlockEditor(
         is NoteBlock.TextBlock -> BlockTextField(
             initial = block.content, key = block.id, autoFocus = autoFocus,
             onFocused = onFocused, onFocusHandled = onFocusHandled, onValueChange = onContent,
-            placeholder = "Escreva algo…", fontSize = 16.sp, bold = false
+            placeholder = stringResource(R.string.note_text_placeholder), fontSize = 16.sp, bold = false
         )
         is NoteBlock.HeadingBlock -> BlockTextField(
             initial = block.content, key = block.id, autoFocus = autoFocus,
             onFocused = onFocused, onFocusHandled = onFocusHandled, onValueChange = onContent,
-            placeholder = "Título da seção", fontSize = 19.sp, bold = true
+            placeholder = stringResource(R.string.note_heading_placeholder), fontSize = 19.sp, bold = true
         )
         is NoteBlock.ChecklistBlock -> Column(
             modifier = Modifier.padding(vertical = 4.dp),
@@ -216,7 +217,7 @@ private fun BlockEditor(
                 }
             }
             TextButton(onClick = onAddItem, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
-                Text("+ Adicionar item", color = GreenMoss, fontSize = 14.sp)
+                Text(stringResource(R.string.note_add_item), color = GreenMoss, fontSize = 14.sp)
             }
         }
     }
@@ -278,12 +279,12 @@ private fun ChecklistItemRow(
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = {}, modifier = dragHandleModifier.size(28.dp)) {
-            Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = "Reordenar item", tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
+            Icon(ImageVector.vectorResource(R.drawable.ic_drag), contentDescription = stringResource(R.string.note_reorder_item), tint = TextSecondary.copy(alpha = 0.4f), modifier = Modifier.size(18.dp))
         }
         IconButton(onClick = { onToggle(!checked) }, modifier = Modifier.size(36.dp)) {
             Icon(
                 if (checked) ImageVector.vectorResource(R.drawable.ic_checkbox_checked) else ImageVector.vectorResource(R.drawable.ic_checkbox_blank),
-                contentDescription = if (checked) "Desmarcar" else "Marcar",
+                contentDescription = if (checked) stringResource(R.string.note_uncheck) else stringResource(R.string.note_check),
                 tint = if (checked) GreenMoss else TextSecondary
             )
         }
@@ -294,7 +295,7 @@ private fun ChecklistItemRow(
                 .weight(1f)
                 .focusRequester(requester)
                 .onFocusChanged { if (it.isFocused) onFocused() },
-            placeholder   = { Text("Item", color = TextSecondary.copy(alpha = 0.5f)) },
+            placeholder   = { Text(stringResource(R.string.note_item_placeholder), color = TextSecondary.copy(alpha = 0.5f)) },
             textStyle     = androidx.compose.ui.text.TextStyle(
                 fontFamily = PlusJakartaSans,
                 fontSize = 15.sp,
@@ -305,7 +306,7 @@ private fun ChecklistItemRow(
             singleLine    = true
         )
         IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Remover item", tint = TextSecondary.copy(alpha = 0.4f))
+            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.note_remove_item), tint = TextSecondary.copy(alpha = 0.4f))
         }
     }
 }
@@ -330,11 +331,11 @@ private fun InsertToolbar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_note_text), "Texto", GreenMoss, onAddText)
-            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_checkbox_checked), "Checklist", GreenMoss, onAddChecklist)
-            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_title), "Título", GreenMoss, onAddHeading)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_note_text), stringResource(R.string.note_toolbar_text), GreenMoss, onAddText)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_checkbox_checked), stringResource(R.string.note_toolbar_checklist), GreenMoss, onAddChecklist)
+            ToolbarButton(ImageVector.vectorResource(R.drawable.ic_title), stringResource(R.string.note_toolbar_heading), GreenMoss, onAddHeading)
             ToolbarButton(
-                ImageVector.vectorResource(R.drawable.ic_delete), "Excluir",
+                ImageVector.vectorResource(R.drawable.ic_delete), stringResource(R.string.common_delete),
                 if (canDelete) MaterialTheme.colorScheme.error else TextSecondary.copy(alpha = 0.3f),
                 onDeleteBlock, enabled = canDelete
             )

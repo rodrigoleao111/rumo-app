@@ -39,6 +39,7 @@ import java.io.File
 import java.time.LocalDate
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,14 +69,14 @@ private fun parseTime(s: String): Pair<Int, Int>? {
 
 private fun formatTime(hour: Int, minute: Int) = "%02dh%02d".format(hour, minute)
 
-private data class TransportOption(val type: String, val res: Int, val label: String)
+private data class TransportOption(val type: String, val res: Int, val labelRes: Int)
 
 private val TRANSPORT_OPTIONS = listOf(
-    TransportOption("FLIGHT", R.drawable.transport_flight, "Avião"),
-    TransportOption("TRAIN",  R.drawable.transport_train,  "Trem"),
-    TransportOption("BUS",    R.drawable.transport_bus,    "Ônibus"),
-    TransportOption("SHIP",   R.drawable.transport_ship,   "Navio"),
-    TransportOption("OTHER",  R.drawable.transport_ticket, "Outro")
+    TransportOption("FLIGHT", R.drawable.transport_flight, R.string.edita_transport_flight),
+    TransportOption("TRAIN",  R.drawable.transport_train,  R.string.edita_transport_train),
+    TransportOption("BUS",    R.drawable.transport_bus,    R.string.edita_transport_bus),
+    TransportOption("SHIP",   R.drawable.transport_ship,   R.string.edita_transport_ship),
+    TransportOption("OTHER",  R.drawable.transport_ticket, R.string.edita_transport_other)
 )
 
 @Composable
@@ -103,7 +104,7 @@ private fun TransportChip(opt: TransportOption, selected: Boolean, onClick: () -
                     .graphicsLayer { scaleX = 1.3f; scaleY = 1.3f }
             )
             Text(
-                text       = opt.label,
+                text       = stringResource(opt.labelRes),
                 color      = GreenMoss,
                 fontSize   = 11.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
@@ -174,24 +175,24 @@ fun EditBoardingPassScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isEditing) "Editar passagem" else "Nova passagem",
+                        if (isEditing) stringResource(R.string.edita_pass_title_edit) else stringResource(R.string.edita_pass_title_new),
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color.White)
                         }
                     }
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -218,7 +219,7 @@ fun EditBoardingPassScreen(
         ) {
 
             // ── Tipo de transporte ────────────────────────────────────────────
-            EditSectionLabel("Tipo de transporte")
+            EditSectionLabel(stringResource(R.string.edita_label_transport_type))
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val cols  = 3
                 val chipW = 104.dp
@@ -243,40 +244,40 @@ fun EditBoardingPassScreen(
             if (isFlight) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Origem (sigla)")
-                        EditTextField(value = state.origin, onValueChange = viewModel::updateOrigin, placeholder = "REC")
+                        EditSectionLabel(stringResource(R.string.edita_origin_code_label))
+                        EditTextField(value = state.origin, onValueChange = viewModel::updateOrigin, placeholder = stringResource(R.string.edita_origin_code_ph))
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Destino (sigla)")
-                        EditTextField(value = state.destination, onValueChange = viewModel::updateDestination, placeholder = "GRU")
+                        EditSectionLabel(stringResource(R.string.edita_dest_code_label))
+                        EditTextField(value = state.destination, onValueChange = viewModel::updateDestination, placeholder = stringResource(R.string.edita_dest_code_ph))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Cidade de origem")
-                        EditTextField(value = state.originCity, onValueChange = viewModel::updateOriginCity, placeholder = "Recife")
+                        EditSectionLabel(stringResource(R.string.edita_origin_city_label))
+                        EditTextField(value = state.originCity, onValueChange = viewModel::updateOriginCity, placeholder = stringResource(R.string.edita_origin_city_ph))
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Cidade de destino")
-                        EditTextField(value = state.destinationCity, onValueChange = viewModel::updateDestinationCity, placeholder = "Gramado")
+                        EditSectionLabel(stringResource(R.string.edita_dest_city_label))
+                        EditTextField(value = state.destinationCity, onValueChange = viewModel::updateDestinationCity, placeholder = stringResource(R.string.edita_dest_city_ph))
                     }
                 }
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Origem")
+                        EditSectionLabel(stringResource(R.string.edita_origin_label))
                         EditTextField(
                             value         = state.originCity,
                             onValueChange = viewModel::updateOriginSingle,
-                            placeholder   = "Ex: São Paulo"
+                            placeholder   = stringResource(R.string.edita_origin_ph)
                         )
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        EditSectionLabel("Destino")
+                        EditSectionLabel(stringResource(R.string.edita_dest_label))
                         EditTextField(
                             value         = state.destinationCity,
                             onValueChange = viewModel::updateDestinationSingle,
-                            placeholder   = "Ex: Gramado"
+                            placeholder   = stringResource(R.string.edita_dest_ph)
                         )
                     }
                 }
@@ -285,35 +286,35 @@ fun EditBoardingPassScreen(
             // ── Número / linha ────────────────────────────────────────────────
             EditSectionLabel(
                 when (state.transportType) {
-                    "FLIGHT" -> "Número do voo"
-                    "TRAIN"  -> "Número do trem / linha"
-                    "BUS"    -> "Linha / serviço"
-                    "SHIP"   -> "Nome da embarcação"
-                    else     -> "Número / identificador"
+                    "FLIGHT" -> stringResource(R.string.edita_number_flight)
+                    "TRAIN"  -> stringResource(R.string.edita_number_train)
+                    "BUS"    -> stringResource(R.string.edita_number_bus)
+                    "SHIP"   -> stringResource(R.string.edita_number_ship)
+                    else     -> stringResource(R.string.edita_number_other)
                 }
             )
             EditTextField(
                 value         = state.flightNumber,
                 onValueChange = viewModel::updateFlightNumber,
                 placeholder   = when (state.transportType) {
-                    "FLIGHT" -> "AD 4153"
-                    "TRAIN"  -> "Ex: IC 732"
-                    "BUS"    -> "Ex: Linha 301"
-                    "SHIP"   -> "Ex: Azul Mar"
-                    else     -> "Ex: 001"
+                    "FLIGHT" -> stringResource(R.string.edita_number_ph_flight)
+                    "TRAIN"  -> stringResource(R.string.edita_number_ph_train)
+                    "BUS"    -> stringResource(R.string.edita_number_ph_bus)
+                    "SHIP"   -> stringResource(R.string.edita_number_ph_ship)
+                    else     -> stringResource(R.string.edita_number_ph_other)
                 }
             )
 
             // ── Data e horário ────────────────────────────────────────────────
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Data")
+                    EditSectionLabel(stringResource(R.string.edita_date_label))
                     Box {
                         OutlinedTextField(
                             value         = state.date,
                             onValueChange = {},
                             readOnly      = true,
-                            placeholder   = { Text("09 Jun 2026", color = TextSecondary) },
+                            placeholder   = { Text(stringResource(R.string.edita_date_ph), color = TextSecondary) },
                             trailingIcon  = { Icon(ImageVector.vectorResource(R.drawable.ic_calendar), contentDescription = null, tint = GreenMoss) },
                             modifier      = Modifier.fillMaxWidth(),
                             shape         = RoundedCornerShape(12.dp),
@@ -328,13 +329,13 @@ fun EditBoardingPassScreen(
                     }
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    EditSectionLabel("Horário de partida")
+                    EditSectionLabel(stringResource(R.string.edita_departure_time_label))
                     Box {
                         OutlinedTextField(
                             value         = state.boardingTime,
                             onValueChange = {},
                             readOnly      = true,
-                            placeholder   = { Text("06h30", color = TextSecondary) },
+                            placeholder   = { Text(stringResource(R.string.edita_departure_time_ph), color = TextSecondary) },
                             trailingIcon  = { Icon(ImageVector.vectorResource(R.drawable.ic_schedule), contentDescription = null, tint = GreenMoss) },
                             modifier      = Modifier.fillMaxWidth(),
                             shape         = RoundedCornerShape(12.dp),
@@ -351,11 +352,11 @@ fun EditBoardingPassScreen(
             }
 
             // ── Passageiro ────────────────────────────────────────────────────
-            EditSectionLabel("Passageiro")
-            EditTextField(value = state.passenger, onValueChange = viewModel::updatePassenger, placeholder = "Nome completo")
+            EditSectionLabel(stringResource(R.string.edita_passenger_label))
+            EditTextField(value = state.passenger, onValueChange = viewModel::updatePassenger, placeholder = stringResource(R.string.edita_passenger_ph))
 
             // ── Link ou arquivo da passagem ───────────────────────────────────
-            EditSectionLabel("Passagem (link ou arquivo)")
+            EditSectionLabel(stringResource(R.string.edita_pass_source_label))
             PassSourceSelector(
                 mode         = state.inputMode,
                 linkUrl      = state.walletUrl,
@@ -367,11 +368,11 @@ fun EditBoardingPassScreen(
             )
 
             // ── Observações ───────────────────────────────────────────────────
-            EditSectionLabel("Observações (opcional)")
+            EditSectionLabel(stringResource(R.string.edita_notes_label))
             OutlinedTextField(
                 value         = state.notes,
                 onValueChange = viewModel::updateNotes,
-                placeholder   = { Text("Ex: Correr para o terminal B para trocar de veículo...", color = TextSecondary) },
+                placeholder   = { Text(stringResource(R.string.edita_notes_ph), color = TextSecondary) },
                 modifier      = Modifier.fillMaxWidth(),
                 minLines      = 3,
                 shape         = RoundedCornerShape(12.dp),
@@ -394,7 +395,7 @@ fun EditBoardingPassScreen(
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                 else Text(
-                    if (isEditing) "Salvar passagem" else "Adicionar passagem",
+                    if (isEditing) stringResource(R.string.edita_save_pass) else stringResource(R.string.edita_add_pass),
                     fontSize   = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color      = AmberPrimary
@@ -415,10 +416,10 @@ fun EditBoardingPassScreen(
                     datePickerState.selectedDateMillis?.let { millis ->
                         viewModel.updateDate(millisToDateString(millis))
                     }
-                }) { Text("OK", color = GreenMoss) }
+                }) { Text(stringResource(R.string.common_ok), color = GreenMoss) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         ) {
             DatePicker(
@@ -448,7 +449,7 @@ fun EditBoardingPassScreen(
                     horizontalAlignment   = Alignment.CenterHorizontally,
                     verticalArrangement   = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Horário de partida", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.edita_departure_time_label), style = MaterialTheme.typography.titleMedium)
                     TimePicker(
                         state  = timePickerState,
                         colors = TimePickerDefaults.colors(
@@ -463,12 +464,12 @@ fun EditBoardingPassScreen(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        TextButton(onClick = { showTimePicker = false }) { Text("Cancelar") }
+                        TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.common_cancel)) }
                         Spacer(Modifier.width(8.dp))
                         TextButton(onClick = {
                             showTimePicker = false
                             viewModel.updateBoardingTime(formatTime(timePickerState.hour, timePickerState.minute))
-                        }) { Text("OK", color = GreenMoss) }
+                        }) { Text(stringResource(R.string.common_ok), color = GreenMoss) }
                     }
                 }
             }
@@ -478,27 +479,27 @@ fun EditBoardingPassScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir passagem?") },
+            title = { Text(stringResource(R.string.edita_delete_pass_title)) },
             confirmButton = {
                 TextButton(onClick = { showDeleteDialog = false; viewModel.delete() }) {
-                    Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Descartar alterações?") },
-            text  = { Text("As informações preenchidas serão perdidas.") },
+            title = { Text(stringResource(R.string.edita_discard_title)) },
+            text  = { Text(stringResource(R.string.edita_discard_msg)) },
             confirmButton = {
                 TextButton(onClick = { showDiscardDialog = false; onBack() }) {
-                    Text("Descartar", color = Color(0xFFD32F2F))
+                    Text(stringResource(R.string.edita_discard_confirm), color = Color(0xFFD32F2F))
                 }
             },
-            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") } }
+            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.edita_discard_dismiss)) } }
         )
     }
 }
@@ -532,7 +533,7 @@ private fun PassSourceSelector(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_link), contentDescription = null, modifier = Modifier.size(16.dp))
-                    Text("Link", fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(stringResource(R.string.edita_source_link), fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
             SegmentedButton(
@@ -548,7 +549,7 @@ private fun PassSourceSelector(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(16.dp))
-                    Text("Arquivo", fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(stringResource(R.string.edita_source_file), fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
         }
@@ -557,7 +558,7 @@ private fun PassSourceSelector(
             EditTextField(
                 value         = linkUrl,
                 onValueChange = onLinkChange,
-                placeholder   = "https://..."
+                placeholder   = stringResource(R.string.edita_link_ph)
             )
         } else {
             if (fileName.isNotBlank()) {
@@ -582,7 +583,7 @@ private fun PassSourceSelector(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = onClearFile, modifier = Modifier.size(24.dp)) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = stringResource(R.string.edita_remove_file_cd), tint = TextSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -594,7 +595,7 @@ private fun PassSourceSelector(
             ) {
                 Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (fileName.isBlank()) "Selecionar arquivo" else "Trocar arquivo")
+                Text(if (fileName.isBlank()) stringResource(R.string.edita_pick_file) else stringResource(R.string.edita_change_file))
             }
         }
     }

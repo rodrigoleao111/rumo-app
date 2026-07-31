@@ -26,6 +26,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -55,10 +56,10 @@ fun ImportTripScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title  = { Text("Importar viagem", color = Color.White, fontWeight = FontWeight.SemiBold) },
+                title  = { Text(stringResource(R.string.import_title), color = Color.White, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -87,7 +88,7 @@ fun ImportTripScreen(
                 Spacer(Modifier.height(20.dp))
 
                 Text(
-                    text       = "Importar viagem",
+                    text       = stringResource(R.string.import_title),
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = TextPrimary,
@@ -97,7 +98,7 @@ fun ImportTripScreen(
                 Spacer(Modifier.height(12.dp))
 
                 Text(
-                    text      = "Recebeu um arquivo .travel de outra pessoa? Importe aqui para ter o mesmo roteiro no seu dispositivo.",
+                    text      = stringResource(R.string.import_description),
                     style     = MaterialTheme.typography.bodyMedium,
                     color     = TextSecondary,
                     textAlign = TextAlign.Center
@@ -106,12 +107,12 @@ fun ImportTripScreen(
                 Spacer(Modifier.height(32.dp))
 
                 // Detalhes do que é importado
-                InfoRow(emoji = "🗓️", text = "Dias, atividades e roteiro completo")
-                InfoRow(emoji = "🏨", text = "Dados de hospedagem")
-                InfoRow(emoji = "👥", text = "Contatos importantes")
-                InfoRow(emoji = "📄", text = "Documentos anexados aos dias")
-                InfoRow(emoji = "🎟️", text = "Vouchers e ingressos")
-                InfoRow(emoji = "✈️", text = "Cartões de embarque")
+                InfoRow(emoji = "🗓️", text = stringResource(R.string.share_info_itinerary))
+                InfoRow(emoji = "🏨", text = stringResource(R.string.share_info_lodging))
+                InfoRow(emoji = "👥", text = stringResource(R.string.share_info_contacts))
+                InfoRow(emoji = "📄", text = stringResource(R.string.share_info_documents))
+                InfoRow(emoji = "🎟️", text = stringResource(R.string.share_info_vouchers))
+                InfoRow(emoji = "✈️", text = stringResource(R.string.share_info_boarding))
             }
 
             // Rodapé fixo — nota + botão de importar (sempre visível)
@@ -123,7 +124,7 @@ fun ImportTripScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text      = "Uma nova viagem será criada. Suas viagens atuais não serão alteradas.",
+                    text      = stringResource(R.string.import_new_trip_note),
                     style     = MaterialTheme.typography.bodySmall,
                     color     = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -138,7 +139,7 @@ fun ImportTripScreen(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_download), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Importar viagem", color = AmberPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.import_title), color = AmberPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -161,7 +162,7 @@ fun ImportTripScreen(
                 ) {
                     CircularProgressIndicator(color = GreenMoss, modifier = Modifier.size(40.dp))
                     Text(
-                        text  = "Importando viagem…",
+                        text  = stringResource(R.string.import_importing),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -180,23 +181,23 @@ fun ImportTripScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissDuplicate() },
             icon  = { Text("⚠️", fontSize = 28.sp) },
-            title = { Text("Viagem já importada") },
+            title = { Text(stringResource(R.string.import_duplicate_title)) },
             text  = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text  = "\"${d.existingTripName}\" já existe no app.",
+                        text  = stringResource(R.string.import_duplicate_exists, d.existingTripName),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextPrimary
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DuplicateDateRow("Versão local:", formatEditTimestamp(d.existingLastEditedAt))
-                        DuplicateDateRow("Versão importada:", formatEditTimestamp(d.incomingLastEditedAt))
+                        DuplicateDateRow(stringResource(R.string.import_local_version), formatEditTimestamp(d.existingLastEditedAt))
+                        DuplicateDateRow(stringResource(R.string.import_imported_version), formatEditTimestamp(d.incomingLastEditedAt))
                     }
                     Text(
                         text = when {
-                            identical     -> "As versões são idênticas."
-                            incomingNewer -> "A versão importada é mais recente. Deseja substituir a versão local?"
-                            else          -> "⚠ Atenção: a versão local é mais recente. Importar substituirá dados mais novos."
+                            identical     -> stringResource(R.string.import_versions_identical)
+                            incomingNewer -> stringResource(R.string.import_incoming_newer)
+                            else          -> stringResource(R.string.import_local_newer)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (localNewer) MaterialTheme.colorScheme.error else TextSecondary
@@ -211,7 +212,7 @@ fun ImportTripScreen(
                     )
                 ) {
                     Text(
-                        "Importar",
+                        stringResource(R.string.import_action),
                         color      = if (localNewer) Color.White else AmberPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -219,7 +220,7 @@ fun ImportTripScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDuplicate() }) {
-                    Text("Manter local", color = GreenMoss, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.import_keep_local), color = GreenMoss, fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -230,7 +231,7 @@ fun ImportTripScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissError() },
             icon  = { Text("⚠️", fontSize = 28.sp) },
-            title = { Text("Não foi possível importar") },
+            title = { Text(stringResource(R.string.import_error_title)) },
             text  = {
                 Text(
                     text  = (phase as ImportPhase.Error).message,
@@ -243,7 +244,7 @@ fun ImportTripScreen(
                     onClick = { viewModel.dismissError() },
                     colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                 ) {
-                    Text("Tentar novamente", color = AmberPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.import_retry), color = AmberPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         )

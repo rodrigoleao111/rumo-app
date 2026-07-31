@@ -22,7 +22,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val sortTripsByProximity: StateFlow<Boolean> = settings.sortTripsByProximity
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val hideCompletedTrips: StateFlow<Boolean> = settings.hideCompletedTrips
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)

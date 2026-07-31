@@ -3,6 +3,8 @@ package com.rodrigoleao.pipa.ui.trips
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.BuildConfig
+import com.rodrigoleao.pipa.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.rodrigoleao.pipa.data.ai.ItineraryGenerator
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.usecase.SaveGeneratedItineraryUseCase
@@ -56,7 +58,8 @@ enum class ChatPhase { CHOOSING, CHATTING, IMPORTING, GENERATING, PREVIEW, SAVIN
 @HiltViewModel
 class CreateTripViewModel @Inject constructor(
     private val repo: TripRepository,
-    private val saveItineraryUseCase: SaveGeneratedItineraryUseCase
+    private val saveItineraryUseCase: SaveGeneratedItineraryUseCase,
+    @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
     // ── Wizard form state ─────────────────────────────────────────────────────
@@ -213,7 +216,7 @@ class CreateTripViewModel @Inject constructor(
 
     fun startChat() {
         _chatPhase.value    = ChatPhase.CHATTING
-        _chatMessages.value = listOf(ChatMessage(ChatRole.AI, generator?.getInitialGreeting() ?: "Olá! Vou ajudar a montar seu roteiro."))
+        _chatMessages.value = listOf(ChatMessage(ChatRole.AI, generator?.getInitialGreeting() ?: appContext.getString(R.string.create_default_greeting)))
     }
 
     fun startImport() {
@@ -231,12 +234,15 @@ class CreateTripViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val days = ItineraryGenerator.parseJson(json)
-                if (days.isEmpty()) throw Exception("Nenhum dia encontrado no JSON.")
+                if (days.isEmpty()) throw Exception(appContext.getString(R.string.create_import_no_days))
                 _generatedDays.value  = days
                 _cameFromImport.value = true
                 _chatPhase.value      = ChatPhase.PREVIEW
             } catch (e: Exception) {
-                _importError.value = "JSON inválido: ${e.message ?: "verifique o formato e tente novamente."}"
+                _importError.value = appContext.getString(
+                    R.string.create_import_invalid,
+                    e.message ?: appContext.getString(R.string.create_import_invalid_fallback)
+                )
             }
         }
     }
@@ -323,7 +329,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
 
         viewModelScope.launch {
             val response = generator?.sendMessage(text)
-                ?: "Assistente não inicializado. Volte ao passo anterior."
+                ?: appContext.getString(R.string.create_assistant_not_initialized)
             _chatMessages.value = _chatMessages.value.dropLast(1) +
                 ChatMessage(ChatRole.AI, response)
         }
@@ -335,13 +341,13 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         viewModelScope.launch {
             try {
                 val days = generator?.generateItinerary()
-                    ?: throw Exception("Assistente não inicializado.")
+                    ?: throw Exception(appContext.getString(R.string.create_assistant_not_initialized_short))
                 _generatedDays.value  = days
                 _cameFromImport.value = false
                 _chatPhase.value      = ChatPhase.PREVIEW
             } catch (e: Exception) {
                 _chatMessages.value = _chatMessages.value +
-                    ChatMessage(ChatRole.AI, "Não consegui gerar o roteiro. ${e.message ?: "Tente novamente."}")
+                    ChatMessage(ChatRole.AI, appContext.getString(R.string.create_generate_failed, e.message ?: appContext.getString(R.string.create_try_again)))
                 _chatPhase.value = ChatPhase.CHATTING
             }
         }

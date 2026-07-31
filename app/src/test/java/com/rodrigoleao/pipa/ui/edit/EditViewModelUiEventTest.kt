@@ -47,6 +47,7 @@ class EditViewModelUiEventTest {
     private lateinit var contactRepo: ContactRepository
     private lateinit var categoryRepo: ContactCategoryRepository
     private lateinit var tripRepo: TripRepository
+    private val appContext: android.content.Context = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -61,7 +62,7 @@ class EditViewModelUiEventTest {
     // ── EditContactViewModel ──────────────────────────────────────────────────
 
     private fun buildContactVm(contactId: Long = 0L) =
-        EditContactViewModel(contactRepo, categoryRepo, tripRepo, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
+        EditContactViewModel(contactRepo, categoryRepo, tripRepo, appContext, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
 
     @Test
     fun save_success_emitsNavigateBack() = runTest {
@@ -168,7 +169,7 @@ class EditViewModelUiEventTest {
         coEvery { tripRepo.getTripEntity(1L) } returns entity
         coEvery { tripRepo.deleteTrip(any()) } just Runs
 
-        val vm = EditTripViewModel(tripRepo, SavedStateHandle(mapOf("tripId" to 1L)))
+        val vm = EditTripViewModel(appContext, tripRepo, SavedStateHandle(mapOf("tripId" to 1L)))
         advanceUntilIdle()
 
         val events = mutableListOf<UiEvent>()
@@ -194,7 +195,7 @@ class EditViewModelUiEventTest {
         coEvery { tripRepo.getTripEntity(1L) } returns entity
         coEvery { tripRepo.deleteTrip(any()) } throws RuntimeException("DB error")
 
-        val vm = EditTripViewModel(tripRepo, SavedStateHandle(mapOf("tripId" to 1L)))
+        val vm = EditTripViewModel(appContext, tripRepo, SavedStateHandle(mapOf("tripId" to 1L)))
         advanceUntilIdle()
 
         vm.deleteTrip()

@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -157,13 +159,13 @@ fun TripsListScreen(
                     ) {
                         Text("🗺️", fontSize = 56.sp)
                         Text(
-                            text       = "Nenhuma viagem ainda",
+                            text       = stringResource(R.string.trips_empty_title),
                             style      = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color      = TextPrimary
                         )
                         Text(
-                            text      = "Crie sua primeira viagem\nno botão + do canto inferior",
+                            text      = stringResource(R.string.trips_empty_msg),
                             style     = MaterialTheme.typography.bodySmall,
                             color     = TextSecondary,
                             textAlign = TextAlign.Center
@@ -202,7 +204,7 @@ fun TripsListScreen(
         ) {
             HeaderIconButton(
                 icon               = Icons.Filled.Menu,
-                contentDescription = "Menu",
+                contentDescription = stringResource(R.string.trips_menu_cd),
                 onClick            = { scope.launch { drawerState.open() } }
             )
         }
@@ -235,10 +237,10 @@ fun TripsListScreen(
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
             icon  = { Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = null, tint = Color(0xFFD32F2F)) },
-            title = { Text("Excluir viagem?") },
+            title = { Text(stringResource(R.string.trips_delete_title)) },
             text  = {
                 Text(
-                    text  = "\"${trip.name}\" e todos os dias, atividades, contatos e vouchers serão apagados permanentemente.",
+                    text  = stringResource(R.string.trips_delete_msg, trip.name),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -248,11 +250,11 @@ fun TripsListScreen(
                     onClick = { viewModel.deleteTrip(trip); pendingDelete = null },
                     colors  = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                 ) {
-                    Text("Excluir", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_delete), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("Cancelar") }
+                TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -260,18 +262,18 @@ fun TripsListScreen(
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text("Sair do app?") },
-            text  = { Text("Deseja fechar o Pipa?", color = TextSecondary) },
+            title = { Text(stringResource(R.string.trips_exit_title)) },
+            text  = { Text(stringResource(R.string.trips_exit_msg), color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = { activity?.finish() },
                     colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                 ) {
-                    Text("Sair", color = AmberPrimary, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.trips_exit_confirm), color = AmberPrimary, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showExitDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -378,7 +380,7 @@ private fun TripCard(
                 ) {
                     Icon(
                         imageVector        = Icons.Filled.MoreVert,
-                        contentDescription = "Mais opções",
+                        contentDescription = stringResource(R.string.trips_more_options_cd),
                         tint               = GreenMoss,
                         modifier           = Modifier.size(22.dp)
                     )
@@ -390,17 +392,17 @@ private fun TripCard(
                     containerColor   = SurfaceWhite
                 ) {
                     DropdownMenuItem(
-                        text        = { Text("Compartilhar", color = TextPrimary) },
+                        text        = { Text(stringResource(R.string.common_share), color = TextPrimary) },
                         leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = null, tint = GreenSage, modifier = Modifier.size(20.dp)) },
                         onClick     = { menuOpen = false; onShare() }
                     )
                     DropdownMenuItem(
-                        text        = { Text("Editar", color = TextPrimary) },
+                        text        = { Text(stringResource(R.string.common_edit), color = TextPrimary) },
                         leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_edit), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(20.dp)) },
                         onClick     = { menuOpen = false; onEdit() }
                     )
                     DropdownMenuItem(
-                        text        = { Text("Excluir", color = Color(0xFFD32F2F)) },
+                        text        = { Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F)) },
                         leadingIcon = { Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = null, tint = Color(0xFFD32F2F), modifier = Modifier.size(20.dp)) },
                         onClick     = { menuOpen = false; onDelete() }
                     )
@@ -462,14 +464,14 @@ private fun ExpandableFab(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 FabAction(
-                    label          = "Importar viagem",
+                    label          = stringResource(R.string.trips_import),
                     icon           = ImageVector.vectorResource(R.drawable.ic_import),
                     containerColor = GreenSage,
                     contentColor   = Color.White,
                     onClick        = { onExpandedChange(false); onImportTrip() }
                 )
                 FabAction(
-                    label          = "Nova viagem",
+                    label          = stringResource(R.string.trips_new_trip),
                     icon           = ImageVector.vectorResource(R.drawable.ic_add),
                     containerColor = AmberPrimary,
                     contentColor   = GreenMoss,
@@ -486,7 +488,7 @@ private fun ExpandableFab(
         ) {
             Icon(
                 imageVector        = Icons.Filled.Add,
-                contentDescription = if (expanded) "Fechar" else "Criar ou importar viagem",
+                contentDescription = if (expanded) stringResource(R.string.common_close) else stringResource(R.string.trips_fab_cd),
                 modifier           = Modifier.rotate(rotation)
             )
         }
@@ -550,8 +552,8 @@ private fun StatusBadge(status: TripStatus, startDate: String?, endDate: String?
             val countdown = countdownLabel(startDate)
             Triple(countdown, AmberPrimary, GreenMoss)
         }
-        TripStatus.ACTIVE    -> Triple("Em curso", GreenMoss, Color.White)
-        TripStatus.COMPLETED -> Triple("Concluída", GreenForest, TextSecondary)
+        TripStatus.ACTIVE    -> Triple(stringResource(R.string.trips_status_active), GreenMoss, Color.White)
+        TripStatus.COMPLETED -> Triple(stringResource(R.string.trips_status_completed), GreenForest, TextSecondary)
     }
     Surface(shape = RoundedCornerShape(100.dp), color = bg) {
         Text(
@@ -564,20 +566,24 @@ private fun StatusBadge(status: TripStatus, startDate: String?, endDate: String?
     }
 }
 
+@Composable
 private fun countdownLabel(startDate: String?): String {
-    if (startDate == null) return "Planejando"
+    if (startDate == null) return stringResource(R.string.trips_countdown_planning)
     val days = ChronoUnit.DAYS.between(LocalDate.now(), LocalDate.parse(startDate))
     return when {
-        days <= 0L  -> "Planejando"
-        days == 1L  -> "amanhã"
-        days < 31L  -> "em $days dias"
+        days <= 0L  -> stringResource(R.string.trips_countdown_planning)
+        days == 1L  -> stringResource(R.string.trips_countdown_tomorrow)
+        days < 31L  -> {
+            val d = days.toInt()
+            pluralStringResource(R.plurals.trips_countdown_days, d, d)
+        }
         days < 365L -> {
-            val months = days / 30
-            if (months == 1L) "em 1 mês" else "em $months meses"
+            val months = (days / 30).toInt()
+            pluralStringResource(R.plurals.trips_countdown_months, months, months)
         }
         else -> {
-            val years = days / 365
-            if (years == 1L) "em 1 ano" else "em $years anos"
+            val years = (days / 365).toInt()
+            pluralStringResource(R.plurals.trips_countdown_years, years, years)
         }
     }
 }
@@ -633,7 +639,7 @@ private fun TripsDrawerContent(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text  = "Suas viagens em um só lugar",
+                text  = stringResource(R.string.trips_drawer_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.75f)
             )
@@ -642,7 +648,7 @@ private fun TripsDrawerContent(
         Spacer(Modifier.height(12.dp))
 
         NavigationDrawerItem(
-            label    = { Text("Nova viagem") },
+            label    = { Text(stringResource(R.string.trips_new_trip)) },
             icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
             selected = false,
             onClick  = onNewTrip,
@@ -650,7 +656,7 @@ private fun TripsDrawerContent(
             modifier = Modifier.padding(horizontal = 12.dp)
         )
         NavigationDrawerItem(
-            label    = { Text("Importar viagem") },
+            label    = { Text(stringResource(R.string.trips_import)) },
             icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_import), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
             selected = false,
             onClick  = onImportTrip,
@@ -661,7 +667,7 @@ private fun TripsDrawerContent(
         HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp), color = DividerColor)
 
         NavigationDrawerItem(
-            label    = { Text("Configurações") },
+            label    = { Text(stringResource(R.string.trips_settings)) },
             icon     = { Icon(ImageVector.vectorResource(R.drawable.ic_settings), contentDescription = null, tint = GreenMoss, modifier = Modifier.size(22.dp)) },
             selected = false,
             onClick  = onSettings,

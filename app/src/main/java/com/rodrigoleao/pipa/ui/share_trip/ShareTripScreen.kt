@@ -25,6 +25,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -44,7 +45,7 @@ fun ShareTripScreen(
                 putExtra(Intent.EXTRA_STREAM, phase.uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(intent, "Compartilhar viagem"))
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_title)))
             viewModel.clearReady()
         }
     }
@@ -53,11 +54,11 @@ fun ShareTripScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Compartilhar viagem", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.share_title), color = Color.White, fontWeight = FontWeight.SemiBold)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenMoss)
@@ -86,7 +87,7 @@ fun ShareTripScreen(
                 Spacer(Modifier.height(20.dp))
 
                 Text(
-                    text       = "Compartilhar viagem",
+                    text       = stringResource(R.string.share_title),
                     style      = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color      = TextPrimary,
@@ -96,7 +97,7 @@ fun ShareTripScreen(
                 Spacer(Modifier.height(12.dp))
 
                 Text(
-                    text      = "Gera um arquivo .travel com todo o conteúdo da viagem. Envie para outra pessoa importar no app.",
+                    text      = stringResource(R.string.share_description),
                     style     = MaterialTheme.typography.bodyMedium,
                     color     = TextSecondary,
                     textAlign = TextAlign.Center
@@ -104,12 +105,12 @@ fun ShareTripScreen(
 
                 Spacer(Modifier.height(32.dp))
 
-                InfoRow(emoji = "🗓️", text = "Dias, atividades e roteiro completo")
-                InfoRow(emoji = "🏨", text = "Dados de hospedagem")
-                InfoRow(emoji = "👥", text = "Contatos importantes")
-                InfoRow(emoji = "📄", text = "Documentos anexados aos dias")
-                InfoRow(emoji = "🎟️", text = "Vouchers e ingressos")
-                InfoRow(emoji = "✈️", text = "Cartões de embarque")
+                InfoRow(emoji = "🗓️", text = stringResource(R.string.share_info_itinerary))
+                InfoRow(emoji = "🏨", text = stringResource(R.string.share_info_lodging))
+                InfoRow(emoji = "👥", text = stringResource(R.string.share_info_contacts))
+                InfoRow(emoji = "📄", text = stringResource(R.string.share_info_documents))
+                InfoRow(emoji = "🎟️", text = stringResource(R.string.share_info_vouchers))
+                InfoRow(emoji = "✈️", text = stringResource(R.string.share_info_boarding))
             }
 
             // Rodapé fixo — aviso + botão de compartilhar (sempre visível)
@@ -121,7 +122,7 @@ fun ShareTripScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text      = "O arquivo pode conter informações sensíveis além do conteúdo do roteiro. Verifique os documentos anexados a viagem antes de compartilhar com alguém.",
+                    text      = stringResource(R.string.share_sensitive_warning),
                     style     = MaterialTheme.typography.bodySmall,
                     color     = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -136,7 +137,7 @@ fun ShareTripScreen(
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_share), contentDescription = null, tint = AmberPrimary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Compartilhar viagem", color = AmberPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.share_title), color = AmberPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -159,7 +160,7 @@ fun ShareTripScreen(
                 ) {
                     CircularProgressIndicator(color = GreenMoss, modifier = Modifier.size(40.dp))
                     Text(
-                        text  = "Preparando arquivo…",
+                        text  = stringResource(R.string.share_preparing),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -173,7 +174,7 @@ fun ShareTripScreen(
         AlertDialog(
             onDismissRequest = { viewModel.dismissError() },
             icon  = { Text("⚠️", fontSize = 28.sp) },
-            title = { Text("Não foi possível compartilhar") },
+            title = { Text(stringResource(R.string.share_error_title)) },
             text  = {
                 Text(
                     text  = (phase as SharePhase.Error).message,
@@ -186,7 +187,7 @@ fun ShareTripScreen(
                     onClick = { viewModel.dismissError() },
                     colors  = ButtonDefaults.buttonColors(containerColor = GreenMoss)
                 ) {
-                    Text("OK", color = AmberPrimary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.common_ok), color = AmberPrimary, fontWeight = FontWeight.SemiBold)
                 }
             }
         )

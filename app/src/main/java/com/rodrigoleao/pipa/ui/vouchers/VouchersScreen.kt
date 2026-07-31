@@ -37,6 +37,7 @@ import com.rodrigoleao.pipa.utils.openInternalFile
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
@@ -51,7 +52,7 @@ private data class VoucherPalette(
     val badgeBackground: Color,
     val badgeText: Color,
     val buttonColor: Color,
-    val label: String
+    val labelRes: Int
 )
 
 private fun voucherType(assetPath: String): VoucherType = when {
@@ -71,7 +72,7 @@ private fun voucherPalette(type: VoucherType): VoucherPalette = when (type) {
         badgeBackground = GreenWarm,
         badgeText       = GreenMoss,
         buttonColor     = GreenMoss,
-        label           = "PDF"
+        labelRes        = R.string.voucher_type_pdf
     )
     VoucherType.LINK -> VoucherPalette(
         accent          = AmberPrimary,
@@ -79,7 +80,7 @@ private fun voucherPalette(type: VoucherType): VoucherPalette = when (type) {
         badgeBackground = Color(0xFFEDD47A),   // âmbar mais saturado para badge
         badgeText       = Color(0xFF5A3A00),   // texto escuro sobre fundo âmbar
         buttonColor     = Color(0xFFAD820E),   // AmberPrimary um tom abaixo para botão
-        label           = "Link"
+        labelRes        = R.string.voucher_type_link
     )
     VoucherType.IMAGE -> VoucherPalette(
         accent          = GreenSage,
@@ -87,7 +88,7 @@ private fun voucherPalette(type: VoucherType): VoucherPalette = when (type) {
         badgeBackground = GreenWarm,
         badgeText       = Color(0xFF1B4332),
         buttonColor     = GreenSage,
-        label           = "Imagem"
+        labelRes        = R.string.voucher_type_image
     )
     VoucherType.FILE -> VoucherPalette(
         accent          = TextSecondary,
@@ -95,7 +96,7 @@ private fun voucherPalette(type: VoucherType): VoucherPalette = when (type) {
         badgeBackground = GreenForest,
         badgeText       = TextSecondary,
         buttonColor     = TextSecondary,
-        label           = "Arquivo"
+        labelRes        = R.string.voucher_type_file
     )
 }
 
@@ -188,8 +189,8 @@ fun VouchersScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("🎫", fontSize = 36.sp)
-                Text("Nenhum voucher ainda", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                Text("Toque em + para adicionar", style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
+                Text(stringResource(R.string.voucher_empty_title), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                Text(stringResource(R.string.voucher_empty_subtitle), style = MaterialTheme.typography.labelSmall, color = TextSecondary.copy(alpha = 0.6f))
             }
         }
         return
@@ -254,7 +255,7 @@ fun VouchersScreen(
                                 ) {
                                     Icon(
                                         imageVector        = ImageVector.vectorResource(R.drawable.ic_drag),
-                                        contentDescription = "Reordenar",
+                                        contentDescription = stringResource(R.string.voucher_reorder_cd),
                                         tint               = TextSecondary.copy(alpha = 0.3f),
                                         modifier           = Modifier.size(20.dp)
                                     )
@@ -276,8 +277,8 @@ fun VouchersScreen(
     confirmDeleteId?.let { deleteId ->
         AlertDialog(
             onDismissRequest = { confirmDeleteId = null },
-            title = { Text("Remover voucher?") },
-            text  = { Text("Essa ação não pode ser desfeita.") },
+            title = { Text(stringResource(R.string.voucher_delete_dialog_title)) },
+            text  = { Text(stringResource(R.string.voucher_delete_dialog_msg)) },
             confirmButton = {
                 TextButton(onClick = {
                     skipNextReorder = true
@@ -285,11 +286,11 @@ fun VouchersScreen(
                     onDeleteVoucher(deleteId)
                     confirmDeleteId = null
                 }) {
-                    Text("Remover", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_remove), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteId = null }) { Text("Cancelar") }
+                TextButton(onClick = { confirmDeleteId = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -332,7 +333,7 @@ private fun shareVoucher(context: android.content.Context, voucher: Voucher) {
         }
         else -> Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text) }
     }
-    context.startActivity(Intent.createChooser(intent, "Compartilhar voucher"))
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.voucher_share_chooser_title)))
 }
 
 // ── Card (Conceito A) ─────────────────────────────────────────────────────────
@@ -438,7 +439,7 @@ private fun VoucherCard(
                         color = palette.badgeBackground
                     ) {
                         Text(
-                            text          = palette.label,
+                            text          = stringResource(palette.labelRes),
                             modifier      = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             fontSize      = 10.sp,
                             fontWeight    = FontWeight.SemiBold,
@@ -454,7 +455,7 @@ private fun VoucherCard(
                         Icon(
                             imageVector        = if (voucher.isUsed) ImageVector.vectorResource(R.drawable.ic_check_circle)
                                                  else ImageVector.vectorResource(R.drawable.ic_radio_unchecked),
-                            contentDescription = if (voucher.isUsed) "Marcar como não usado" else "Marcar como usado",
+                            contentDescription = if (voucher.isUsed) stringResource(R.string.voucher_mark_unused_cd) else stringResource(R.string.voucher_mark_used_cd),
                             tint               = if (voucher.isUsed) GreenMoss else TextSecondary.copy(alpha = 0.4f),
                             modifier           = Modifier.size(18.dp)
                         )
@@ -463,7 +464,7 @@ private fun VoucherCard(
                     IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector        = ImageVector.vectorResource(R.drawable.ic_edit),
-                            contentDescription = "Editar",
+                            contentDescription = stringResource(R.string.common_edit),
                             tint               = TextSecondary.copy(alpha = 0.6f),
                             modifier           = Modifier.size(17.dp)
                         )
@@ -472,7 +473,7 @@ private fun VoucherCard(
                     IconButton(onClick = onShare, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector        = ImageVector.vectorResource(R.drawable.ic_share),
-                            contentDescription = "Compartilhar",
+                            contentDescription = stringResource(R.string.common_share),
                             tint               = TextSecondary.copy(alpha = 0.6f),
                             modifier           = Modifier.size(17.dp)
                         )
@@ -481,7 +482,7 @@ private fun VoucherCard(
                     IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector        = ImageVector.vectorResource(R.drawable.ic_delete),
-                            contentDescription = "Remover",
+                            contentDescription = stringResource(R.string.common_remove),
                             tint               = Color(0xFFD32F2F).copy(alpha = 0.7f),
                             modifier           = Modifier.size(17.dp)
                         )

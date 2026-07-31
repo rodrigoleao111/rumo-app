@@ -8,8 +8,10 @@ import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.weather.GeocodingResult
 import com.rodrigoleao.pipa.data.weather.WeatherRepository
 import com.rodrigoleao.pipa.data.model.UiEvent
+import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.ui.components.TripCovers
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -40,6 +42,7 @@ data class EditTripState(
 
 @HiltViewModel
 class EditTripViewModel @Inject constructor(
+    @ApplicationContext private val appContext: android.content.Context,
     private val repo: TripRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -150,7 +153,7 @@ class EditTripViewModel @Inject constructor(
                 ))
             }
                 .onSuccess { repo.touchLastEditedAt(e.id); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar viagem")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.editd_error_save_trip))) }
         }
     }
 
@@ -160,7 +163,7 @@ class EditTripViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { repo.deleteTrip(e) }
                 .onSuccess { _uiEvent.send(UiEvent.NavigateAfterDelete) }
-                .onFailure { _state.value = _state.value.copy(isDeleting = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir viagem")) }
+                .onFailure { _state.value = _state.value.copy(isDeleting = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.editd_error_delete_trip))) }
         }
     }
 

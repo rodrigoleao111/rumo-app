@@ -3,9 +3,11 @@ package com.rodrigoleao.pipa.ui.import_trip
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.data.import_trip.TravelImporter
 import com.rodrigoleao.pipa.data.model.DuplicateTripException
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +32,8 @@ sealed class ImportPhase {
 
 @HiltViewModel
 class ImportTripViewModel @Inject constructor(
-    private val importer: TravelImporter
+    private val importer: TravelImporter,
+    @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
     private val _phase = MutableStateFlow<ImportPhase>(ImportPhase.Idle)
@@ -51,7 +54,7 @@ class ImportTripViewModel @Inject constructor(
                     pendingUri           = uri
                 )
             } catch (e: Exception) {
-                ImportPhase.Error(e.message ?: "Erro ao importar viagem.")
+                ImportPhase.Error(e.message ?: appContext.getString(R.string.import_error_fallback))
             }
         }
     }
@@ -63,7 +66,7 @@ class ImportTripViewModel @Inject constructor(
             _phase.value = try {
                 ImportPhase.Done(importer.overwriteImport(uri, existingTripId))
             } catch (e: Exception) {
-                ImportPhase.Error(e.message ?: "Erro ao substituir viagem.")
+                ImportPhase.Error(e.message ?: appContext.getString(R.string.import_error_overwrite_fallback))
             }
         }
     }

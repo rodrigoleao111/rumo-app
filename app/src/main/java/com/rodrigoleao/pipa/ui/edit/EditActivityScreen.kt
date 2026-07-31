@@ -37,6 +37,7 @@ import com.rodrigoleao.pipa.data.model.BadgeType
 import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -53,12 +54,12 @@ private val ALL_ACTIVITY_EMOJIS = listOf(
 )
 
 private val ALL_BADGES = listOf(
-    BadgeType.FREE      to "Grátis",
-    BadgeType.PAID      to "Pago",
-    BadgeType.BOOKED    to "Reservado",
-    BadgeType.INCLUDED  to "Incluído",
-    BadgeType.UBER      to "Uber",
-    BadgeType.WALKING   to "A pé"
+    BadgeType.FREE      to R.string.edita_badge_free,
+    BadgeType.PAID      to R.string.edita_badge_paid,
+    BadgeType.BOOKED    to R.string.edita_badge_booked,
+    BadgeType.INCLUDED  to R.string.edita_badge_included,
+    BadgeType.UBER      to R.string.edita_badge_uber,
+    BadgeType.WALKING   to R.string.edita_badge_walking
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,23 +96,23 @@ fun EditActivityScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar atividade" else "Nova atividade", fontWeight = FontWeight.SemiBold, color = Color.White) },
+                title = { Text(if (isEditing) stringResource(R.string.edita_activity_title_edit) else stringResource(R.string.edita_activity_title_new), fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color.White)
                         }
                     }
                     IconButton(
                         onClick = { viewModel.save() },
                         enabled = canSave && !state.isSaving
                     ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -140,14 +141,14 @@ fun EditActivityScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Horário
-            EditSectionLabel("Horário")
+            EditSectionLabel(stringResource(R.string.edita_label_time))
             TimePickerField(
                 time    = state.time,
                 onClick = { showTimePicker = true }
             )
 
             // Emoji
-            EditSectionLabel("Ícone")
+            EditSectionLabel(stringResource(R.string.edita_label_icon))
             ActivityEmojiRow(
                 selected    = state.emoji,
                 onSelect    = viewModel::updateEmoji,
@@ -155,15 +156,15 @@ fun EditActivityScreen(
             )
 
             // Nome
-            EditSectionLabel("Nome da atividade")
-            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = "Ex: Café da manhã no hotel")
+            EditSectionLabel(stringResource(R.string.edita_label_activity_name))
+            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = stringResource(R.string.edita_placeholder_activity_name))
 
             // Detalhe
-            EditSectionLabel("Descrição")
+            EditSectionLabel(stringResource(R.string.edita_label_description))
             EditTextField(
                 value         = state.detail,
                 onValueChange = viewModel::updateDetail,
-                placeholder   = "Detalhes, dicas, observações…",
+                placeholder   = stringResource(R.string.edita_placeholder_description),
                 singleLine    = false,
                 minLines      = 3
             )
@@ -174,14 +175,14 @@ fun EditActivityScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                EditSectionLabel("Tags")
+                EditSectionLabel(stringResource(R.string.edita_label_tags))
                 TextButton(
                     onClick = { showNewBadgeDialog = true },
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(16.dp), tint = GreenMoss)
                     Spacer(Modifier.width(4.dp))
-                    Text("Nova", fontSize = 13.sp, color = GreenMoss)
+                    Text(stringResource(R.string.edita_new), fontSize = 13.sp, color = GreenMoss)
                 }
             }
             BadgeSelector(
@@ -193,16 +194,16 @@ fun EditActivityScreen(
 
             // Endereço
             HorizontalDivider(color = CardBorder)
-            EditSectionLabel("Endereço (opcional)")
+            EditSectionLabel(stringResource(R.string.edita_label_address))
             Text(
-                text  = "Usado para abrir no Maps e chamar Uber.",
+                text  = stringResource(R.string.edita_address_help),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
             EditTextField(
                 value         = state.address,
                 onValueChange = viewModel::updateAddress,
-                placeholder   = "Ex: Parque do Caracol, Canela RS"
+                placeholder   = stringResource(R.string.edita_placeholder_address)
             )
 
             Spacer(Modifier.height(8.dp))
@@ -215,7 +216,7 @@ fun EditActivityScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text(if (isEditing) "Salvar atividade" else "Adicionar atividade", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                else Text(if (isEditing) stringResource(R.string.edita_save_activity) else stringResource(R.string.edita_add_activity), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
     }
@@ -257,16 +258,16 @@ fun EditActivityScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir atividade?") },
-            text  = { Text("Esta atividade será removida permanentemente do dia.") },
+            title = { Text(stringResource(R.string.edita_delete_activity_title)) },
+            text  = { Text(stringResource(R.string.edita_delete_activity_msg)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
                     viewModel.deleteActivity()
-                }) { Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
+                }) { Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -294,7 +295,7 @@ private fun TimePickerField(time: String, onClick: () -> Unit) {
                 modifier           = Modifier.size(20.dp)
             )
             Text(
-                text  = time.ifBlank { "Selecionar horário" },
+                text  = time.ifBlank { stringResource(R.string.edita_select_time) },
                 color = if (time.isBlank()) TextSecondary.copy(alpha = 0.5f) else TextSecondary,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -328,7 +329,7 @@ private fun TimePickerDialog(
                 modifier          = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Selecionar horário", fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                Text(stringResource(R.string.edita_select_time), fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Start))
                 Spacer(Modifier.height(16.dp))
                 TimePicker(
@@ -347,9 +348,9 @@ private fun TimePickerDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
                     TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
-                        Text("OK", color = GreenMoss, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.common_ok), color = GreenMoss, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -392,7 +393,7 @@ private fun ActivityEmojiRow(selected: String, onSelect: (String) -> Unit, onMor
             border   = BorderStroke(1.dp, CardBorder)
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Mais ícones", tint = TextSecondary)
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.edita_more_icons), tint = TextSecondary)
             }
         }
     }
@@ -408,7 +409,7 @@ private fun EmojiPickerDialog(selected: String, onDismiss: () -> Unit, onSelect:
             colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Escolha um ícone", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Text(stringResource(R.string.edita_choose_icon), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Spacer(Modifier.height(16.dp))
                 LazyVerticalGrid(
                     columns                = GridCells.Fixed(6),
@@ -435,7 +436,7 @@ private fun EmojiPickerDialog(selected: String, onDismiss: () -> Unit, onSelect:
                     onClick  = onDismiss,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Fechar", color = GreenMoss)
+                    Text(stringResource(R.string.common_close), color = GreenMoss)
                 }
             }
         }
@@ -460,7 +461,7 @@ private fun BadgeSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement   = Arrangement.spacedBy(8.dp)
     ) {
-        ALL_BADGES.forEach { (type, label) ->
+        ALL_BADGES.forEach { (type, labelRes) ->
             val isSelected = type in selected
             Surface(
                 modifier = Modifier
@@ -471,7 +472,7 @@ private fun BadgeSelector(
                 border = BorderStroke(1.dp, if (isSelected) AmberPrimary else CardBorder)
             ) {
                 Text(
-                    text       = label,
+                    text       = stringResource(labelRes),
                     modifier   = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     fontSize   = 13.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
@@ -496,7 +497,7 @@ private fun BadgeSelector(
                 ) {
                     Text(cb.name, fontSize = 13.sp, color = base, fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = { onRemoveCustom(cb) }, modifier = Modifier.size(20.dp)) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover", tint = base, modifier = Modifier.size(14.dp))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = stringResource(R.string.common_remove), tint = base, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -513,13 +514,13 @@ fun NewBadgeDialog(onDismiss: () -> Unit, onConfirm: (name: String, colorHex: St
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nova categoria", fontWeight = FontWeight.SemiBold) },
+        title = { Text(stringResource(R.string.edita_new_category), fontWeight = FontWeight.SemiBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value         = name,
                     onValueChange = { name = it },
-                    label         = { Text("Nome da categoria") },
+                    label         = { Text(stringResource(R.string.edita_category_name)) },
                     singleLine    = true,
                     modifier      = Modifier.fillMaxWidth(),
                     colors        = OutlinedTextFieldDefaults.colors(
@@ -529,7 +530,7 @@ fun NewBadgeDialog(onDismiss: () -> Unit, onConfirm: (name: String, colorHex: St
                     )
                 )
 
-                Text("Cor da tag", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                Text(stringResource(R.string.edita_tag_color), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement   = Arrangement.spacedBy(10.dp)
@@ -563,11 +564,11 @@ fun NewBadgeDialog(onDismiss: () -> Unit, onConfirm: (name: String, colorHex: St
                 onClick  = { if (name.isNotBlank()) onConfirm(name, selectedColor) },
                 enabled  = name.isNotBlank()
             ) {
-                Text("Adicionar", color = GreenMoss, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.common_add), color = GreenMoss, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
         }
     )
 }

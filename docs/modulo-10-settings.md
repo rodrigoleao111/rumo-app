@@ -10,7 +10,7 @@
 
 ## Visão geral
 
-Tela de configurações globais do app com quatro toggles. As preferências afetam o comportamento de toda a aplicação — não de uma viagem específica — e são persistidas em **DataStore** (`androidx.datastore.preferences`). A tela não tem scroll: todos os itens cabem em uma coluna simples.
+Tela de configurações globais do app com **quatro toggles** (persistidos em **DataStore**, `androidx.datastore.preferences`) e um **seletor de idioma** (persistido à parte, via `LocaleHelper`/`SharedPreferences` — ver seção *Idioma*). As preferências afetam o comportamento de toda a aplicação — não de uma viagem específica. A tela não tem scroll: todos os itens cabem em uma coluna simples.
 
 ---
 
@@ -42,7 +42,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.data.map { it[KEY_EMERGENCY_CONTACTS] ?: true }
 
     val sortTripsByProximity: Flow<Boolean> =
-        dataStore.data.map { it[KEY_SORT_BY_PROXIMITY] ?: false }
+        dataStore.data.map { it[KEY_SORT_BY_PROXIMITY] ?: true }
 
     val hideCompletedTrips: Flow<Boolean> =
         dataStore.data.map { it[KEY_HIDE_COMPLETED] ?: false }
@@ -65,7 +65,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
 **Chaves:** as quatro `booleanPreferencesKey` ficam no `companion object` da classe.
 
-**Defaults:** `autoOpenActiveTrip` e `showEmergencyContacts` iniciam como `true`; `sortTripsByProximity` e `hideCompletedTrips` iniciam como `false`. O `?: <default>` no `.map { }` aplica o default quando a chave ainda não existe.
+**Defaults:** `autoOpenActiveTrip`, `showEmergencyContacts` e `sortTripsByProximity` iniciam como `true`; `hideCompletedTrips` inicia como `false`. O `?: <default>` no `.map { }` aplica o default quando a chave ainda não existe.
 
 **Reatividade:** qualquer gravação via `dataStore.edit { }` propaga automaticamente pelo `Flow` para todos os coletores — sem recomposição manual, sem `DisposableEffect`.
 
@@ -172,7 +172,7 @@ A condição `== exatamente 1` é importante: se houver zero ou mais de uma viag
 
 ### Toggle 3 — "Ordenar viagens por proximidade"
 
-**Default:** `false`.
+**Default:** `true` (ligado — a lista já nasce ordenada por proximidade).
 
 **Lido em:** `TripsListViewModel` — o `Flow` `sortTripsByProximity` entra no `combine` que produz a lista exibida.
 
@@ -188,6 +188,16 @@ A condição `== exatamente 1` é importante: se houver zero ou mais de uma viag
 
 > **Vínculo com a lista:** os toggles 3 e 4 não têm efeito na `SettingsScreen` em si; são consumidos pelo `TripsListViewModel` via `combine(repo.allTrips, sortTripsByProximity, hideCompletedTrips)` (ver `docs/modulo-01-lista-viagens.md`).
 
+### Idioma (seletor de idioma)
+
+Abaixo dos quatro toggles há uma linha **Idioma** (`LanguageSettingRow`, em `ui/settings/LanguageSettingRow.kt`). Ao tocar, abre um diálogo com quatro opções — **Sistema / Português / English / Español**. Ao escolher, a preferência é gravada e a `Activity` é recriada para reaplicar o locale.
+
+- **Fora do DataStore:** o idioma é lido bem cedo (em `MainActivity.attachBaseContext`), antes de qualquer recurso ser resolvido — cedo demais para o DataStore (assíncrono). Por isso fica em `SharedPreferences` (`pipa_locale` / chave `app_language`), acessado por `LocaleHelper` (`locale/LocaleHelper.kt`).
+- **Aplicação do locale:** `LocaleHelper.wrap(context)` envolve o contexto com o locale escolhido (`createConfigurationContext`); `"system"` mantém o idioma do aparelho (fallback para os recursos padrão = português).
+- **Troca:** `LocaleHelper.setLanguage(...)` grava e `context.findActivity()?.recreate()` reinicia a UI no novo idioma.
+
+Panorama de recursos (`res/values{,-en,-es}/strings.xml`) na seção **Internacionalização** de `docs/arquitetura-geral.md`.
+
 ---
 
 ## Composables e símbolos (resumo)
@@ -196,7 +206,8 @@ A condição `== exatamente 1` é importante: se houver zero ou mais de uma viag
 |---|---|---|
 | `SettingsRepository` | classe | Persistência em `DataStore("pipa_settings")` — expõe quatro `Flow<Boolean>` e quatro `suspend fun set*()` |
 | `SettingsViewModel` | `@HiltViewModel` | Quatro `Flow<Boolean>` → `StateFlow` via `stateIn(Eagerly)`; `set*()` via `viewModelScope.launch` |
-| `SettingsScreen` | composable | Quatro `Row` com `Switch` + `HorizontalDivider(Sand)`; stateless — coleta e emite via ViewModel |
+| `SettingsScreen` | composable | Quatro `Row` com `Switch` + `LanguageSettingRow` + `HorizontalDivider(Sand)`; stateless — coleta e emite via ViewModel. Textos via `stringResource` |
+| `LanguageSettingRow` | composable | Linha "Idioma" + diálogo de seleção (Sistema/PT/EN/ES); grava via `LocaleHelper` e chama `Activity.recreate()` |
 
 ---
 
@@ -206,3 +217,4 @@ A condição `== exatamente 1` é importante: se houver zero ou mais de uma viag
 - **Default diferente de `true`:** alterar o `?: true` no `.map { }` em `SettingsRepository`. Usuários existentes **não são afetados** — o default só vale se a chave ainda não existir no DataStore.
 - **Configuração por viagem (não global):** usar `TripEntity` + migration de banco (campo novo) em vez de DataStore. `SettingsRepository` é apenas para configurações globais do app.
 - **Seções no futuro:** se houver muitas configurações, agrupar com `Text` de label de seção (10sp uppercase GreenMoss, mesmo padrão de `SectionLabel` em `CreateTripScreen`) acima de cada grupo de `Row`s.
+- **Novo texto de UI:** criar a chave nas **três** `strings.xml` (pt/en/es) e usar `stringResource` — nunca hardcode. Ver *Internacionalização* em `docs/arquitetura-geral.md`.

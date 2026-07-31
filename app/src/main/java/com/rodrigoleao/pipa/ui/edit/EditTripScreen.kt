@@ -26,6 +26,7 @@ import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.ui.components.CoverPicker
 import com.rodrigoleao.pipa.ui.theme.*
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -63,11 +64,11 @@ fun EditTripScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Editar viagem", fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(stringResource(R.string.editd_edit_trip_title), fontWeight = FontWeight.SemiBold, color = Color.White)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
@@ -75,13 +76,13 @@ fun EditTripScreen(
                         onClick = { showDeleteDialog = true },
                         enabled = state.entity != null
                     ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White.copy(alpha = 0.85f))
+                        Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color.White.copy(alpha = 0.85f))
                     }
                     IconButton(
                         onClick = { viewModel.save() },
                         enabled = canSave && !state.isSaving
                     ) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -110,13 +111,13 @@ fun EditTripScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // ── Destino com autocomplete ──────────────────────────────────────
-            EditSectionLabel("Destino")
+            EditSectionLabel(stringResource(R.string.editd_label_destination))
             Box {
                 OutlinedTextField(
                     value         = state.destination,
                     onValueChange = viewModel::updateDestination,
                     modifier      = Modifier.fillMaxWidth(),
-                    placeholder   = { Text("Ex: Gramado & Canela, RS", color = TextSecondary.copy(alpha = 0.5f)) },
+                    placeholder   = { Text(stringResource(R.string.editd_destination_placeholder), color = TextSecondary.copy(alpha = 0.5f)) },
                     singleLine    = true,
                     shape         = RoundedCornerShape(12.dp),
                     trailingIcon  = {
@@ -165,16 +166,16 @@ fun EditTripScreen(
             }
             if (state.latitude != null) {
                 Text(
-                    text  = "Localização selecionada — clima será atualizado na viagem",
+                    text  = stringResource(R.string.editd_location_selected),
                     style = MaterialTheme.typography.labelSmall,
                     color = GreenMoss
                 )
             }
 
-            EditSectionLabel("Nome da viagem")
-            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = "Ex: Férias de inverno 2026")
+            EditSectionLabel(stringResource(R.string.editd_label_trip_name))
+            EditTextField(value = state.name, onValueChange = viewModel::updateName, placeholder = stringResource(R.string.editd_trip_name_placeholder))
 
-            EditSectionLabel("Capa da viagem")
+            EditSectionLabel(stringResource(R.string.editd_label_cover))
             CoverPicker(
                 selectedId = state.coverImage,
                 onSelect   = { viewModel.updateCover(it.id) }
@@ -182,15 +183,15 @@ fun EditTripScreen(
 
             HorizontalDivider(color = CardBorder)
 
-            EditSectionLabel("Hotel")
-            EditTextField(value = state.hotelName, onValueChange = viewModel::updateHotelName, placeholder = "Nome do hotel")
-            EditTextField(value = state.hotelAddress, onValueChange = viewModel::updateHotelAddress, placeholder = "Endereço completo")
+            EditSectionLabel(stringResource(R.string.editd_label_hotel))
+            EditTextField(value = state.hotelName, onValueChange = viewModel::updateHotelName, placeholder = stringResource(R.string.editd_hotel_name_placeholder))
+            EditTextField(value = state.hotelAddress, onValueChange = viewModel::updateHotelAddress, placeholder = stringResource(R.string.editd_hotel_address_placeholder))
 
-            EditSectionLabel("Telefone do hotel")
+            EditSectionLabel(stringResource(R.string.editd_label_hotel_phone))
             EditTextField(
                 value         = state.hotelPhone,
                 onValueChange = viewModel::updateHotelPhone,
-                placeholder   = "Ex: +55 54 3286-0000",
+                placeholder   = stringResource(R.string.editd_hotel_phone_placeholder),
                 keyboardType  = KeyboardType.Phone
             )
 
@@ -204,7 +205,7 @@ fun EditTripScreen(
                 colors   = ButtonDefaults.buttonColors(containerColor = GreenMoss)
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                else Text("Salvar alterações", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                else Text(stringResource(R.string.editd_save_changes), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
     }
@@ -212,16 +213,16 @@ fun EditTripScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir viagem?") },
-            text  = { Text("Todos os dias e atividades desta viagem serão removidos permanentemente.") },
+            title = { Text(stringResource(R.string.editd_delete_trip_title)) },
+            text  = { Text(stringResource(R.string.editd_delete_trip_msg)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
                     viewModel.deleteTrip()
-                }) { Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
+                }) { Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }

@@ -35,6 +35,7 @@ import com.rodrigoleao.pipa.utils.openWhatsApp
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
 
@@ -46,12 +47,7 @@ private sealed class ContactListItem {
 }
 
 // ── Contatos fixos de emergência (IDs negativos, não vêm do banco) ────────────
-
-private val BUILTIN_EMERGENCY_CONTACTS = listOf(
-    Contact(id = -1L, name = "SAMU",            role = "Serviço de Atendimento Móvel de Urgência", phone = "192", type = ContactType.EMERGENCY, isEmergency = true),
-    Contact(id = -2L, name = "Bombeiros",        role = "Corpo de Bombeiros",                       phone = "193", type = ContactType.EMERGENCY, isEmergency = true),
-    Contact(id = -3L, name = "Polícia Militar",  role = "Emergências policiais",                    phone = "190", type = ContactType.EMERGENCY, isEmergency = true),
-)
+// Construídos dentro do Composable para permitir tradução via stringResource.
 
 // ── Groups definition — replaced by dynamic listItems building ────────────────
 
@@ -76,20 +72,47 @@ fun ContactsScreen(
         if (localContacts != contacts) onReorderContacts(localContacts)
     }
 
-    val listItems: List<ContactListItem> = remember(localContacts, showEmergencyContacts) {
+    // Rótulos dos grupos e contatos fixos (traduzíveis)
+    val labelFavorites  = stringResource(R.string.contact_group_favorites)
+    val labelAgency     = stringResource(R.string.contact_group_agency)
+    val labelHotel      = stringResource(R.string.contact_group_hotel)
+    val labelFamily     = stringResource(R.string.contact_group_family)
+    val labelAttraction = stringResource(R.string.contact_group_attraction)
+    val labelEmergency  = stringResource(R.string.contact_group_emergency)
+    val labelOthers     = stringResource(R.string.contact_group_others)
+
+    val samuName         = stringResource(R.string.contact_samu_name)
+    val samuRole         = stringResource(R.string.contact_samu_role)
+    val firefightersName = stringResource(R.string.contact_firefighters_name)
+    val firefightersRole = stringResource(R.string.contact_firefighters_role)
+    val policeName       = stringResource(R.string.contact_police_name)
+    val policeRole       = stringResource(R.string.contact_police_role)
+
+    val builtinEmergencyContacts = remember(samuName, samuRole, firefightersName, firefightersRole, policeName, policeRole) {
+        listOf(
+            Contact(id = -1L, name = samuName,         role = samuRole,         phone = "192", type = ContactType.EMERGENCY, isEmergency = true),
+            Contact(id = -2L, name = firefightersName, role = firefightersRole, phone = "193", type = ContactType.EMERGENCY, isEmergency = true),
+            Contact(id = -3L, name = policeName,       role = policeRole,       phone = "190", type = ContactType.EMERGENCY, isEmergency = true),
+        )
+    }
+
+    val listItems: List<ContactListItem> = remember(
+        localContacts, showEmergencyContacts, builtinEmergencyContacts,
+        labelFavorites, labelAgency, labelHotel, labelFamily, labelAttraction, labelEmergency, labelOthers
+    ) {
         buildList {
             // Fixed groups in order
             val fixedGroups = listOf(
-                Triple("favorites", "Favoritos", "⭐")         to { c: Contact -> c.isFavorite },
-                Triple("agency",    "Agência & Transfers", "📋") to { c: Contact -> c.type == ContactType.AGENCY && !c.isFavorite },
-                Triple("hotel",     "Hospedagem", "🏨")         to { c: Contact -> c.type == ContactType.HOTEL && !c.isFavorite },
-                Triple("family",    "Família", "👨‍👩‍👧")            to { c: Contact -> c.type == ContactType.FAMILY && !c.isFavorite },
-                Triple("attraction","Atrações", "🎡")           to { c: Contact -> c.type == ContactType.ATTRACTION && !c.isFavorite },
-                Triple("emergency", "Emergências", "🚨")        to { c: Contact -> c.type == ContactType.EMERGENCY && !c.isFavorite },
+                Triple("favorites", labelFavorites, "⭐")    to { c: Contact -> c.isFavorite },
+                Triple("agency",    labelAgency, "📋")       to { c: Contact -> c.type == ContactType.AGENCY && !c.isFavorite },
+                Triple("hotel",     labelHotel, "🏨")        to { c: Contact -> c.type == ContactType.HOTEL && !c.isFavorite },
+                Triple("family",    labelFamily, "👨‍👩‍👧")      to { c: Contact -> c.type == ContactType.FAMILY && !c.isFavorite },
+                Triple("attraction",labelAttraction, "🎡")   to { c: Contact -> c.type == ContactType.ATTRACTION && !c.isFavorite },
+                Triple("emergency", labelEmergency, "🚨")    to { c: Contact -> c.type == ContactType.EMERGENCY && !c.isFavorite },
             )
             fixedGroups.forEach { (meta, filter) ->
                 val (key, label, emoji) = meta
-                val builtins = if (key == "emergency" && showEmergencyContacts) BUILTIN_EMERGENCY_CONTACTS else emptyList()
+                val builtins = if (key == "emergency" && showEmergencyContacts) builtinEmergencyContacts else emptyList()
                 val userContacts = localContacts.filter(filter)
                 val all = builtins + userContacts
                 if (all.isNotEmpty()) {
@@ -100,7 +123,7 @@ fun ContactsScreen(
             // Custom groups: contacts with type == CUSTOM, grouped by customTypeName
             val customContacts = localContacts.filter { it.type == ContactType.CUSTOM && !it.isFavorite }
             val customGroups = customContacts
-                .groupBy { it.customTypeName.ifBlank { "Outros" } }
+                .groupBy { it.customTypeName.ifBlank { labelOthers } }
                 .entries.sortedBy { it.key }
             customGroups.forEach { (groupName, groupContacts) ->
                 add(ContactListItem.Header(groupName, "🏷️"))
@@ -119,8 +142,8 @@ fun ContactsScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("📞", fontSize = 48.sp)
-                Text("Nenhum contato ainda", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Text("Toque em + para adicionar", fontSize = 14.sp, color = TextSecondary)
+                Text(stringResource(R.string.contact_empty_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text(stringResource(R.string.contact_empty_hint), fontSize = 14.sp, color = TextSecondary)
             }
         }
         return
@@ -233,7 +256,7 @@ fun ContactsScreen(
                                         if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
                                             Icon(
                                                 imageVector        = ImageVector.vectorResource(R.drawable.ic_delete),
-                                                contentDescription = "Remover",
+                                                contentDescription = stringResource(R.string.common_remove),
                                                 tint               = Color.White,
                                                 modifier           = Modifier.size(22.dp)
                                             )
@@ -253,7 +276,7 @@ fun ContactsScreen(
                                         ) {
                                             Icon(
                                                 imageVector        = ImageVector.vectorResource(R.drawable.ic_drag),
-                                                contentDescription = "Reordenar",
+                                                contentDescription = stringResource(R.string.contact_reorder),
                                                 tint               = Color.White.copy(alpha = 0.8f),
                                                 modifier           = Modifier.size(20.dp)
                                             )
@@ -285,18 +308,18 @@ fun ContactsScreen(
     contactToDelete?.let { c ->
         AlertDialog(
             onDismissRequest = { contactToDelete = null },
-            title = { Text("Remover ${c.name}?") },
-            text  = { Text("Esse contato será removido permanentemente.") },
+            title = { Text(stringResource(R.string.contact_remove_title, c.name)) },
+            text  = { Text(stringResource(R.string.contact_remove_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteContact(c.id)
                     contactToDelete = null
                 }) {
-                    Text("Remover", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_remove), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { contactToDelete = null }) { Text("Cancelar") }
+                TextButton(onClick = { contactToDelete = null }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -375,7 +398,7 @@ private fun ContactCard(
                 ) {
                     Icon(
                         imageVector        = if (contact.isFavorite) ImageVector.vectorResource(R.drawable.ic_star) else ImageVector.vectorResource(R.drawable.ic_star_border),
-                        contentDescription = if (contact.isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
+                        contentDescription = if (contact.isFavorite) stringResource(R.string.contact_remove_favorite) else stringResource(R.string.contact_add_favorite),
                         tint               = if (contact.isFavorite) AmberPrimary else Color.White.copy(alpha = 0.5f),
                         modifier           = Modifier.size(20.dp)
                     )
@@ -411,7 +434,7 @@ private fun ContactCard(
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                 shape          = RoundedCornerShape(8.dp)
                             ) {
-                                Text("🚨  Ligar", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(stringResource(R.string.contact_call_emergency), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                         } else {
                             OutlinedButton(
@@ -421,7 +444,7 @@ private fun ContactCard(
                                 modifier       = Modifier.height(32.dp),
                                 shape          = RoundedCornerShape(8.dp)
                             ) {
-                                Text("📞  Ligar", fontSize = 12.sp, color = GreenMoss)
+                                Text(stringResource(R.string.contact_call), fontSize = 12.sp, color = GreenMoss)
                             }
                             onWhatsAppClick?.let { onClick ->
                                 OutlinedButton(
@@ -431,7 +454,7 @@ private fun ContactCard(
                                     modifier       = Modifier.height(32.dp),
                                     shape          = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text("💬  WhatsApp", fontSize = 12.sp, color = Color(0xFF0A7A30))
+                                    Text(stringResource(R.string.contact_whatsapp), fontSize = 12.sp, color = Color(0xFF0A7A30))
                                 }
                             }
                         }
@@ -441,7 +464,7 @@ private fun ContactCard(
 
                     if (showActions) {
                         IconButton(onClick = onEditClick, modifier = Modifier.size(28.dp)) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_edit), "Editar contato", tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_edit), stringResource(R.string.contact_edit_description), tint = GreenSage.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
                         }
                     }
                 }

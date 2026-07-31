@@ -6,7 +6,9 @@ import com.rodrigoleao.pipa.data.db.entity.TripEntity
 import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.data.preferences.SettingsRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
+import com.rodrigoleao.pipa.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TripsListViewModel @Inject constructor(
     private val repo: TripRepository,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
     // null = ainda carregando; emptyList = carregado mas sem viagens
@@ -51,7 +54,7 @@ class TripsListViewModel @Inject constructor(
     fun deleteTrip(trip: TripEntity) {
         viewModelScope.launch {
             runCatching { repo.deleteTrip(trip) }
-                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir viagem")) }
+                .onFailure { _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.trips_delete_error))) }
         }
     }
 

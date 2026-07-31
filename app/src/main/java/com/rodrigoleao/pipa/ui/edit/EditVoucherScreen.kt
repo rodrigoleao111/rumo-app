@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.ui.theme.*
 import java.io.File
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.rodrigoleao.pipa.R
@@ -115,20 +116,20 @@ fun EditVoucherScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar voucher" else "Novo voucher", fontWeight = FontWeight.SemiBold, color = Color.White) },
+                title = { Text(if (isEditing) stringResource(R.string.voucher_edit_title) else stringResource(R.string.voucher_new_title), fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { if (isDirty) showDiscardDialog = true else onBack() }) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = "Voltar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_arrow_back), contentDescription = stringResource(R.string.common_back), tint = Color.White)
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = "Excluir", tint = Color.White)
+                            Icon(ImageVector.vectorResource(R.drawable.ic_delete), contentDescription = stringResource(R.string.common_delete), tint = Color.White)
                         }
                     }
                     IconButton(onClick = { viewModel.save() }, enabled = canSave && !state.isSaving) {
-                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = "Salvar", tint = Color.White)
+                        Icon(ImageVector.vectorResource(R.drawable.ic_check), contentDescription = stringResource(R.string.common_save), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -157,15 +158,15 @@ fun EditVoucherScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 1. Nome — campo mais importante, vem primeiro
-            EditSectionLabel("Nome do voucher")
+            EditSectionLabel(stringResource(R.string.voucher_field_name_label))
             EditTextField(
                 value         = state.name,
                 onValueChange = viewModel::updateName,
-                placeholder   = "Ex: Parque do Caracol — Adulto"
+                placeholder   = stringResource(R.string.voucher_field_name_placeholder)
             )
 
             // 2. Categoria
-            EditSectionLabel("Categoria")
+            EditSectionLabel(stringResource(R.string.voucher_field_category_label))
             VoucherGroupSelector(
                 selected      = state.groupName,
                 groups        = state.availableGroups,
@@ -174,7 +175,7 @@ fun EditVoucherScreen(
             )
 
             // 3. Ícone
-            EditSectionLabel("Ícone")
+            EditSectionLabel(stringResource(R.string.voucher_field_icon_label))
             VoucherEmojiRow(
                 selected    = state.emoji,
                 onSelect    = viewModel::updateEmoji,
@@ -182,15 +183,15 @@ fun EditVoucherScreen(
             )
 
             // 4. Para quem (opcional)
-            EditSectionLabel("Para quem (opcional)")
+            EditSectionLabel(stringResource(R.string.voucher_field_person_label))
             EditTextField(
                 value         = state.person,
                 onValueChange = viewModel::updatePerson,
-                placeholder   = "Ex: adulto, criança, Rodrigo"
+                placeholder   = stringResource(R.string.voucher_field_person_placeholder)
             )
 
             // 5. Arquivo ou link (opcional)
-            EditSectionLabel("Arquivo ou link (opcional)")
+            EditSectionLabel(stringResource(R.string.voucher_field_source_label))
             VoucherSourceSelector(
                 mode         = state.inputMode,
                 linkUrl      = state.linkUrl,
@@ -203,7 +204,7 @@ fun EditVoucherScreen(
 
             // 6. Dia da viagem (opcional) — chips em vez de texto livre
             if (state.availableDays.isNotEmpty()) {
-                EditSectionLabel("Dia da viagem (opcional)")
+                EditSectionLabel(stringResource(R.string.voucher_field_day_label))
                 VoucherDaySelector(
                     selected  = state.dayNumber,
                     days      = state.availableDays,
@@ -213,7 +214,7 @@ fun EditVoucherScreen(
 
             if (state.name.isBlank() && !state.isLoading) {
                 Text(
-                    text  = "Preencha o nome do voucher para continuar.",
+                    text  = stringResource(R.string.voucher_name_required_msg),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -230,7 +231,7 @@ fun EditVoucherScreen(
             ) {
                 if (state.isSaving) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                 else Text(
-                    if (isEditing) "Salvar voucher" else "Adicionar voucher",
+                    if (isEditing) stringResource(R.string.voucher_save_button) else stringResource(R.string.voucher_add_button),
                     fontSize   = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color      = AmberPrimary
@@ -244,27 +245,27 @@ fun EditVoucherScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir voucher?") },
+            title = { Text(stringResource(R.string.voucher_delete_confirm_title)) },
             confirmButton = {
                 TextButton(onClick = { showDeleteDialog = false; viewModel.delete() }) {
-                    Text("Excluir", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_delete), color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Descartar alterações?") },
-            text  = { Text("As informações preenchidas serão perdidas.") },
+            title = { Text(stringResource(R.string.voucher_discard_title)) },
+            text  = { Text(stringResource(R.string.voucher_discard_msg)) },
             confirmButton = {
                 TextButton(onClick = { showDiscardDialog = false; onBack() }) {
-                    Text("Descartar", color = Color(0xFFD32F2F))
+                    Text(stringResource(R.string.voucher_discard_confirm), color = Color(0xFFD32F2F))
                 }
             },
-            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") } }
+            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.voucher_discard_dismiss)) } }
         )
     }
 
@@ -279,12 +280,12 @@ fun EditVoucherScreen(
     if (showNewGroupDialog) {
         AlertDialog(
             onDismissRequest = { showNewGroupDialog = false },
-            title = { Text("Nova categoria") },
+            title = { Text(stringResource(R.string.voucher_new_category)) },
             text = {
                 OutlinedTextField(
                     value         = newGroupInput,
                     onValueChange = { newGroupInput = it },
-                    placeholder   = { Text("Ex: Parques, Passeios…") },
+                    placeholder   = { Text(stringResource(R.string.voucher_new_group_placeholder)) },
                     singleLine    = true,
                     modifier      = Modifier.fillMaxWidth()
                 )
@@ -293,9 +294,9 @@ fun EditVoucherScreen(
                 TextButton(
                     onClick = { viewModel.createGroup(newGroupInput); showNewGroupDialog = false },
                     enabled = newGroupInput.isNotBlank()
-                ) { Text("Criar", color = GreenMoss, fontWeight = FontWeight.Bold) }
+                ) { Text(stringResource(R.string.voucher_create_button), color = GreenMoss, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { showNewGroupDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showNewGroupDialog = false }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 }
@@ -330,7 +331,7 @@ private fun VoucherSourceSelector(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_link), contentDescription = null, modifier = Modifier.size(16.dp))
-                    Text("Link", fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(stringResource(R.string.voucher_type_link), fontWeight = if (linkSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
             SegmentedButton(
@@ -346,7 +347,7 @@ private fun VoucherSourceSelector(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(16.dp))
-                    Text("Arquivo", fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(stringResource(R.string.voucher_type_file), fontWeight = if (fileSel) FontWeight.SemiBold else FontWeight.Normal)
                 }
             }
         }
@@ -380,7 +381,7 @@ private fun VoucherSourceSelector(
                             overflow = TextOverflow.Ellipsis
                         )
                         IconButton(onClick = onClearFile, modifier = Modifier.size(24.dp)) {
-                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = "Remover arquivo", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                            Icon(ImageVector.vectorResource(R.drawable.ic_close), contentDescription = stringResource(R.string.voucher_remove_file_cd), tint = TextSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -392,7 +393,7 @@ private fun VoucherSourceSelector(
             ) {
                 Icon(ImageVector.vectorResource(R.drawable.ic_attach), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (fileName.isBlank()) "Selecionar arquivo" else "Trocar arquivo")
+                Text(if (fileName.isBlank()) stringResource(R.string.voucher_pick_file) else stringResource(R.string.voucher_change_file))
             }
         }
     }
@@ -417,7 +418,7 @@ private fun VoucherDaySelector(
             FilterChip(
                 selected = sel,
                 onClick  = { onSelect(if (sel) null else day.number) },
-                label    = { Text("Dia ${day.number} · ${day.title}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label    = { Text(stringResource(R.string.voucher_day_chip, day.number, day.title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors   = FilterChipDefaults.filterChipColors(
                     selectedContainerColor   = AmberPrimary.copy(alpha = 0.15f),
                     selectedLabelColor       = AmberPrimary,
@@ -470,7 +471,7 @@ private fun VoucherGroupSelector(
         }
         AssistChip(
             onClick = onCreateClick,
-            label   = { Text("Nova categoria") },
+            label   = { Text(stringResource(R.string.voucher_new_category)) },
             leadingIcon = {
                 Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(16.dp))
             }
@@ -479,7 +480,7 @@ private fun VoucherGroupSelector(
     // Categoria legada não presente na lista
     if (selected.isNotBlank() && !groups.contains(selected)) {
         Text(
-            text  = "Categoria atual: $selected",
+            text  = stringResource(R.string.voucher_current_category, selected),
             style = MaterialTheme.typography.labelSmall,
             color = TextSecondary
         )
@@ -515,7 +516,7 @@ private fun VoucherEmojiRow(selected: String, onSelect: (String) -> Unit, onMore
             border   = BorderStroke(1.dp, CardBorder)
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = "Mais ícones", tint = TextSecondary)
+                Icon(ImageVector.vectorResource(R.drawable.ic_add), contentDescription = stringResource(R.string.voucher_more_icons_cd), tint = TextSecondary)
             }
         }
     }
@@ -528,7 +529,7 @@ private fun VoucherEmojiPickerDialog(selected: String, onDismiss: () -> Unit, on
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = SurfaceWhite)) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Escolha um ícone", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Text(stringResource(R.string.voucher_emoji_picker_title), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                 Spacer(Modifier.height(16.dp))
                 LazyVerticalGrid(
                     columns               = GridCells.Fixed(6),
@@ -552,7 +553,7 @@ private fun VoucherEmojiPickerDialog(selected: String, onDismiss: () -> Unit, on
                 }
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text("Fechar", color = GreenMoss)
+                    Text(stringResource(R.string.common_close), color = GreenMoss)
                 }
             }
         }

@@ -3,6 +3,7 @@ package com.rodrigoleao.pipa.ui.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.R
 import com.rodrigoleao.pipa.data.db.entity.ActivityBadgeEntity
 import com.rodrigoleao.pipa.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.pipa.data.model.BadgeType
@@ -11,6 +12,7 @@ import com.rodrigoleao.pipa.data.repository.DayRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.model.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,6 +45,7 @@ class EditActivityViewModel @Inject constructor(
     private val activityRepo: ActivityRepository,
     private val dayRepo: DayRepository,
     private val tripRepo: TripRepository,
+    @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -148,7 +151,7 @@ class EditActivityViewModel @Inject constructor(
             }
             runCatching { activityRepo.upsertActivity(s.dayEntityId, entity, badges) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar atividade")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_save_activity))) }
         }
     }
 
@@ -159,7 +162,7 @@ class EditActivityViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { activityRepo.deleteActivity(id) }
                 .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
-                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao excluir atividade")) }
+                .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_delete_activity))) }
         }
     }
 
