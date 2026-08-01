@@ -51,7 +51,9 @@ private fun languageLabel(code: String): Int = when (code) {
  * e recria a Activity para reaplicar o locale.
  */
 @Composable
-fun LanguageSettingRow() {
+fun LanguageSettingRow(
+    onLanguageChanged: (String) -> Unit = {}
+) {
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
     val current = remember { LocaleHelper.getLanguage(context) }
@@ -103,6 +105,7 @@ fun LanguageSettingRow() {
                                     onClick  = {
                                         showDialog = false
                                         if (code != current) {
+                                            onLanguageChanged(code)
                                             LocaleHelper.setLanguage(context, code)
                                             context.findActivity()?.recreate()
                                         }
@@ -116,6 +119,7 @@ fun LanguageSettingRow() {
                                 onClick  = {
                                     showDialog = false
                                     if (code != current) {
+                                        onLanguageChanged(code)
                                         LocaleHelper.setLanguage(context, code)
                                         context.findActivity()?.recreate()
                                     }

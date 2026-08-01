@@ -3,6 +3,7 @@ package com.rodrigoleao.pipa.ui.trips
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.model.Contact
 import com.rodrigoleao.pipa.data.model.Note
 import com.rodrigoleao.pipa.data.model.Voucher
@@ -29,6 +30,7 @@ class TripViewModel @Inject constructor(
     private val contactRepo: ContactRepository,
     private val activityRepo: ActivityRepository,
     private val noteRepo: NoteRepository,
+    private val analytics: AnalyticsService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -142,6 +144,7 @@ class TripViewModel @Inject constructor(
     fun createGeneralNote(onCreated: (Long) -> Unit) {
         viewModelScope.launch {
             val id = noteRepo.createNote(tripId, null)
+            analytics.logContentAdded(AnalyticsService.CONTENT_NOTE)
             loadNotes()
             onCreated(id)
         }

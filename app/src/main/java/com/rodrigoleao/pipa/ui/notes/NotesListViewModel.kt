@@ -3,6 +3,7 @@ package com.rodrigoleao.pipa.ui.notes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.model.Note
 import com.rodrigoleao.pipa.data.repository.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NotesListViewModel @Inject constructor(
     private val repo: NoteRepository,
+    private val analytics: AnalyticsService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -42,6 +44,7 @@ class NotesListViewModel @Inject constructor(
     fun createNote(onCreated: (Long) -> Unit) {
         viewModelScope.launch {
             val id = repo.createNote(tripId, dayNumber)
+            analytics.logContentAdded(AnalyticsService.CONTENT_NOTE)
             load()
             onCreated(id)
         }

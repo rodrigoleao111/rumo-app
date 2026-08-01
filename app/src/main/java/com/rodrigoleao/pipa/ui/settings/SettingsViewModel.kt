@@ -2,6 +2,7 @@ package com.rodrigoleao.pipa.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.preferences.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val analytics: AnalyticsService
 ) : ViewModel() {
 
     val autoOpenActiveTrip: StateFlow<Boolean> = settings.autoOpenActiveTrip
@@ -41,6 +43,11 @@ class SettingsViewModel @Inject constructor(
 
     fun setHideCompletedTrips(enabled: Boolean) {
         viewModelScope.launch { settings.setHideCompletedTrips(enabled) }
+    }
+
+    /** Registra a troca de idioma no Analytics (a persistência/recreate fica na UI). */
+    fun onLanguageChanged(code: String) {
+        analytics.logLanguageChanged(code)
     }
 
 }

@@ -3,6 +3,7 @@ package com.rodrigoleao.pipa.ui.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.db.entity.VoucherEntity
 import com.rodrigoleao.pipa.data.repository.TripRepository
 import com.rodrigoleao.pipa.data.repository.VoucherRepository
@@ -44,6 +45,7 @@ data class EditVoucherState(
 class EditVoucherViewModel @Inject constructor(
     private val voucherRepo: VoucherRepository,
     private val tripRepo: TripRepository,
+    private val analytics: AnalyticsService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -148,7 +150,11 @@ class EditVoucherViewModel @Inject constructor(
                 isUsed    = s.entity?.isUsed ?: false
             )
             runCatching { voucherRepo.upsertVoucher(tripId, entity) }
-                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess {
+                    tripRepo.touchLastEditedAt(tripId)
+                    if (voucherId == 0L) analytics.logContentAdded(AnalyticsService.CONTENT_VOUCHER)
+                    _uiEvent.send(UiEvent.NavigateBack)
+                }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar("Erro ao salvar voucher")) }
         }
     }

@@ -139,7 +139,16 @@ class ItineraryGenerator(
         }
     }
 
-    suspend fun generateItinerary(): List<GeneratedDay> {
+    /** Resultado da geração de roteiro: os dias + contagem real de tokens e latência (p/ analytics). */
+    data class GenerationResult(
+        val days: List<GeneratedDay>,
+        val promptTokens: Int,
+        val candidatesTokens: Int,
+        val totalTokens: Int,
+        val latencyMs: Long
+    )
+
+    suspend fun generateItinerary(): GenerationResult {
         Log.d(TAG, ">>> GENERATE: sending generation prompt")
         val t0 = System.currentTimeMillis()
         val response = chat.sendMessage(buildGenerationPrompt())
@@ -147,12 +156,19 @@ class ItineraryGenerator(
         val raw = response.text ?: throw Exception("Resposta vazia da IA")
         val usage = response.usageMetadata
         val prompt = usage?.promptTokenCount ?: 0
+        val cand = usage?.candidatesTokenCount ?: 0
         val total = usage?.totalTokenCount ?: 0
-        Log.d(TAG, "<<< GENERATE ${latency}ms | prompt=$prompt out=${usage?.candidatesTokenCount ?: 0} total=$total tk | ~R$ ${String.format(Locale.US, "%.4f", estimateCostBrl(prompt, total))}")
+        Log.d(TAG, "<<< GENERATE ${latency}ms | prompt=$prompt out=$cand total=$total tk | ~R$ ${String.format(Locale.US, "%.4f", estimateCostBrl(prompt, total))}")
         Log.d(TAG, "<<< GENERATE RAW:\n$raw")
         val json = extractJson(raw)
         Log.d(TAG, "<<< GENERATE JSON:\n$json")
-        return parseItinerary(json)
+        return GenerationResult(
+            days             = parseItinerary(json),
+            promptTokens     = prompt,
+            candidatesTokens = cand,
+            totalTokens      = total,
+            latencyMs        = latency
+        )
     }
 
     // ── Prompts ───────────────────────────────────────────────────────────────

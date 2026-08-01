@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rodrigoleao.pipa.data.model.BoardingPass
@@ -80,6 +81,7 @@ import com.rodrigoleao.pipa.ui.aiconversations.AiConversationDetailScreen
 import com.rodrigoleao.pipa.ui.aiconversations.AiConversationDetailViewModel
 import com.rodrigoleao.pipa.ui.aiconversations.AiConversationsScreen
 import com.rodrigoleao.pipa.ui.aiconversations.AiConversationsViewModel
+import com.rodrigoleao.pipa.ui.analytics.AnalyticsViewModel
 import com.rodrigoleao.pipa.ui.splash.SplashScreen
 import com.rodrigoleao.pipa.ui.share_trip.ShareTripScreen
 import com.rodrigoleao.pipa.ui.share_trip.ShareTripViewModel
@@ -147,7 +149,37 @@ sealed class Screen(val route: String) {
 
 private val TAB_ICON_RES = listOf(R.drawable.ic_home, R.drawable.ic_ticket, R.drawable.ic_boarding, R.drawable.ic_contacts, R.drawable.ic_notes_nav)
 private val TAB_LABEL_RES = listOf(R.string.nav_tab_home, R.string.nav_tab_vouchers, R.string.nav_tab_boarding, R.string.nav_tab_contacts, R.string.nav_tab_notes)
+private val TAB_SCREEN_NAMES = listOf("trip_home", "trip_vouchers", "trip_boarding", "trip_contacts", "trip_notes")
 private const val ANIM_DURATION = 320
+
+/** Nome amigável de tela p/ o evento screen_view; null = não rastrear (Splash; e TripMain, tratado por aba no pager). */
+private fun screenNameFor(route: String?): String? = when (route) {
+    Screen.TripsList.route            -> "trips_list"
+    Screen.Settings.route             -> "settings"
+    Screen.AiConversations.route      -> "ai_conversations"
+    Screen.AiConversationDetail.route -> "ai_conversation_detail"
+    Screen.ImportTrip.route           -> "import_trip"
+    Screen.ShareTrip.route            -> "share_trip"
+    Screen.CreateTrip.route           -> "create_trip"
+    Screen.DayDetail.route            -> "day_detail"
+    Screen.EditTrip.route             -> "edit_trip"
+    Screen.EditDay.route              -> "edit_day"
+    Screen.EditActivity.route         -> "edit_activity"
+    Screen.EditContact.route          -> "edit_contact"
+    Screen.EditVoucher.route          -> "edit_voucher"
+    Screen.EditBoardingPass.route     -> "edit_boarding_pass"
+    Screen.NoteEditor.route           -> "note_editor"
+    Screen.DayNotes.route             -> "day_notes"
+    else                              -> null
+}
+
+/** Viagem "ativa" = hoje está dentro do período [start, end]. */
+private fun isTripActive(startDate: String?, endDate: String?): Boolean {
+    val start = startDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return false
+    val end   = endDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return false
+    val today = LocalDate.now()
+    return !today.isBefore(start) && !today.isAfter(end)
+}
 
 // ── NAVEGAÇÃO PRINCIPAL ───────────────────────────────────────────────────────
 
@@ -156,6 +188,13 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
     val navController = rememberNavController()
     val settingsVm: SettingsViewModel = hiltViewModel()
     val showEmergencyContacts by settingsVm.showEmergencyContacts.collectAsStateWithLifecycle()
+
+    // Analytics: screen_view (Compose não gera automático) observando a troca de rota.
+    val analyticsVm: AnalyticsViewModel = hiltViewModel()
+    val currentEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(currentEntry) {
+        screenNameFor(currentEntry?.destination?.route)?.let { analyticsVm.analytics.logScreenView(it) }
+    }
 
     val importUri = importUriState.value
 
@@ -319,6 +358,16 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                 .collectAsStateWithLifecycle()
             LaunchedEffect(refreshKey) { if (refreshKey > 0L) vm.refresh() }
 
+            // trip_opened: uma vez por abertura, com is_active calculado das datas.
+            var openLogged by rememberSaveable(tripId) { mutableStateOf(false) }
+            LaunchedEffect(tripData) {
+                val t = tripData?.trip
+                if (!openLogged && t != null) {
+                    openLogged = true
+                    analyticsVm.analytics.logTripOpened(isTripActive(t.startDate, t.endDate))
+                }
+            }
+
             MainPagerScreen(
                 state = TripScreenState(
                     tripData              = tripData,
@@ -348,7 +397,8 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
                     onDeleteNote            = { noteId -> vm.deleteNote(noteId) },
                     onReorderNotes          = { list -> vm.reorderNotes(list) },
                     onBack                  = { navController.popBackStack() }
-                )
+                ),
+                onScreenView = analyticsVm.analytics::logScreenView
             )
         }
 
@@ -632,10 +682,16 @@ private fun Modifier.softDropShadow(
 @Composable
 private fun MainPagerScreen(
     state: TripScreenState,
-    actions: TripScreenActions
+    actions: TripScreenActions,
+    onScreenView: (String) -> Unit
 ) {
     val trip              = state.tripData?.trip
     val pagerState        = rememberPagerState(pageCount = { TAB_ICON_RES.size })
+
+    // screen_view por aba do pager (Início/Vouchers/Embarque/Contatos/Notas).
+    LaunchedEffect(pagerState.currentPage) {
+        onScreenView(TAB_SCREEN_NAMES[pagerState.currentPage])
+    }
     val coroutineScope    = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior    = TopAppBarDefaults.enterAlwaysScrollBehavior()

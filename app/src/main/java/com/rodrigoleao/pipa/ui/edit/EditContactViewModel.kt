@@ -3,6 +3,7 @@ package com.rodrigoleao.pipa.ui.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.db.entity.ContactEntity
 import com.rodrigoleao.pipa.data.model.ContactType
 import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
@@ -41,6 +42,7 @@ class EditContactViewModel @Inject constructor(
     private val repo: ContactRepository,
     private val categoryRepo: ContactCategoryRepository,
     private val tripRepo: TripRepository,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -136,7 +138,11 @@ class EditContactViewModel @Inject constructor(
                 isEmergency    = s.isEmergency
             )
             runCatching { repo.upsertContact(tripId, entity) }
-                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess {
+                    tripRepo.touchLastEditedAt(tripId)
+                    if (contactId == 0L) analytics.logContentAdded(AnalyticsService.CONTENT_CONTACT)
+                    _uiEvent.send(UiEvent.NavigateBack)
+                }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.contact_error_save))) }
         }
     }

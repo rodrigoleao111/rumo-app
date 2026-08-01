@@ -1,6 +1,7 @@
 package com.rodrigoleao.pipa.data.di
 
 import android.content.Context
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.rodrigoleao.pipa.data.db.TravelDatabase
 import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
 import com.rodrigoleao.pipa.data.preferences.SettingsRepository
@@ -41,4 +42,10 @@ object AppModule {
     @Singleton
     fun provideContactCategoryRepository(@ApplicationContext ctx: Context): ContactCategoryRepository =
         ContactCategoryRepository(ctx)
+
+    /** Instância única do Firebase Analytics para registrar eventos customizados. */
+    @Provides
+    @Singleton
+    fun provideFirebaseAnalytics(@ApplicationContext ctx: Context): FirebaseAnalytics =
+        FirebaseAnalytics.getInstance(ctx)
 }

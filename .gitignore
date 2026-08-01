@@ -1,6 +1,9 @@
 # Local config — nunca versionar (contém GEMINI_API_KEY)
 local.properties
 
+# Firebase — google-services.json contém a API key do projeto (não versionar; restringir a chave no GCP)
+google-services.json
+
 # Gradle
 .gradle/
 build/

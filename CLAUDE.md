@@ -58,6 +58,16 @@ App traduzido para **pt (padrão), en, es**. Textos de UI ficam em `res/values{,
 - **Seleção de idioma:** `locale/LocaleHelper.kt` (`SharedPreferences` `pipa_locale`) + `MainActivity.attachBaseContext`; troca via `LanguageSettingRow` em Configurações → `Activity.recreate()`. `"system"` segue o aparelho. Detalhes em `docs/arquitetura-geral.md` e `docs/modulo-10-settings.md`.
 - **Verificação:** garanta paridade de chaves entre os 3 arquivos; chave referenciada e não definida = erro de compilação. `assembleRelease`/`compileDebugKotlin` acusam faltas.
 
+## Firebase (Crashlytics + Analytics)
+
+Projeto Firebase `gen-lang-client-0481952640` (o mesmo GCP do Gemini). Detalhes em `docs/modulo-17-firebase.md`.
+
+- **Plugins/SDKs:** plugins `com.google.gms.google-services` e `com.google.firebase.crashlytics` (root `apply false` + aplicados no `app`); SDKs via **Firebase BoM** (`firebase-common` + `firebase-crashlytics` + `firebase-analytics`). `FirebaseApp` auto-inicializa (sem código).
+- **`google-services.json`:** fica em **`app/`** (não na raiz) e está no **`.gitignore`** (contém a API key). Tem **2 clients** — `com.rodrigoleao.pipa` e `com.rodrigoleao.pipa.debug` — reusando o mesmo `mobilesdk_app_id`, porque o build debug tem sufixo `.debug` (senão o plugin falha com *"No matching client found"*). **Efeito colateral:** telemetria de debug cai no mesmo app do release. Restringir a chave no Google Cloud Console é recomendação pendente.
+- **Crashlytics:** auto-captura crashes; no release o `mapping.txt` sobe sozinho (desofuscação). Coleta em debug **ligada** (para testar).
+- **Analytics:** todo evento passa pelo **`AnalyticsService`** (`data/analytics/`, nomes/parâmetros em constantes, `snake_case`, **sem PII**). ViewModels recebem por `@Inject`; composables usam o `AnalyticsViewModel` (a `AppNavigation` loga `screen_view` manualmente — Compose não gera automático). User property `app_language` fatiando os relatórios. Ao criar evento novo, centralize no `AnalyticsService`.
+- **DebugView:** `adb shell setprop debug.firebase.analytics.app com.rodrigoleao.pipa.debug` → Console → Analytics → DebugView.
+
 ## Armadilhas conhecidas
 
 - **Edge-to-edge:** `MainActivity` chama `enableEdgeToEdge()`, o que desativa o resize automático da janela pelo teclado. Telas com formulário precisam de `.imePadding()` antes do scroll para o campo focado subir acima do teclado virtual (padrão já aplicado em `Edit*`, `CreateTrip` e no editor de notas).
@@ -70,4 +80,4 @@ Repo pessoal no GitHub (`rodrigoleao111/rumo-app`), identidade **Rodrigo Leão `
 
 ## Documentação
 
-`docs/` tem visão arquitetural (`arquitetura-geral.md`), design system (`design-system.md`), guia de testes (`guia-testes.md`), schemas (`travel-export-schema.md`, `ai-itinerary-schema.md`) e um doc por módulo (`modulo-01`..`modulo-15`). Ao mudar comportamento de uma tela, atualize o `modulo-*` correspondente. Screenshots em `docs/screenshots/` são capturados do build debug.
+`docs/` tem visão arquitetural (`arquitetura-geral.md`), design system (`design-system.md`), guia de testes (`guia-testes.md`), schemas (`travel-export-schema.md`, `ai-itinerary-schema.md`) e um doc por módulo (`modulo-01`..`modulo-17`). Ao mudar comportamento de uma tela, atualize o `modulo-*` correspondente. Screenshots em `docs/screenshots/` são capturados do build debug.

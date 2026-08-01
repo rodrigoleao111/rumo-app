@@ -7,6 +7,7 @@ import com.rodrigoleao.pipa.BuildConfig
 import com.rodrigoleao.pipa.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.rodrigoleao.pipa.data.ai.ItineraryGenerator
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.model.AiChatMessage
 import com.rodrigoleao.pipa.data.preferences.SettingsRepository
 import com.rodrigoleao.pipa.data.repository.AiConversationRepository
@@ -66,6 +67,7 @@ class CreateTripViewModel @Inject constructor(
     private val saveItineraryUseCase: SaveGeneratedItineraryUseCase,
     private val settingsRepo: SettingsRepository,
     private val aiConversationRepo: AiConversationRepository,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
@@ -370,7 +372,9 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         // Em debug (limitsEnabled = false) não conta nem bloqueia.
         if (limitsEnabled && !conversationCounted) {
             conversationCounted = true
+            val reachedDailyCap = dailyConversationsUsed.value + 1 >= MAX_DAILY_CONVERSATIONS
             viewModelScope.launch { settingsRepo.incrementAiConversations(today()) }
+            if (reachedDailyCap) analytics.logAiLimitReached(AnalyticsService.LIMIT_DAILY_CAP)
         }
 
         _chatMessages.value = _chatMessages.value +
@@ -383,6 +387,13 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
             _chatMessages.value = _chatMessages.value.dropLast(1) +
                 ChatMessage(ChatRole.AI, replyText)
 
+            if (reply != null) {
+                analytics.logAiChatMessageSent(
+                    totalTokens  = reply.totalTokens,
+                    messageIndex = _chatMessages.value.count { it.role == ChatRole.USER }
+                )
+            }
+
             // Orçamento de tokens reais: acumula, loga e (se limitsEnabled) decide nudge/trava
             if (reply != null && reply.totalTokens > 0) {
                 val used = _tokensUsed.value + reply.totalTokens
@@ -390,8 +401,10 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
                 logAiUsage(reply, used)
                 if (limitsEnabled) {
                     when {
-                        used >= MAX_CONVERSATION_TOKENS ->
+                        used >= MAX_CONVERSATION_TOKENS -> {
                             _chatLimitReached.value = true
+                            analytics.logAiLimitReached(AnalyticsService.LIMIT_TOKEN_BUDGET)
+                        }
                         used >= (MAX_CONVERSATION_TOKENS * NUDGE_RATIO).toInt() && !nudgeGiven -> {
                             nudgeGiven = true
                             _chatMessages.value = _chatMessages.value +
@@ -465,12 +478,24 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         _chatPhase.value = ChatPhase.GENERATING
         viewModelScope.launch {
             try {
-                val days = generator?.generateItinerary()
+                val result = generator?.generateItinerary()
                     ?: throw Exception(appContext.getString(R.string.create_assistant_not_initialized_short))
-                _generatedDays.value  = days
+                _generatedDays.value  = result.days
                 _cameFromImport.value = false
                 _chatPhase.value      = ChatPhase.PREVIEW
+                analytics.logAiItineraryGenerated(
+                    success      = true,
+                    daysCount    = result.days.size,
+                    promptTokens = result.promptTokens,
+                    outputTokens = result.candidatesTokens,
+                    totalTokens  = result.totalTokens,
+                    latencyMs    = result.latencyMs
+                )
             } catch (e: Exception) {
+                analytics.logAiItineraryGenerated(
+                    success = false, daysCount = 0,
+                    promptTokens = 0, outputTokens = 0, totalTokens = 0, latencyMs = 0L
+                )
                 _chatMessages.value = _chatMessages.value +
                     ChatMessage(ChatRole.AI, appContext.getString(R.string.create_generate_failed, e.message ?: appContext.getString(R.string.create_try_again)))
                 _chatPhase.value = ChatPhase.CHATTING
@@ -485,6 +510,10 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
         viewModelScope.launch {
             saveItineraryUseCase(tripId, days)
             repo.touchLastEditedAt(tripId)   // F1: roteiro gerado por IA conta como edição
+            analytics.logTripCreated(
+                method    = if (_cameFromImport.value) AnalyticsService.METHOD_AI_IMPORT else AnalyticsService.METHOD_AI,
+                daysCount = formDaysCount()
+            )
             _readyToNavigate.value = true
         }
     }
@@ -494,6 +523,7 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     }
 
     fun skipItinerary() {
+        analytics.logTripCreated(method = AnalyticsService.METHOD_MANUAL, daysCount = formDaysCount())
         _readyToNavigate.value = true
     }
 
@@ -525,6 +555,16 @@ Retorne SOMENTE o JSON a seguir — sem texto antes, sem texto depois, sem bloco
     }
 
     private fun today(): String = LocalDate.now().toString()
+
+    /** Nº de dias (calendário) do formulário; 0 se datas ausentes/inválidas. */
+    private fun formDaysCount(): Int {
+        val f = _form.value
+        val s = f.startDate ?: return 0
+        val e = f.endDate ?: return 0
+        return runCatching {
+            (LocalDate.parse(e).toEpochDay() - LocalDate.parse(s).toEpochDay() + 1).toInt()
+        }.getOrDefault(0)
+    }
 
     companion object {
         private const val TAG = "PipaAiUsage"

@@ -201,7 +201,7 @@ fun SettingsScreen(
             }
             HorizontalDivider(color = Sand)
 
-            LanguageSettingRow()
+            LanguageSettingRow(onLanguageChanged = viewModel::onLanguageChanged)
             HorizontalDivider(color = Sand)
         }
     }

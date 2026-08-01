@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.R
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.import_trip.TravelImporter
 import com.rodrigoleao.pipa.data.model.DuplicateTripException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,7 @@ sealed class ImportPhase {
 @HiltViewModel
 class ImportTripViewModel @Inject constructor(
     private val importer: TravelImporter,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context
 ) : ViewModel() {
 
@@ -44,7 +46,9 @@ class ImportTripViewModel @Inject constructor(
         _phase.value = ImportPhase.Importing
         viewModelScope.launch {
             _phase.value = try {
-                ImportPhase.Done(importer.import(uri))
+                val tripId = importer.import(uri)
+                analytics.logTripImported(overwrite = false)
+                ImportPhase.Done(tripId)
             } catch (dup: DuplicateTripException) {
                 ImportPhase.Duplicate(
                     existingTripId       = dup.existingTripId,
@@ -64,7 +68,9 @@ class ImportTripViewModel @Inject constructor(
         _phase.value = ImportPhase.Importing
         viewModelScope.launch {
             _phase.value = try {
-                ImportPhase.Done(importer.overwriteImport(uri, existingTripId))
+                val tripId = importer.overwriteImport(uri, existingTripId)
+                analytics.logTripImported(overwrite = true)
+                ImportPhase.Done(tripId)
             } catch (e: Exception) {
                 ImportPhase.Error(e.message ?: appContext.getString(R.string.import_error_overwrite_fallback))
             }

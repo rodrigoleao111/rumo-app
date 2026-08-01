@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.R
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.db.entity.BoardingPassEntity
 import com.rodrigoleao.pipa.data.repository.BoardingPassRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
@@ -47,6 +48,7 @@ data class EditBoardingPassState(
 class EditBoardingPassViewModel @Inject constructor(
     private val repo: BoardingPassRepository,
     private val tripRepo: TripRepository,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -159,7 +161,11 @@ class EditBoardingPassViewModel @Inject constructor(
                 notes           = s.notes.trim()
             )
             runCatching { repo.upsertBoardingPass(tripId, entity) }
-                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess {
+                    tripRepo.touchLastEditedAt(tripId)
+                    if (passId == 0L) analytics.logContentAdded(AnalyticsService.CONTENT_BOARDING_PASS)
+                    _uiEvent.send(UiEvent.NavigateBack)
+                }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_save_pass))) }
         }
     }

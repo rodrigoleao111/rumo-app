@@ -1,6 +1,7 @@
 package com.rodrigoleao.pipa.ui.edit
 
 import androidx.lifecycle.SavedStateHandle
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.db.entity.ContactEntity
 import com.rodrigoleao.pipa.data.model.UiEvent
 import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
@@ -48,6 +49,7 @@ class EditViewModelUiEventTest {
     private lateinit var categoryRepo: ContactCategoryRepository
     private lateinit var tripRepo: TripRepository
     private val appContext: android.content.Context = mockk(relaxed = true)
+    private val analytics: AnalyticsService = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -62,7 +64,7 @@ class EditViewModelUiEventTest {
     // ── EditContactViewModel ──────────────────────────────────────────────────
 
     private fun buildContactVm(contactId: Long = 0L) =
-        EditContactViewModel(contactRepo, categoryRepo, tripRepo, appContext, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
+        EditContactViewModel(contactRepo, categoryRepo, tripRepo, analytics, appContext, SavedStateHandle(mapOf("tripId" to 1L, "contactId" to contactId)))
 
     @Test
     fun save_success_emitsNavigateBack() = runTest {

@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.R
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.export.TravelExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,6 +25,7 @@ sealed class SharePhase {
 @HiltViewModel
 class ShareTripViewModel @Inject constructor(
     private val exporter: TravelExporter,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -38,7 +40,9 @@ class ShareTripViewModel @Inject constructor(
         _phase.value = SharePhase.Exporting
         viewModelScope.launch {
             _phase.value = try {
-                SharePhase.Ready(exporter.export(tripId))
+                val uri = exporter.export(tripId)
+                analytics.logTripShared()
+                SharePhase.Ready(uri)
             } catch (e: Exception) {
                 SharePhase.Error(e.message ?: appContext.getString(R.string.share_error_fallback))
             }

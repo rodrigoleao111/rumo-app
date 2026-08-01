@@ -1,6 +1,7 @@
 package com.rodrigoleao.pipa.ui.trips
 
 import androidx.lifecycle.SavedStateHandle
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.repository.ActivityRepository
 import com.rodrigoleao.pipa.data.repository.ContactRepository
 import com.rodrigoleao.pipa.data.repository.TripRepository
@@ -47,6 +48,7 @@ class TripViewModelTest {
     private lateinit var contactRepo: ContactRepository
     private lateinit var activityRepo: ActivityRepository
     private lateinit var noteRepo: com.rodrigoleao.pipa.data.repository.NoteRepository
+    private val analytics: AnalyticsService = mockk(relaxed = true)
     private val tripId = 1L
 
     @Before
@@ -63,7 +65,7 @@ class TripViewModelTest {
 
     private fun buildVm(initialData: com.rodrigoleao.pipa.data.repository.TripData = fakeTripData()): TripViewModel {
         coEvery { tripRepo.getTripData(tripId) } returns initialData
-        return TripViewModel(tripRepo, voucherRepo, contactRepo, activityRepo, noteRepo, SavedStateHandle(mapOf("tripId" to tripId)))
+        return TripViewModel(tripRepo, voucherRepo, contactRepo, activityRepo, noteRepo, analytics, SavedStateHandle(mapOf("tripId" to tripId)))
     }
 
     // ── Carregamento inicial ───────────────────────────────────────────────────

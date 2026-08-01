@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodrigoleao.pipa.R
+import com.rodrigoleao.pipa.data.analytics.AnalyticsService
 import com.rodrigoleao.pipa.data.db.entity.ActivityBadgeEntity
 import com.rodrigoleao.pipa.data.db.entity.TravelActivityEntity
 import com.rodrigoleao.pipa.data.model.BadgeType
@@ -45,6 +46,7 @@ class EditActivityViewModel @Inject constructor(
     private val activityRepo: ActivityRepository,
     private val dayRepo: DayRepository,
     private val tripRepo: TripRepository,
+    private val analytics: AnalyticsService,
     @ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -150,7 +152,11 @@ class EditActivityViewModel @Inject constructor(
                 ActivityBadgeEntity(activityId = 0L, badgeType = BadgeType.CUSTOM.name, label = cb.name, color = cb.colorHex)
             }
             runCatching { activityRepo.upsertActivity(s.dayEntityId, entity, badges) }
-                .onSuccess { tripRepo.touchLastEditedAt(tripId); _uiEvent.send(UiEvent.NavigateBack) }
+                .onSuccess {
+                    tripRepo.touchLastEditedAt(tripId)
+                    if (s.activityId == 0L) analytics.logContentAdded(AnalyticsService.CONTENT_ACTIVITY)
+                    _uiEvent.send(UiEvent.NavigateBack)
+                }
                 .onFailure { _state.value = _state.value.copy(isSaving = false); _uiEvent.send(UiEvent.ShowSnackbar(appContext.getString(R.string.edita_error_save_activity))) }
         }
     }
