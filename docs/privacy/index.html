@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="index, follow">
+<title>Política de Privacidade — Pipa</title>
+<style>
+  :root{
+    --sand:#F4EDE1; --surface:#FFFFFF; --ink:#22302B; --muted:#5B6B63;
+    --moss:#1B4332; --amber:#E9B43C; --line:#E4DACb; --line2:#EFE8DA;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --sand:#141915; --surface:#1C231E; --ink:#E9EFEA; --muted:#A9B7AE;
+      --moss:#8FBF9F; --amber:#E9B43C; --line:#2B3630; --line2:#232B26;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--sand); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.6; font-size:16px;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:32px 20px 64px}
+  header.top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:8px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; color:var(--moss); font-size:20px}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:var(--moss);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .switch{display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--surface)}
+  .switch button{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.02em
+  }
+  .switch button[aria-pressed="true"]{background:var(--moss);color:#fff}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px 26px; margin-top:20px}
+  h1{font-size:26px; line-height:1.25; margin:.2em 0 .1em; color:var(--ink)}
+  h2{font-size:18px; margin:1.8em 0 .5em; color:var(--moss)}
+  .updated{color:var(--muted); font-size:14px; margin-top:0}
+  p{margin:.7em 0}
+  ul{margin:.5em 0 .9em; padding-left:1.25em}
+  li{margin:.28em 0}
+  a{color:var(--moss); text-decoration:underline; text-underline-offset:2px; word-break:break-word}
+  code, .ph{background:var(--line2); padding:1px 6px; border-radius:6px; font-size:.92em}
+  .tldr{border-left:3px solid var(--amber); padding:2px 0 2px 16px; margin:1.2em 0}
+  table{width:100%; border-collapse:collapse; margin:.6em 0; font-size:15px; display:block; overflow-x:auto}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top}
+  th{background:var(--line2); font-weight:700}
+  hr{border:0;border-top:1px solid var(--line); margin:1.6em 0}
+  .lang{display:none}
+  .lang.active{display:block}
+  footer.foot{color:var(--muted); font-size:13px; text-align:center; margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand"><span class="dot">P</span> Pipa</div>
+    <div class="switch" role="group" aria-label="Idioma / Language / Idioma">
+      <button data-lang="pt" aria-pressed="true">PT</button>
+      <button data-lang="en" aria-pressed="false">EN</button>
+      <button data-lang="es" aria-pressed="false">ES</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ PORTUGUÊS ═══════════════════ -->
+  <section class="lang active" id="pt" lang="pt-BR">
+    <div class="card">
+      <h1>Política de Privacidade</h1>
+      <p class="updated">Última atualização: 1 de agosto de 2026</p>
+      <p>Esta Política de Privacidade descreve como o aplicativo <strong>Pipa</strong> ("app", "nós")
+      trata informações quando você o utiliza. O Pipa é um app de organização de roteiros de viagem.</p>
+      <p><strong>Responsável pelo tratamento (controlador):</strong> Rodrigo Leão<br>
+      <strong>Contato:</strong> <a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></p>
+
+      <div class="tldr">
+        <h2>Resumo rápido</h2>
+        <ul>
+          <li><strong>Não temos servidor nem banco de dados próprio.</strong> Tudo o que você cria (viagens, vouchers, passagens, contatos, notas) fica <strong>armazenado apenas no seu aparelho</strong>.</li>
+          <li><strong>Não exigimos cadastro nem login.</strong> Não coletamos seu nome, e-mail ou senha.</li>
+          <li><strong>Não exibimos anúncios</strong> e <strong>não acessamos a localização física</strong> do aparelho.</li>
+          <li>Alguns recursos usam <strong>serviços do Google</strong> (IA, relatórios de uso e de falhas) e um serviço de <strong>previsão do tempo</strong> (Open-Meteo). Nesses casos, dados limitados são enviados a esses terceiros, conforme detalhado abaixo.</li>
+        </ul>
+      </div>
+
+      <h2>1. Dados que ficam apenas no seu aparelho</h2>
+      <p>O Pipa guarda localmente, no armazenamento do próprio app, os conteúdos que você cria:</p>
+      <ul>
+        <li>Viagens (destino, datas, hospedagem, capa);</li>
+        <li>Vouchers e arquivos/imagens anexados;</li>
+        <li>Passagens e cartões de embarque (incluindo <strong>nomes de passageiros</strong> que você inserir);</li>
+        <li><strong>Contatos</strong> da viagem (<strong>nome e telefone</strong> que você cadastrar);</li>
+        <li>Notas, checklists, atividades e o histórico das suas conversas com o assistente de IA;</li>
+        <li>Preferências do app (idioma, ordenação, ocultação de viagens).</li>
+      </ul>
+      <p>Esses dados <strong>não são enviados para nós</strong> — não operamos servidores que os recebam. Eles
+      permanecem no aparelho até você <strong>excluí-los no app</strong> ou <strong>desinstalar</strong> o Pipa. Se o
+      backup automático do Android estiver ativo, esses dados podem ser incluídos no backup da sua conta Google,
+      conforme as configurações do seu dispositivo. Os dados só saem do aparelho se <strong>você</strong> escolher
+      <strong>compartilhar ou exportar</strong> uma viagem.</p>
+
+      <h2>2. Assistente de roteiro por IA (Google Gemini)</h2>
+      <p>Quando você usa o recurso de <strong>geração de roteiro por IA</strong>, o app envia ao serviço
+      <strong>Google Gemini</strong> (API Google AI / Generative Language API) as informações necessárias para
+      gerar o roteiro:</p>
+      <ul>
+        <li>Destino, datas e número de dias da viagem;</li>
+        <li>Nome e endereço da hospedagem, se você tiver informado;</li>
+        <li><strong>As mensagens que você digita no chat</strong> com o assistente (perfil e preferências da viagem).</li>
+      </ul>
+      <p>Esse conteúdo é processado pelo Google conforme seus termos. Dependendo do plano de uso da API, o Google
+      pode utilizar o conteúdo para operar e <strong>melhorar seus serviços de IA</strong>. Por isso,
+      <strong>evite digitar informações sensíveis</strong> (dados de saúde, documentos, senhas, dados de terceiros)
+      no chat com a IA.</p>
+      <ul>
+        <li>Termos da API Gemini: <a href="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</a></li>
+        <li>Política de Privacidade do Google: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+      </ul>
+
+      <h2>3. Dados de uso e de diagnóstico (Firebase Analytics e Crashlytics)</h2>
+      <p>Para entender como o app é usado e corrigir falhas, utilizamos <strong>Google Firebase Analytics</strong> e
+      <strong>Firebase Crashlytics</strong>, que coletam automaticamente:</p>
+      <ul>
+        <li><strong>Eventos de uso</strong> — ações genéricas (ex.: criação de viagem, visualização de tela, uso da IA). <strong>Não contêm</strong> o conteúdo das suas viagens nem dados que identifiquem você; são apenas contagens e rótulos genéricos.</li>
+        <li><strong>Informações técnicas e do dispositivo</strong> — modelo, versão do Android, idioma, região aproximada (via IP) e identificadores do app/dispositivo (como o ID de instância do app e, quando disponível, o ID de publicidade do Android).</li>
+        <li><strong>Relatórios de falha</strong> — rastro de pilha, estado do app e informações do dispositivo, para diagnóstico.</li>
+      </ul>
+      <p>Usamos esses dados <strong>apenas</strong> para medir o uso de forma agregada e melhorar a estabilidade do
+      app. <strong>Não</strong> os usamos para publicidade. Como o Firebase/Google trata esses dados:
+      <a href="https://firebase.google.com/support/privacy">firebase.google.com/support/privacy</a>.</p>
+
+      <h2>4. Previsão do tempo (Open-Meteo)</h2>
+      <p>Para mostrar a previsão do tempo do destino, o app consulta o serviço <strong>Open-Meteo</strong>. São
+      enviados: o <strong>nome do destino</strong> que você digita (para localizar as coordenadas) e as
+      <strong>coordenadas geográficas</strong> e <strong>datas</strong> da viagem. Essas consultas
+      <strong>não incluem</strong> identificadores pessoais.
+      Termos: <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.</p>
+
+      <h2>5. Permissões do aplicativo</h2>
+      <table>
+        <tr><th>Permissão</th><th>Para quê</th></tr>
+        <tr><td>Internet</td><td>Consultar a previsão do tempo, o assistente de IA e enviar relatórios de uso/falha.</td></tr>
+        <tr><td>Notificações</td><td>Exibir lembretes locais (ex.: lembrete de check-in), gerados no próprio aparelho.</td></tr>
+        <tr><td>Executar após inicializar</td><td>Reagendar os lembretes locais após reiniciar o aparelho.</td></tr>
+      </table>
+      <p>O app pode abrir o <strong>discador</strong> já preenchido quando você toca para ligar a um contato, mas
+      <strong>não realiza chamadas automaticamente</strong>. O app <strong>não</strong> solicita acesso a localização
+      (GPS), câmera, microfone, contatos do sistema, agenda ou arquivos além dos que você anexa voluntariamente.</p>
+
+      <h2>6. Compartilhamento com terceiros</h2>
+      <p>Não vendemos nem alugamos seus dados. Há compartilhamento <strong>limitado</strong> apenas com os prestadores
+      necessários aos recursos acima: <strong>Google</strong> (Gemini, Firebase Analytics, Crashlytics) e
+      <strong>Open-Meteo</strong> (clima). Cada um trata os dados conforme suas próprias políticas.</p>
+
+      <h2>7. Transferência internacional de dados</h2>
+      <p>Os serviços do Google e do Open-Meteo podem processar dados em <strong>servidores fora do Brasil</strong>. Ao
+      usar os recursos que dependem desses serviços, você reconhece que os dados podem ser transferidos e processados
+      internacionalmente, com as salvaguardas das políticas desses provedores.</p>
+
+      <h2>8. Seus direitos (LGPD)</h2>
+      <p>Conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você pode a qualquer momento:</p>
+      <ul>
+        <li><strong>Acessar e excluir</strong> os dados que ficam no aparelho — pelo próprio app ou desinstalando o Pipa;</li>
+        <li>Solicitar <strong>informações</strong> sobre o tratamento ou pedir a <strong>exclusão</strong> de dados de diagnóstico, pelo e-mail no topo desta política.</li>
+      </ul>
+      <p>Como o app não possui cadastro, não conseguimos vincular os dados de uso/diagnóstico a uma pessoa específica;
+      ainda assim, atenderemos os pedidos na medida do tecnicamente possível.</p>
+
+      <h2>9. Retenção e exclusão</h2>
+      <ul>
+        <li><strong>Dados no aparelho:</strong> permanecem até você excluí-los ou desinstalar o app.</li>
+        <li><strong>Dados de uso e de falhas (Firebase):</strong> retidos pelos prazos padrão da plataforma Google/Firebase e usados de forma agregada.</li>
+      </ul>
+
+      <h2>10. Segurança</h2>
+      <p>Os dados que você cria ficam no armazenamento privado do app, protegido pelo Android. As comunicações com os
+      serviços de IA, clima e telemetria usam conexões <strong>HTTPS</strong>. Nenhum sistema é 100% seguro, mas
+      adotamos medidas razoáveis para proteger as informações.</p>
+
+      <h2>11. Crianças</h2>
+      <p>O Pipa é um app de público geral e <strong>não é direcionado a menores de 13 anos</strong>. Não coletamos
+      intencionalmente dados de crianças.</p>
+
+      <h2>12. Alterações nesta política</h2>
+      <p>Podemos atualizar esta política periodicamente. A data de "Última atualização" indica a versão vigente.</p>
+
+      <h2>13. Contato</h2>
+      <p>Dúvidas sobre esta política ou sobre privacidade no Pipa:<br>
+      <strong><a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></strong></p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ ENGLISH ═══════════════════ -->
+  <section class="lang" id="en" lang="en">
+    <div class="card">
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: August 1, 2026</p>
+      <p>This Privacy Policy describes how the <strong>Pipa</strong> app ("the app", "we") handles information when
+      you use it. Pipa is a travel itinerary organizer app.</p>
+      <p><strong>Data controller:</strong> Rodrigo Leão<br>
+      <strong>Contact:</strong> <a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></p>
+
+      <div class="tldr">
+        <h2>Quick summary</h2>
+        <ul>
+          <li><strong>We have no server or database of our own.</strong> Everything you create (trips, vouchers, boarding passes, contacts, notes) is <strong>stored only on your device</strong>.</li>
+          <li><strong>No sign-up or login required.</strong> We do not collect your name, email, or password.</li>
+          <li><strong>No ads</strong> and <strong>no access to your device's physical location</strong>.</li>
+          <li>Some features use <strong>Google services</strong> (AI, usage and crash reporting) and a <strong>weather</strong> service (Open-Meteo). In those cases, limited data is sent to those third parties, as detailed below.</li>
+        </ul>
+      </div>
+
+      <h2>1. Data that stays only on your device</h2>
+      <p>Pipa stores the content you create locally, in the app's own storage:</p>
+      <ul>
+        <li>Trips (destination, dates, accommodation, cover);</li>
+        <li>Vouchers and attached files/images;</li>
+        <li>Tickets and boarding passes (including <strong>passenger names</strong> you enter);</li>
+        <li>Trip <strong>contacts</strong> (<strong>name and phone</strong> you add);</li>
+        <li>Notes, checklists, activities, and your AI assistant chat history;</li>
+        <li>App preferences (language, sorting, hidden trips).</li>
+      </ul>
+      <p>This data <strong>is not sent to us</strong> — we operate no servers to receive it. It stays on the device
+      until you <strong>delete it in the app</strong> or <strong>uninstall</strong> Pipa. If Android auto-backup is
+      enabled, this data may be included in your Google account backup, per your device settings. Data leaves the
+      device only if <strong>you</strong> choose to <strong>share or export</strong> a trip.</p>
+
+      <h2>2. AI itinerary assistant (Google Gemini)</h2>
+      <p>When you use the <strong>AI itinerary generation</strong> feature, the app sends the information needed to
+      generate the itinerary to <strong>Google Gemini</strong> (Google AI / Generative Language API):</p>
+      <ul>
+        <li>Destination, dates, and number of trip days;</li>
+        <li>Accommodation name and address, if provided;</li>
+        <li><strong>The messages you type in the chat</strong> with the assistant (trip profile and preferences).</li>
+      </ul>
+      <p>This content is processed by Google under its terms. Depending on the API usage tier, Google may use the
+      content to operate and <strong>improve its AI services</strong>. Therefore, <strong>avoid typing sensitive
+      information</strong> (health data, documents, passwords, third-party data) in the AI chat.</p>
+      <ul>
+        <li>Gemini API terms: <a href="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</a></li>
+        <li>Google Privacy Policy: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+      </ul>
+
+      <h2>3. Usage and diagnostics data (Firebase Analytics and Crashlytics)</h2>
+      <p>To understand how the app is used and fix issues, we use <strong>Google Firebase Analytics</strong> and
+      <strong>Firebase Crashlytics</strong>, which automatically collect:</p>
+      <ul>
+        <li><strong>Usage events</strong> — generic actions (e.g., trip creation, screen views, AI usage). They <strong>do not contain</strong> your trip content or data identifying you; only counts and generic labels.</li>
+        <li><strong>Technical and device info</strong> — device model, Android version, language, approximate region (from IP), and app/device identifiers (such as the app instance ID and, when available, the Android advertising ID).</li>
+        <li><strong>Crash reports</strong> — stack trace, app state, and device info, for diagnostics.</li>
+      </ul>
+      <p>We use this data <strong>only</strong> to measure usage in aggregate and improve the app's stability.
+      We do <strong>not</strong> use it for advertising. How Firebase/Google handles this data:
+      <a href="https://firebase.google.com/support/privacy">firebase.google.com/support/privacy</a>.</p>
+
+      <h2>4. Weather forecast (Open-Meteo)</h2>
+      <p>To show the destination's weather, the app queries <strong>Open-Meteo</strong>. It sends the
+      <strong>destination name</strong> you type (to find coordinates) and the trip's <strong>geographic
+      coordinates</strong> and <strong>dates</strong>. These queries <strong>do not include</strong> personal
+      identifiers. Terms: <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.</p>
+
+      <h2>5. App permissions</h2>
+      <table>
+        <tr><th>Permission</th><th>Purpose</th></tr>
+        <tr><td>Internet</td><td>Query the weather forecast and AI assistant, and send usage/crash reports.</td></tr>
+        <tr><td>Notifications</td><td>Show local reminders (e.g., check-in reminder), generated on the device itself.</td></tr>
+        <tr><td>Run after boot</td><td>Reschedule local reminders after the device restarts.</td></tr>
+      </table>
+      <p>The app may open the <strong>phone dialer</strong> pre-filled when you tap to call a contact, but it
+      <strong>does not place calls automatically</strong>. The app does <strong>not</strong> request access to location
+      (GPS), camera, microphone, system contacts, calendar, or files beyond those you attach voluntarily.</p>
+
+      <h2>6. Sharing with third parties</h2>
+      <p>We do not sell or rent your data. There is <strong>limited</strong> sharing only with the providers needed for
+      the features above: <strong>Google</strong> (Gemini, Firebase Analytics, Crashlytics) and <strong>Open-Meteo</strong>
+      (weather). Each handles data under its own policies.</p>
+
+      <h2>7. International data transfer</h2>
+      <p>Google and Open-Meteo services may process data on <strong>servers outside Brazil</strong>. By using the
+      features that rely on those services, you acknowledge that the data may be transferred and processed
+      internationally, with the safeguards in those providers' policies.</p>
+
+      <h2>8. Your rights</h2>
+      <p>Under Brazil's LGPD (Law No. 13,709/2018) and similar data-protection laws, you may at any time:</p>
+      <ul>
+        <li><strong>Access and delete</strong> the data on your device — via the app or by uninstalling Pipa;</li>
+        <li>Request <strong>information</strong> about processing or ask for <strong>deletion</strong> of diagnostics data, via the email at the top of this policy.</li>
+      </ul>
+      <p>Since the app has no account, we cannot link usage/diagnostics data to a specific person; we will nonetheless
+      honor requests to the extent technically possible.</p>
+
+      <h2>9. Retention and deletion</h2>
+      <ul>
+        <li><strong>On-device data:</strong> stays until you delete it or uninstall the app.</li>
+        <li><strong>Usage and crash data (Firebase):</strong> retained per Google/Firebase standard periods and used in aggregate.</li>
+      </ul>
+
+      <h2>10. Security</h2>
+      <p>The content you create stays in the app's private storage, protected by Android. Communications with the AI,
+      weather, and telemetry services use <strong>HTTPS</strong>. No system is 100% secure, but we take reasonable
+      measures to protect the information.</p>
+
+      <h2>11. Children</h2>
+      <p>Pipa is a general-audience app and is <strong>not directed to children under 13</strong>. We do not knowingly
+      collect data from children.</p>
+
+      <h2>12. Changes to this policy</h2>
+      <p>We may update this policy from time to time. The "Last updated" date indicates the current version.</p>
+
+      <h2>13. Contact</h2>
+      <p>Questions about this policy or privacy in Pipa:<br>
+      <strong><a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></strong></p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ ESPAÑOL ═══════════════════ -->
+  <section class="lang" id="es" lang="es">
+    <div class="card">
+      <h1>Política de Privacidad</h1>
+      <p class="updated">Última actualización: 1 de agosto de 2026</p>
+      <p>Esta Política de Privacidad describe cómo la aplicación <strong>Pipa</strong> ("la app", "nosotros") trata la
+      información cuando la utilizas. Pipa es una app para organizar itinerarios de viaje.</p>
+      <p><strong>Responsable del tratamiento:</strong> Rodrigo Leão<br>
+      <strong>Contacto:</strong> <a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></p>
+
+      <div class="tldr">
+        <h2>Resumen rápido</h2>
+        <ul>
+          <li><strong>No tenemos servidor ni base de datos propios.</strong> Todo lo que creas (viajes, vouchers, tarjetas de embarque, contactos, notas) se <strong>almacena solo en tu dispositivo</strong>.</li>
+          <li><strong>No requiere registro ni inicio de sesión.</strong> No recopilamos tu nombre, correo ni contraseña.</li>
+          <li><strong>Sin anuncios</strong> y <strong>sin acceso a la ubicación física</strong> del dispositivo.</li>
+          <li>Algunas funciones usan <strong>servicios de Google</strong> (IA, informes de uso y de fallos) y un servicio de <strong>pronóstico del tiempo</strong> (Open-Meteo). En esos casos se envían datos limitados a esos terceros, como se detalla abajo.</li>
+        </ul>
+      </div>
+
+      <h2>1. Datos que permanecen solo en tu dispositivo</h2>
+      <p>Pipa guarda localmente, en el almacenamiento de la propia app, el contenido que creas:</p>
+      <ul>
+        <li>Viajes (destino, fechas, alojamiento, portada);</li>
+        <li>Vouchers y archivos/imágenes adjuntos;</li>
+        <li>Boletos y tarjetas de embarque (incluidos los <strong>nombres de pasajeros</strong> que ingreses);</li>
+        <li><strong>Contactos</strong> del viaje (<strong>nombre y teléfono</strong> que agregues);</li>
+        <li>Notas, listas, actividades y el historial de tus conversaciones con el asistente de IA;</li>
+        <li>Preferencias de la app (idioma, orden, viajes ocultos).</li>
+      </ul>
+      <p>Estos datos <strong>no se nos envían</strong> — no operamos servidores que los reciban. Permanecen en el
+      dispositivo hasta que los <strong>elimines en la app</strong> o <strong>desinstales</strong> Pipa. Si la copia de
+      seguridad automática de Android está activa, estos datos pueden incluirse en la copia de tu cuenta de Google,
+      según la configuración de tu dispositivo. Los datos solo salen del dispositivo si <strong>tú</strong> eliges
+      <strong>compartir o exportar</strong> un viaje.</p>
+
+      <h2>2. Asistente de itinerario con IA (Google Gemini)</h2>
+      <p>Cuando usas la función de <strong>generación de itinerario con IA</strong>, la app envía a
+      <strong>Google Gemini</strong> (Google AI / Generative Language API) la información necesaria para generar el
+      itinerario:</p>
+      <ul>
+        <li>Destino, fechas y número de días del viaje;</li>
+        <li>Nombre y dirección del alojamiento, si los indicaste;</li>
+        <li><strong>Los mensajes que escribes en el chat</strong> con el asistente (perfil y preferencias del viaje).</li>
+      </ul>
+      <p>Google procesa ese contenido conforme a sus términos. Según el plan de uso de la API, Google puede utilizar el
+      contenido para operar y <strong>mejorar sus servicios de IA</strong>. Por eso, <strong>evita escribir información
+      sensible</strong> (datos de salud, documentos, contraseñas, datos de terceros) en el chat con la IA.</p>
+      <ul>
+        <li>Términos de la API Gemini: <a href="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</a></li>
+        <li>Política de Privacidad de Google: <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+      </ul>
+
+      <h2>3. Datos de uso y diagnóstico (Firebase Analytics y Crashlytics)</h2>
+      <p>Para entender cómo se usa la app y corregir fallos, usamos <strong>Google Firebase Analytics</strong> y
+      <strong>Firebase Crashlytics</strong>, que recopilan automáticamente:</p>
+      <ul>
+        <li><strong>Eventos de uso</strong> — acciones genéricas (p. ej., creación de viaje, vistas de pantalla, uso de la IA). <strong>No contienen</strong> el contenido de tus viajes ni datos que te identifiquen; solo recuentos y etiquetas genéricas.</li>
+        <li><strong>Información técnica y del dispositivo</strong> — modelo, versión de Android, idioma, región aproximada (por IP) e identificadores de la app/dispositivo (como el ID de instancia de la app y, cuando esté disponible, el ID de publicidad de Android).</li>
+        <li><strong>Informes de fallos</strong> — traza de la pila, estado de la app e información del dispositivo, para diagnóstico.</li>
+      </ul>
+      <p>Usamos estos datos <strong>solo</strong> para medir el uso de forma agregada y mejorar la estabilidad.
+      <strong>No</strong> los usamos para publicidad. Cómo trata Firebase/Google estos datos:
+      <a href="https://firebase.google.com/support/privacy">firebase.google.com/support/privacy</a>.</p>
+
+      <h2>4. Pronóstico del tiempo (Open-Meteo)</h2>
+      <p>Para mostrar el clima del destino, la app consulta <strong>Open-Meteo</strong>. Envía el <strong>nombre del
+      destino</strong> que escribes (para localizar las coordenadas) y las <strong>coordenadas geográficas</strong> y
+      <strong>fechas</strong> del viaje. Estas consultas <strong>no incluyen</strong> identificadores personales.
+      Términos: <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.</p>
+
+      <h2>5. Permisos de la aplicación</h2>
+      <table>
+        <tr><th>Permiso</th><th>Para qué</th></tr>
+        <tr><td>Internet</td><td>Consultar el pronóstico del tiempo y el asistente de IA, y enviar informes de uso/fallos.</td></tr>
+        <tr><td>Notificaciones</td><td>Mostrar recordatorios locales (p. ej., recordatorio de check-in), generados en el propio dispositivo.</td></tr>
+        <tr><td>Ejecutar tras el arranque</td><td>Reprogramar los recordatorios locales tras reiniciar el dispositivo.</td></tr>
+      </table>
+      <p>La app puede abrir el <strong>marcador</strong> ya rellenado cuando tocas para llamar a un contacto, pero
+      <strong>no realiza llamadas automáticamente</strong>. La app <strong>no</strong> solicita acceso a la ubicación
+      (GPS), cámara, micrófono, contactos del sistema, calendario ni archivos más allá de los que adjuntas
+      voluntariamente.</p>
+
+      <h2>6. Compartir con terceros</h2>
+      <p>No vendemos ni alquilamos tus datos. Solo hay un intercambio <strong>limitado</strong> con los proveedores
+      necesarios para las funciones anteriores: <strong>Google</strong> (Gemini, Firebase Analytics, Crashlytics) y
+      <strong>Open-Meteo</strong> (clima). Cada uno trata los datos conforme a sus propias políticas.</p>
+
+      <h2>7. Transferencia internacional de datos</h2>
+      <p>Los servicios de Google y Open-Meteo pueden procesar datos en <strong>servidores fuera de Brasil</strong>. Al
+      usar las funciones que dependen de esos servicios, reconoces que los datos pueden transferirse y procesarse
+      internacionalmente, con las salvaguardas de las políticas de esos proveedores.</p>
+
+      <h2>8. Tus derechos</h2>
+      <p>Conforme a la LGPD de Brasil (Ley n.º 13.709/2018) y leyes de protección de datos similares, puedes en
+      cualquier momento:</p>
+      <ul>
+        <li><strong>Acceder y eliminar</strong> los datos de tu dispositivo — desde la app o desinstalando Pipa;</li>
+        <li>Solicitar <strong>información</strong> sobre el tratamiento o pedir la <strong>eliminación</strong> de datos de diagnóstico, mediante el correo indicado arriba.</li>
+      </ul>
+      <p>Como la app no tiene registro, no podemos vincular los datos de uso/diagnóstico a una persona concreta; aun
+      así, atenderemos las solicitudes en la medida técnicamente posible.</p>
+
+      <h2>9. Conservación y eliminación</h2>
+      <ul>
+        <li><strong>Datos en el dispositivo:</strong> permanecen hasta que los elimines o desinstales la app.</li>
+        <li><strong>Datos de uso y fallos (Firebase):</strong> se conservan según los plazos estándar de Google/Firebase y se usan de forma agregada.</li>
+      </ul>
+
+      <h2>10. Seguridad</h2>
+      <p>El contenido que creas permanece en el almacenamiento privado de la app, protegido por Android. Las
+      comunicaciones con los servicios de IA, clima y telemetría usan <strong>HTTPS</strong>. Ningún sistema es 100%
+      seguro, pero adoptamos medidas razonables para proteger la información.</p>
+
+      <h2>11. Menores</h2>
+      <p>Pipa es una app para el público general y <strong>no está dirigida a menores de 13 años</strong>. No
+      recopilamos intencionadamente datos de menores.</p>
+
+      <h2>12. Cambios en esta política</h2>
+      <p>Podemos actualizar esta política periódicamente. La fecha de "Última actualización" indica la versión vigente.</p>
+
+      <h2>13. Contacto</h2>
+      <p>Dudas sobre esta política o sobre la privacidad en Pipa:<br>
+      <strong><a href="mailto:rodrigoleao1995@gmail.com">rodrigoleao1995@gmail.com</a></strong></p>
+    </div>
+  </section>
+
+  <footer class="foot">Pipa · <span id="year">2026</span></footer>
+</div>
+
+<script>
+  (function(){
+    var buttons = document.querySelectorAll('.switch button');
+    var sections = document.querySelectorAll('.lang');
+    var htmlEl = document.documentElement;
+    function show(lang){
+      sections.forEach(function(s){ s.classList.toggle('active', s.id === lang); });
+      buttons.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
+      htmlEl.setAttribute('lang', lang === 'pt' ? 'pt-BR' : lang);
+      try { history.replaceState(null, '', '#' + lang); } catch(e){}
+    }
+    buttons.forEach(function(b){ b.addEventListener('click', function(){ show(b.dataset.lang); }); });
+    // Idioma inicial: hash da URL > idioma do navegador > pt
+    var fromHash = (location.hash || '').replace('#','');
+    var nav = (navigator.language || 'pt').slice(0,2).toLowerCase();
+    var initial = ['pt','en','es'].indexOf(fromHash) >= 0 ? fromHash
+                : (nav === 'en' || nav === 'es') ? nav : 'pt';
+    show(initial);
+  })();
+</script>
+</body>
+</html>
