@@ -19,6 +19,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PipaApp.Splash">
 
+        <!-- Desativa a coleta do Advertising ID pelo Analytics em todas as versões do Android
+             (app sem anúncios) — complementa a remoção da permissão AD_ID. -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
