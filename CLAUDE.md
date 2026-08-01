@@ -4,7 +4,7 @@ Guia para agentes trabalhando neste repositório. Complementa o `README.md` (vis
 
 ## O que é
 
-App Android nativo de roteiros de viagem. Package `com.rodrigoleao.pipa` (o nome `gramado2026` é histórico — o produto é o **Pipa**). Kotlin + Jetpack Compose + Material 3, MVVM, Hilt, Room, DataStore. minSdk 26, compileSdk/targetSdk 34, JDK 17.
+App Android nativo de roteiros de viagem. Package `com.rodrigoleao.pipa` (o nome `gramado2026` é histórico — o produto é o **Pipa**). Kotlin + Jetpack Compose + Material 3, MVVM, Hilt, Room, DataStore. minSdk 26, compileSdk/targetSdk 36, JDK 17.
 
 ## Build & run (Windows)
 
@@ -72,7 +72,7 @@ Projeto Firebase `gen-lang-client-0481952640` (o mesmo GCP do Gemini). Detalhes 
 
 - **Edge-to-edge:** `MainActivity` chama `enableEdgeToEdge()`, o que desativa o resize automático da janela pelo teclado. Telas com formulário precisam de `.imePadding()` antes do scroll para o campo focado subir acima do teclado virtual (padrão já aplicado em `Edit*`, `CreateTrip` e no editor de notas).
 - **Seed de exemplo é debug-only:** `DatabaseSeeder.seedIfEmpty` só roda dentro de `if (BuildConfig.DEBUG)` no `MainActivity`. Release nasce sem viagens. Para screenshots/testes com dados, use o build debug.
-- **Assinatura release:** o `signingConfig("release")` lê `keystore/gramado2026.jks` + props `STORE_PASSWORD`/`KEY_ALIAS`/`KEY_PASSWORD`. Se ausentes, `assembleRelease` gera APK **não assinado** — assine com `apksigner` (build-tools em `...\Android\Sdk\build-tools\<versão>\`). Ao verificar com `apksigner verify`, **não** faça pipe para `Select-Object` (fecha o stdout do exe e retorna exit 255 falso).
+- **Assinatura release:** o build type `release` **usa** o `signingConfig("release")` (linha `signingConfig = signingConfigs.getByName("release")` no `buildTypes.release`). Ele lê a **upload key** em `keystore/gramado2026.jks` (gitignored via `*.jks`) + as props `STORE_PASSWORD`/`KEY_ALIAS`(=`gramado`)/`KEY_PASSWORD`, que ficam no **`~/.gradle/gradle.properties` global** (fora do repo — nunca comitar senha). Com isso, `bundleRelease` gera um **AAB assinado** direto; se a keystore/props faltarem, o build **falha** (em vez de gerar artefato não assinado silenciosamente). O app usa **Play App Signing** (o Google detém a app signing key; nós só assinamos o upload). Verificar o AAB com `jarsigner -verify <aab>` (espera-se `jar verified` + um Warning de "certificate chain is invalid" — **normal** para cert autoassinado). Para APK, `apksigner verify` — e **não** faça pipe para `Select-Object` (fecha o stdout do exe e retorna exit 255 falso).
 
 ## Git
 

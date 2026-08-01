@@ -54,7 +54,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
 | Clima | Open-Meteo API |
 | IA | Gemini 2.0 Flash (Google AI) |
 | minSdk | 26 (Android 8.0+) |
-| compileSdk / targetSdk | 34 |
+| compileSdk / targetSdk | 36 |
 
 ## Funcionalidades
 
