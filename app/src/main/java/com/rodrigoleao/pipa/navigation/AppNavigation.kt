@@ -198,9 +198,17 @@ fun AppNavigation(importUriState: MutableState<android.net.Uri?> = remember { mu
 
     val importUri = importUriState.value
 
-    val startDestination = when {
-        importUri != null -> Screen.ImportTrip.route
-        else              -> Screen.Splash.route
+    // Destino inicial fixado na PRIMEIRA composição: se o app foi aberto por um arquivo
+    // .travel (intent externo "abrir com"), começa direto na importação; senão, no splash.
+    //
+    // IMPORTANTE — precisa ser `remember` (estável). O NavHost guarda o grafo com
+    // `remember(route, startDestination, builder)`, ou seja, o startDestination é CHAVE.
+    // Se recalculássemos a cada recomposição, ao zerar o importUri em onImported (após
+    // importar) o startDestination mudaria de ImportTrip → Splash, o NavHost recriaria o
+    // grafo e RESETARIA a navegação para o novo start — jogando o usuário no Splash/lista
+    // em vez de deixá-lo na home da viagem recém-importada.
+    val startDestination = remember {
+        if (importUriState.value != null) Screen.ImportTrip.route else Screen.Splash.route
     }
 
     // Trata onNewIntent: app já aberto, novo arquivo .travel aberto externamente
