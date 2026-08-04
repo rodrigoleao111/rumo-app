@@ -116,6 +116,10 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-analytics")
 
+    // Play In-App Updates — notifica e instala novas versões pela Play (modo flexível)
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
+
     // Drag-to-reorder em LazyColumn
     implementation("sh.calvin.reorderable:reorderable:2.4.0")
 

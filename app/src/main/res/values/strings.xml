@@ -550,4 +550,8 @@
     <string name="aiconv_delete_title">Excluir conversa?</string>
     <string name="aiconv_delete_msg">Esta conversa será removida permanentemente.</string>
     <string name="aiconv_delete_cd">Excluir conversa</string>
+
+    <!-- Atualização do app (Play In-App Updates) -->
+    <string name="update_downloaded_message">Atualização pronta para instalar.</string>
+    <string name="update_downloaded_action">Reiniciar</string>
 </resources>

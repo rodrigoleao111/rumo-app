@@ -550,4 +550,8 @@
     <string name="aiconv_delete_title">Delete conversation?</string>
     <string name="aiconv_delete_msg">This conversation will be permanently removed.</string>
     <string name="aiconv_delete_cd">Delete conversation</string>
+
+    <!-- App update (Play In-App Updates) -->
+    <string name="update_downloaded_message">Update ready to install.</string>
+    <string name="update_downloaded_action">Restart</string>
 </resources>

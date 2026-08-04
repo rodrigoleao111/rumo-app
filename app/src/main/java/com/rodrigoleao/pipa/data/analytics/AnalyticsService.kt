@@ -81,6 +81,19 @@ class AnalyticsService @Inject constructor(
         putString(PARAM_TYPE, type)
     })
 
+    // ── Atualização do app (Play In-App Updates) ────────────────────────────────
+
+    /** Uma nova versão foi encontrada na Play e o fluxo flexível foi iniciado. */
+    fun logUpdateAvailable() = fa.logEvent(EVENT_APP_UPDATE_AVAILABLE, Bundle())
+
+    /** Resultado do diálogo de atualização da Play (accepted | canceled | failed). */
+    fun logUpdateFlowResult(result: String) = fa.logEvent(EVENT_APP_UPDATE_FLOW, Bundle().apply {
+        putString(PARAM_RESULT, result)
+    })
+
+    /** Usuário aceitou reiniciar para instalar a atualização baixada. */
+    fun logUpdateInstalled() = fa.logEvent(EVENT_APP_UPDATE_INSTALLED, Bundle())
+
     // ── Preferências ─────────────────────────────────────────────────────────────
 
     /** Registra a troca de idioma e atualiza a propriedade de usuário [PROP_LANGUAGE]. */
@@ -99,6 +112,9 @@ class AnalyticsService @Inject constructor(
         const val EVENT_AI_CHAT_MESSAGE_SENT   = "ai_chat_message_sent"
         const val EVENT_AI_LIMIT_REACHED       = "ai_limit_reached"
         const val EVENT_LANGUAGE_CHANGED       = "language_changed"
+        const val EVENT_APP_UPDATE_AVAILABLE   = "app_update_available"
+        const val EVENT_APP_UPDATE_FLOW        = "app_update_flow"
+        const val EVENT_APP_UPDATE_INSTALLED   = "app_update_installed"
 
         // Parâmetros
         const val PARAM_METHOD        = "method"
@@ -113,6 +129,7 @@ class AnalyticsService @Inject constructor(
         const val PARAM_LATENCY_MS    = "latency_ms"
         const val PARAM_MESSAGE_INDEX = "message_index"
         const val PARAM_LANGUAGE      = "language"
+        const val PARAM_RESULT        = "result"
 
         // Propriedades de usuário
         const val PROP_LANGUAGE = "app_language"
@@ -137,5 +154,10 @@ class AnalyticsService @Inject constructor(
         // Valores — tipo de limite de IA
         const val LIMIT_TOKEN_BUDGET = "token_budget"
         const val LIMIT_DAILY_CAP    = "daily_cap"
+
+        // Valores — resultado do fluxo de atualização
+        const val RESULT_ACCEPTED = "accepted"
+        const val RESULT_CANCELED = "canceled"
+        const val RESULT_FAILED   = "failed"
     }
 }

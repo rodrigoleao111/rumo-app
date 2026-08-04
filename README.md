@@ -225,4 +225,7 @@ Botões de ação principal: `containerColor = GreenMoss`, ícone/texto `AmberPr
 | `docs/modulo-13-seed-dados-iniciais.md` | Seed da viagem de exemplo (só em debug): `DatabaseSeeder` e `RoteiroRepository` (fixture de dados iniciais) |
 | `docs/modulo-14-categorias-contato.md` | Categorias de contato personalizadas: `ContactCategoryRepository` e uso em `EditContactViewModel` |
 | `docs/modulo-15-notas.md` | Notas por viagem/dia (F4): entidades, `NoteRepository`, editor de blocos, lista, navegação e export/import |
+| `docs/modulo-16-conversas-ia.md` | Conversas com a IA salvas: entidade `AiConversation`, `AiConversationRepository`, lista e detalhe das conversas |
+| `docs/modulo-17-firebase.md` | Firebase: integração base, Crashlytics (relatório de falhas) e Analytics (`AnalyticsService`, eventos e user property `app_language`) |
+| `docs/modulo-18-in-app-updates.md` | Atualização in-app (Play In-App Updates, modo flexível): `InAppUpdateManager`, Snackbar global e wiring na `MainActivity` |
 ```

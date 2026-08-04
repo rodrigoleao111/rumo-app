@@ -1,6 +1,8 @@
 package com.rodrigoleao.pipa.data.di
 
 import android.content.Context
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.rodrigoleao.pipa.data.db.TravelDatabase
 import com.rodrigoleao.pipa.data.preferences.ContactCategoryRepository
@@ -48,4 +50,10 @@ object AppModule {
     @Singleton
     fun provideFirebaseAnalytics(@ApplicationContext ctx: Context): FirebaseAnalytics =
         FirebaseAnalytics.getInstance(ctx)
+
+    /** Gerenciador de atualização in-app da Google Play (usado pelo InAppUpdateManager). */
+    @Provides
+    @Singleton
+    fun provideAppUpdateManager(@ApplicationContext ctx: Context): AppUpdateManager =
+        AppUpdateManagerFactory.create(ctx)
 }
