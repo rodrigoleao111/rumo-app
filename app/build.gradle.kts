@@ -45,6 +45,12 @@ android {
             isMinifyEnabled   = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            // Inclui os símbolos das libs nativas (androidx graphics-path/datastore) no AAB,
+            // p/ desofuscar crashes/ANRs nativos no Play. Não afeta o tamanho do download
+            // (o Play remove os símbolos antes de entregar ao dispositivo).
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
