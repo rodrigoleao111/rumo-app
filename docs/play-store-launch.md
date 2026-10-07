@@ -86,7 +86,7 @@ Sin registro. Sin anuncios. Simple y bonito.
 
 ### Categoria / contato
 - **Categoria:** Viagens e local (Travel & Local)
-- **E-mail de contato:** rodrigoleao1995@gmail.com
+- **E-mail de contato:** pipa.app.suporte@gmail.com
 - **Política de privacidade:** https://rodrigoleao111.github.io/rumo-app/privacy/
 
 ---
