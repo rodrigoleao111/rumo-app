@@ -64,37 +64,59 @@
           <h2><span class="num">1</span>Criar uma viagem</h2>
           <p>Na tela <b>Minhas viagens</b>, toque no botão <span class="k">+</span> (ou abra o menu <span class="k">☰</span>) e escolha <b>Nova viagem</b>. São quatro passos:</p>
           <ol class="steps">
-            <li><b>Nova viagem:</b> dê um nome (ex.: “Férias de inverno 2026”) e escolha o destino. O app sugere cidades enquanto você digita.</li>
-            <li><b>Datas da viagem:</b> informe ida e volta. O Pipa cria um dia para cada data.</li>
-            <li><b>Hospedagem:</b> busque o hotel ou o endereço onde vai ficar.</li>
-            <li><b>Roteiro com IA:</b> opcional. Veja a próxima seção.</li>
+            <li><b>Nova viagem:</b> escolha o destino (o app sugere cidades enquanto você digita), dê um nome à viagem e escolha uma capa.</li>
+            <li><b>Datas da viagem:</b> toque no dia da ida e depois no da volta. O Pipa cria um dia para cada data.</li>
+            <li><b>Hospedagem:</b> informe nome, endereço e telefone de onde vai ficar. É opcional, mas ajuda a abrir o Maps e chamar um Uber.</li>
+            <li><b>Roteiro com IA:</b> opcional. Veja a próxima seção, ou toque em <b>Pular e acessar a viagem</b>.</li>
           </ol>
           <div class="tip"><b>Dica:</b> você pode pular o passo da IA e montar o roteiro manualmente, direto na tela de cada dia.</div>
         </div>
-        <figure class="shot"><img src="../screenshots/01_lista_viagens.webp" alt="Tela Minhas viagens" loading="lazy" width="600" height="1333"><figcaption>Minhas viagens</figcaption></figure>
+        <figure class="shot"><video muted loop playsinline preload="none" poster="../assets/video/v1_criar.jpg" width="540" height="1200" aria-label="Animação mostrando a criação de uma viagem no Pipa, passo a passo"><source src="../assets/video/v1_criar.mp4" type="video/mp4"></video><figcaption>Criando uma viagem</figcaption></figure>
       </div>
     </article>
 
     <!-- 2 -->
     <article class="guide" id="roteiro">
       <h2><span class="num">2</span>Montar o roteiro</h2>
-      <p>No último passo da criação você escolhe como quer montar o roteiro. Toque no ícone de ajuda (<span class="k">?</span>) para ver as duas opções dentro do app.</p>
-      <div class="grid" style="margin-top:16px">
-        <div class="card">
-          <h3>Chat com IA</h3>
-          <p>Ideal se você ainda não tem um plano. A IA já conhece destino, datas e hospedagem. Conte o perfil da viagem (família, casal, amigos…) e o que prefere fazer, e ela monta um roteiro personalizado no app.</p>
-        </div>
-        <div class="card">
-          <h3>Importar roteiro</h3>
-          <p>Ideal se você já tem um roteiro, de um blog, um vídeo ou outra conversa com IA. O app gera um texto de instrução: copie, cole em qualquer IA, e depois cole a resposta de volta no Pipa.</p>
-        </div>
+      <p>No último passo da criação você escolhe como quer montar o roteiro. Toque no ícone de ajuda (<span class="k">?</span>) para ver as duas opções dentro do app. Se preferir, toque em <b>Pular e acessar a viagem</b> e monte tudo manualmente depois.</p>
+
+      <div class="modes" role="tablist" aria-label="Como montar o roteiro" hidden>
+        <button type="button" role="tab" id="tab-chat-ia" aria-controls="chat-ia" aria-selected="true"><b>Chat com IA</b><span>Monte do zero, conversando</span></button>
+        <button type="button" role="tab" id="tab-importar-roteiro" aria-controls="importar-roteiro" aria-selected="false" tabindex="-1"><b>Importar roteiro</b><span>Traga um roteiro pronto</span></button>
       </div>
-      <ol class="steps">
-        <li>Escolha <b>Chat com IA</b> ou <b>Importar roteiro</b>.</li>
-        <li>Siga as instruções da tela. Na importação, cole a resposta da IA <b>exatamente como veio</b>, sem editar.</li>
-        <li>Confira o <b>Roteiro gerado</b> e confirme para salvar os dias e as atividades.</li>
-      </ol>
-      <div class="tip warn"><b>Atenção:</b> no chat, o que você digita é enviado ao Google Gemini para gerar o roteiro. Não escreva dados sensíveis (saúde, documentos, senhas).</div>
+
+      <div class="split has-shot mode-panel" role="tabpanel" id="chat-ia" aria-labelledby="tab-chat-ia">
+        <div>
+          <h3>Usando o chat com IA</h3>
+          <p>Ideal se você ainda não tem um plano. A IA do app já conhece destino, datas e hospedagem. Conte o perfil da viagem (família, casal, amigos…) e o que prefere fazer, e ela monta um roteiro personalizado.</p>
+          <ol class="steps">
+            <li>Toque em <b>Chat com IA</b>. O assistente abre a conversa já sabendo o destino, as datas e a hospedagem.</li>
+            <li>Conte o perfil da viagem e o que vocês gostam de fazer. O assistente responde e pode fazer mais perguntas.</li>
+            <li>Quando quiser, toque em <b>Gerar roteiro agora</b> e aguarde alguns segundos.</li>
+            <li>Confira o <b>Roteiro gerado</b>, dia a dia, e toque em <b>Salvar roteiro</b>. Se algo não agradar, use <b>Voltar ao chat para ajustar</b>.</li>
+          </ol>
+          <div class="tip warn"><b>Atenção:</b> no chat, o que você digita é enviado ao Google Gemini para gerar o roteiro. Não escreva dados sensíveis (saúde, documentos, senhas).</div>
+        </div>
+        <figure class="shot"><video muted loop playsinline preload="none" poster="../assets/video/v2_chat_ia.jpg" width="540" height="1200" aria-label="Animação mostrando a criação de um roteiro pelo chat com IA, da conversa até o roteiro salvo"><source src="../assets/video/v2_chat_ia.mp4" type="video/mp4"></video><figcaption>Roteiro com o chat de IA</figcaption></figure>
+      </div>
+
+      <div class="split has-shot mode-panel" role="tabpanel" id="importar-roteiro" aria-labelledby="tab-importar-roteiro">
+        <div>
+          <h3>Importando um roteiro de outra IA</h3>
+          <p>Ideal se você já tem um roteiro, de um blog, de um vídeo ou de uma conversa com outra IA, como o ChatGPT ou o Gemini. O Pipa gera uma instrução, a IA organiza o roteiro no formato certo e você cola o resultado no app.</p>
+          <ol class="steps">
+            <li>Toque em <b>Importar roteiro</b>.</li>
+            <li>Abra o ChatGPT, o Gemini ou outra IA e peça o roteiro que você quer, contando o destino e o seu perfil de viagem.</li>
+            <li>Volte ao Pipa e toque em <b>Copiar texto de instrução</b>. O botão confirma com <b>Texto copiado!</b>.</li>
+            <li>Cole esse texto <b>na mesma conversa</b> da IA e envie. Ela devolve o roteiro no formato que o app entende.</li>
+            <li>Copie a resposta da IA, volte ao Pipa, toque no campo <b>Cole aqui a resposta da IA</b> e escolha <b>Colar</b>.</li>
+            <li>Toque em <b>Importar roteiro</b>, confira o <b>Roteiro gerado</b> e toque em <b>Salvar roteiro</b>.</li>
+          </ol>
+          <div class="tip warn"><b>Cole exatamente como veio.</b> Qualquer alteração na resposta da IA pode causar erro na importação. Se isso acontecer, peça à IA para repetir a resposta no mesmo formato.</div>
+          <div class="tip"><b>Dica:</b> o texto de instrução é longo. Se a IA responder em partes ou acrescentar comentários, peça: “responda só com o JSON, sem texto fora dele”.</div>
+        </div>
+        <figure class="shot"><video muted loop playsinline preload="none" poster="../assets/video/v3_importar.jpg" width="540" height="1200" aria-label="Animação mostrando a importação de um roteiro feito no ChatGPT para dentro do Pipa"><source src="../assets/video/v3_importar.mp4" type="video/mp4"></video><figcaption>Importando um roteiro do ChatGPT</figcaption></figure>
+      </div>
     </article>
 
     <!-- 3 -->
@@ -271,6 +293,60 @@
     </div>
   </div>
 </footer>
+
+<script>
+(function(){
+  // ---- seletor de modo (abas) da seção "Montar o roteiro" ----
+  var tablist=document.querySelector('.modes');
+  var tabs=tablist?[].slice.call(tablist.querySelectorAll('[role="tab"]')):[];
+  function painel(tab){ return document.getElementById(tab.getAttribute('aria-controls')); }
+  function selecionar(tab,foco,reinicia){
+    tabs.forEach(function(t){
+      var on=(t===tab), p=painel(t);
+      t.setAttribute('aria-selected',on?'true':'false');
+      t.tabIndex=on?0:-1;
+      if(p) p.hidden=!on;
+      if(on && reinicia && p){ var v=p.querySelector('video'); if(v){ try{ v.currentTime=0; }catch(e){} } }
+    });
+    if(foco) tab.focus();
+  }
+  if(tabs.length){
+    tablist.hidden=false;
+    tabs.forEach(function(t,i){
+      t.addEventListener('click',function(){ selecionar(t,false,true); history.replaceState(null,'','#'+t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown',function(e){
+        var j=-1;
+        if(e.key==='ArrowRight'||e.key==='ArrowDown') j=(i+1)%tabs.length;
+        else if(e.key==='ArrowLeft'||e.key==='ArrowUp') j=(i-1+tabs.length)%tabs.length;
+        else if(e.key==='Home') j=0; else if(e.key==='End') j=tabs.length-1;
+        if(j>=0){ e.preventDefault(); selecionar(tabs[j],true,true); }
+      });
+    });
+    var porHash=function(){
+      var h=(location.hash||'').slice(1);
+      for(var k=0;k<tabs.length;k++){
+        if(tabs[k].getAttribute('aria-controls')===h){ selecionar(tabs[k],false,true); var p=painel(tabs[k]); if(p) p.scrollIntoView(); return; }
+      }
+    };
+    selecionar(tabs[0],false,false);
+    porHash();
+    window.addEventListener('hashchange',porHash);
+  }
+
+  // ---- vídeos: tocam só quando visíveis; respeitam "reduzir movimento" ----
+  var vs=[].slice.call(document.querySelectorAll('video'));
+  if(!vs.length) return;
+  var reduz=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduz||!('IntersectionObserver' in window)) return; // fica no pôster
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      var v=e.target;
+      if(e.isIntersecting){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); } else { v.pause(); }
+    });
+  },{threshold:.4});
+  vs.forEach(function(v){ io.observe(v); });
+})();
+</script>
 
 </body>
 </html>
