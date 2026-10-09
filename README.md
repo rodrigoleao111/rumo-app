@@ -35,7 +35,7 @@ App Android nativo para organizar roteiros de viagem com previsão do tempo ao v
   </tr>
 </table>
 
-> Screenshots capturados do build **debug** (que semeia a viagem de exemplo "Gramado & Canela").
+> Screenshots do app com uma viagem fictícia de exemplo (dados inventados).
 
 ## Stack
 
